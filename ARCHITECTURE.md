@@ -1,4 +1,4 @@
-# Itechtivity Voting System — Implementation Plan
+# Itechtivity Voting System — Architecture & Implementation Plan
 
 ## Context
 Itechtivity is a 4th-year student event where thesis/booth groups are showcased and fellow students vote for their favorites. The system must be secure (cross-checked registration), transparent (live vote counts), fully audited, and highly mobile-optimized. Built on Laravel + Tailwind CSS + PostgreSQL.
@@ -111,6 +111,13 @@ Itechtivity is a 4th-year student event where thesis/booth groups are showcased 
 | status | enum('pending','processing','done','failed') | |
 | created_at / updated_at | timestamps | |
 
+### `system_settings` (key-value config)
+| Column | Type | Notes |
+|---|---|---|
+| key | varchar(100) | PK e.g. 'voting_open_at', 'voting_close_at' |
+| value | text | |
+| updated_at | timestamp | |
+
 ---
 
 ## 2. Cross-Check Registration Algorithm
@@ -183,13 +190,15 @@ CAST VOTE (student submits vote form):
   STEP 3 — Booth validation: booth must be active
   STEP 4 — Duplicate vote guard: votes.exists(user_id, booth_id) → REJECT
   STEP 5 — Voting window check: current time within admin-configured open/close window
-  STEP 6 — BEGIN TRANSACTION
+  STEP 6 — BEGIN TRANSACTION (with pessimistic lock on user row)
+    Lock user row: SELECT ... FOR UPDATE
+    Re-check votes_remaining (race condition guard)
     Insert votes row
     Decrement users.votes_remaining by 1
     Increment vote_tallies.total_votes for booth
     Log audit: action='vote.cast'
   COMMIT
-  STEP 7 — Broadcast VoteCast event (triggers live update)
+  STEP 7 — Broadcast VoteCast event → Reverb → all connected clients update live
 ```
 
 ---
@@ -215,9 +224,12 @@ app/
         DashboardController.php
         VoteController.php          # cast votes
         BoothController.php         # view booths
+      Api/
+        VoteTallyController.php     # GET /api/vote-tallies (WS fallback polling)
     Middleware/
       AdminMiddleware.php
       ActiveUserMiddleware.php
+      SecurityHeadersMiddleware.php
   Models/
     User.php
     StudentReference.php
@@ -228,18 +240,22 @@ app/
     AuditLog.php
     VoteGrant.php
     ImportBatch.php
+    SystemSetting.php
   Services/
     CrossCheckService.php           # registration cross-check logic
-    VoteService.php                 # vote casting logic
+    VoteService.php                 # vote casting logic (atomic, locked)
     AuditService.php                # audit logging helper
     ImportService.php               # CSV/Excel parsing + import
     PdfExportService.php            # PDF generation
   Events/
-    VoteCast.php                    # broadcast event
+    VoteCast.php                    # ShouldBroadcast — fires after each vote
   Listeners/
     UpdateVoteTally.php
   Jobs/
     ProcessStudentImport.php        # queued import job
+  Console/
+    Commands/
+      ReconcileVoteTallies.php      # scheduled integrity check (every 5min)
 
 resources/
   views/
@@ -263,13 +279,16 @@ resources/
       audit/index.blade.php
       import/index.blade.php
     transparency/
-      index.blade.php               # public live vote page
+      index.blade.php               # public live vote page (WebSocket-powered)
+    exports/
+      results.blade.php             # PDF template
   js/
-    live-votes.js                   # websocket listener for live count
+    live-votes.js                   # Echo WebSocket listener + fallback polling
 
 routes/
   web.php
-  channels.php                      # broadcast channel auth
+  api.php                           # GET /api/vote-tallies — WS fallback endpoint
+  channels.php                      # broadcast channel auth (public 'votes' channel)
 
 database/
   migrations/
@@ -282,14 +301,16 @@ database/
     007_create_audit_logs_table.php
     008_create_vote_grants_table.php
     009_create_import_batches_table.php
+    010_create_system_settings_table.php
   seeders/
     AdminSeeder.php
 ```
 
 ---
 
-## 5. Routes (web.php)
+## 5. Routes
 
+### web.php
 ```php
 // Public
 Route::get('/transparency', [TransparencyController::class, 'index']);
@@ -327,24 +348,165 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 });
 ```
 
+### api.php (fallback polling)
+```php
+Route::get('/vote-tallies', [Api\VoteTallyController::class, 'index']);
+```
+
 ---
 
-## 6. Real-Time Live Vote Count
+## 6. Real-Time Live Vote Count (WebSocket — Laravel Reverb)
 
-**Approach: Laravel Broadcasting + Pusher (or Laravel Reverb for self-hosted)**
+**Stack: Laravel Reverb (self-hosted WebSocket server) + Laravel Echo (client)**
 
-1. When a vote is cast → fire `VoteCast` event
-2. `VoteCast` broadcasts on public channel `votes`
-3. Transparency page JS listens via Echo → updates DOM counter without page reload
-4. Fallback: polling every 5s if websocket unavailable (graceful degradation)
+Reverb is chosen over Pusher because:
+- Free, no per-connection pricing
+- Runs on the same server (no external dependency)
+- Natively supported by Laravel Broadcasting since v11
+- Handles 1,000 concurrent connections on a $24/mo DigitalOcean droplet comfortably
+
+### Server-Side Event
+
+```php
+// app/Events/VoteCast.php
+class VoteCast implements ShouldBroadcast
+{
+    use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public function __construct(
+        public int $booth_id,
+        public int $total_votes,
+        public string $booth_name,
+    ) {}
+
+    public function broadcastOn(): array
+    {
+        return [new Channel('votes')];  // public channel — no auth required
+    }
+
+    public function broadcastAs(): string
+    {
+        return 'VoteCast';
+    }
+
+    // Only send what the client needs — never expose user data
+    public function broadcastWith(): array
+    {
+        return [
+            'booth_id'    => $this->booth_id,
+            'total_votes' => $this->total_votes,
+            'booth_name'  => $this->booth_name,
+        ];
+    }
+}
+```
+
+### Reverb Server Configuration
+
+```php
+// config/reverb.php (key settings)
+'servers' => [
+    'reverb' => [
+        'host' => env('REVERB_SERVER_HOST', '0.0.0.0'),
+        'port' => env('REVERB_SERVER_PORT', 8080),
+        'max_connections'  => 1100,     // headroom above 1,000 target
+        'max_request_size' => 10_000,   // 10KB per message — votes are tiny
+    ]
+],
+```
+
+### Reverb as a systemd Service (production)
+
+```ini
+# /etc/systemd/system/reverb.service
+[Unit]
+Description=Laravel Reverb WebSocket Server
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/var/www/itechtivity
+ExecStart=php artisan reverb:start --host=0.0.0.0 --port=8080
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Nginx WebSocket Proxy
+
+```nginx
+# /etc/nginx/sites-available/itechtivity
+server {
+    listen 443 ssl;
+    server_name yourdomain.com;
+
+    # HTTP Laravel app
+    location / {
+        root /var/www/itechtivity/public;
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # WebSocket upgrade — proxy to Reverb on port 8080
+    location /app/ {
+        proxy_pass         http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection "Upgrade";
+        proxy_set_header   Host $host;
+        proxy_read_timeout 60s;
+    }
+}
+```
+
+### Client-Side (Laravel Echo)
 
 ```js
-// live-votes.js
+// resources/js/live-votes.js
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';   // Echo uses Pusher protocol even with Reverb
+
+window.Pusher = Pusher;
+
+window.Echo = new Echo({
+    broadcaster: 'reverb',
+    key:         import.meta.env.VITE_REVERB_APP_KEY,
+    wsHost:      import.meta.env.VITE_REVERB_HOST,
+    wsPort:      import.meta.env.VITE_REVERB_PORT ?? 8080,
+    wssPort:     import.meta.env.VITE_REVERB_PORT ?? 443,
+    forceTLS:    true,
+    enabledTransports: ['ws', 'wss'],
+    disableStats: true,
+});
+
+// Subscribe to the public votes channel
 Echo.channel('votes')
-  .listen('VoteCast', (e) => {
-    document.querySelector(`#booth-${e.booth_id}-count`).textContent = e.total_votes;
-    // animate the counter
-  });
+    .listen('.VoteCast', (e) => {
+        const counter = document.querySelector(`#booth-${e.booth_id}-count`);
+        if (counter) {
+            counter.textContent = e.total_votes;
+            counter.classList.add('vote-bump');           // CSS animation trigger
+            setTimeout(() => counter.classList.remove('vote-bump'), 600);
+        }
+    });
+```
+
+### Fallback Polling (graceful degradation)
+
+```js
+// If Reverb connection fails, fall back to polling every 5s
+Echo.connector.pusher.connection.bind('failed', () => {
+    console.warn('WebSocket unavailable — switching to polling');
+    setInterval(() => {
+        fetch('/api/vote-tallies')
+            .then(r => r.json())
+            .then(data => data.forEach(booth => {
+                const el = document.querySelector(`#booth-${booth.id}-count`);
+                if (el) el.textContent = booth.total_votes;
+            }));
+    }, 5000);
+});
 ```
 
 ---
@@ -400,7 +562,7 @@ AuditService::log(
 - Large tap targets (minimum 44px height for buttons)
 - Sticky header with hamburger menu for admin panel
 - Vote form: full-width cards with booth image, swipeable on mobile
-- Transparency page: animated vote bars, auto-refreshing, readable on small screens
+- Transparency page: animated vote bars, WebSocket-powered live counters, readable on small screens
 - Admin tables: horizontal scroll with frozen first column on mobile
 
 ---
@@ -411,7 +573,7 @@ AuditService::log(
 // composer.json additions
 "barryvdh/laravel-dompdf": "^2.0",
 "maatwebsite/laravel-excel": "^3.1",
-"pusher/pusher-php-server": "^7.0",   // or use Laravel Reverb (free, self-hosted)
+"laravel/reverb": "^1.0",
 "laravel/sanctum": "^3.0"
 ```
 
@@ -421,61 +583,110 @@ AuditService::log(
 "pusher-js": "^8.0"
 ```
 
----
-
-## 12. Deployment Plan
-
-### DigitalOcean (Recommended over Heroku — no cold starts, PostgreSQL first-class)
-1. Create Droplet (Ubuntu 22.04, $12/mo minimum)
-2. Install: Nginx, PHP 8.2, Composer, Node.js, PostgreSQL
-3. Configure Nginx vhost → point to Laravel `public/`
-4. Set up `.env` with DB credentials, Pusher/Reverb keys, mail config
-5. Run: `php artisan migrate --force`, `php artisan db:seed --class=AdminSeeder`
-6. Set up queue worker: `php artisan queue:work` as a systemd service
-7. SSL: Let's Encrypt via Certbot
-8. Connect domain from Name.com → DigitalOcean nameservers
-
-### Heroku (Alternative)
-1. `heroku create itechtivity-voting`
-2. Add Postgres addon: `heroku addons:create heroku-postgresql`
-3. Set buildpacks: heroku/php + heroku/nodejs
-4. Push code → auto-deploy on git push
-5. Configure Procfile: `web: vendor/bin/heroku-php-nginx public/`
-6. Add Pusher addon or use external Pusher account
+> Note: `pusher-js` is still required on the client — Laravel Echo uses the Pusher protocol even when connecting to Reverb. No Pusher account or API key is needed.
 
 ---
 
-## 13. Repo Documentation File
+## 12. Capacity Planning — 1,000 Users / 200 Votes per Hour
 
-The plan document is committed to the repo as **`ARCHITECTURE.md`** at the repo root.
+### Load Profile
+| Metric | Value | Notes |
+|---|---|---|
+| Peak concurrent users | ~1,000 | All students online during event |
+| Votes per hour | ~200 | ~3.3 votes/minute, bursty not steady |
+| WebSocket connections | ~1,000 | Each browser holds 1 persistent connection to Reverb |
+| Vote events/min broadcast | ~4 | Each pushed to all 1,000 subscribers |
+| DB writes per vote | 3 | `votes`, `users.votes_remaining`, `vote_tallies` |
+| DB reads per page load | ~5–10 | Booth list, tally cache, user state |
 
-- Path: `/home/user/Itechtivity-voting-system/ARCHITECTURE.md`
-- This file serves as the single source of truth for DB schema, algorithms, routes, security, and deployment
-- Committed in Phase 1 alongside the initial Laravel scaffold
-- Updated as the system evolves
+This is a **light load** for a $24/mo DigitalOcean droplet. The primary resource consumer is Reverb holding 1,000 open connections — handled efficiently via ReactPHP's async I/O (no thread-per-connection).
+
+### Server Sizing
+
+**DigitalOcean Droplet: 2 vCPU / 4GB RAM ($24/mo)**
+- Nginx: HTTP app traffic
+- PHP-FPM: 50 workers — far exceeds the ~4 concurrent vote requests/min
+- Laravel Reverb: 1,000 WebSocket connections ≈ ~150–250MB RAM at peak
+- PostgreSQL: local, < 10 queries/second at peak burst = trivial
+- Queue worker (database driver): 1 worker sufficient for async import jobs
+
+### Broadcast Fan-Out Calculation
+```
+200 votes/hour = 3.3 events/minute
+Each event broadcasts to 1,000 subscribers
+= 3,300 WebSocket frames/minute = 55 frames/second
+Each frame ≈ 200 bytes (JSON payload)
+= ~11 KB/s outbound from Reverb → negligible
+```
+
+### DB Connection Pooling
+```
+PHP-FPM workers: 50
+Each worker holds 1 DB connection when active
+Peak concurrent DB connections at 200 votes/hr: ~5–10
+PostgreSQL max_connections: 100 (default) → sufficient with room to spare
+```
+
+### Caching Strategy
+- `vote_tallies` table = materialized cache — live counts served from here, not `COUNT(*)` queries
+- `booths` list: file/Redis cache for 60s (avoids repeated reads during heavy page loads)
+- Session driver: `database` (avoid `file` driver under concurrent load)
+
+### Scalability Headroom
+If the event ever grows beyond 1,000 users:
+- Move PostgreSQL to DigitalOcean Managed Postgres ($15/mo) — zero code changes
+- Add Redis for sessions + queue ($15/mo) — change env vars only
+- Scale Reverb horizontally: multiple Reverb nodes + Redis pub/sub backend — config only
 
 ---
 
-## 13a. Implementation Order (Phases)
+## 13. Deployment Plan
 
-| Phase | Tasks |
-|---|---|
-| 1 | Commit `ARCHITECTURE.md` to repo root; Laravel scaffold, DB migrations, models, seeders |
-| 2 | Auth system + CrossCheckService (registration + login) |
-| 3 | Admin: student import (CSV), booth management |
-| 4 | Voting system: grant votes, cast votes, history |
-| 5 | Live vote count (broadcasting + transparency page) |
-| 6 | Audit log system |
-| 7 | PDF export |
-| 8 | Mobile UI polish (Tailwind, all views) |
-| 9 | Deployment + DNS setup |
-| 10 | UAT + security review |
+### DigitalOcean (Recommended — 2 vCPU / 4GB, $24/mo)
+1. Create Droplet (Ubuntu 22.04)
+2. Install: Nginx, PHP 8.3-fpm, Composer, Node.js 20, PostgreSQL 16
+3. Configure PHP-FPM pool: `pm = dynamic`, `pm.max_children = 50`
+4. Configure Nginx vhost with WebSocket proxy block for Reverb (see §6)
+5. Set up `.env`: `BROADCAST_CONNECTION=reverb`, DB credentials, mail config
+6. Run: `php artisan migrate --force`, `php artisan db:seed --class=AdminSeeder`
+7. Install systemd services:
+   - `laravel-queue.service` → `php artisan queue:work --tries=3`
+   - `reverb.service` → `php artisan reverb:start --host=0.0.0.0 --port=8080`
+8. SSL: `certbot --nginx` (Let's Encrypt)
+9. Connect domain from registrar → DigitalOcean nameservers
+
+### Heroku (Alternative — limited WebSocket support)
+> Reverb requires a persistent process — use a Standard-2X dyno minimum. Free dynos sleep and cannot run Reverb.
+```
+# Procfile
+web:    vendor/bin/heroku-php-nginx public/
+worker: php artisan queue:work
+reverb: php artisan reverb:start
+```
 
 ---
 
-## 14. Security Implementation
+## 14. Implementation Phases
 
-### 14.1 Authentication Security
+| Phase | Tasks | Status |
+|---|---|---|
+| **1** | **Write and commit `ARCHITECTURE.md` to repo root** | ✅ Done |
+| 2 | Laravel scaffold, DB migrations, models, seeders, `.env.example` | pending |
+| 3 | Auth system + CrossCheckService (registration + login) | pending |
+| 4 | Admin: student import (CSV), booth management | pending |
+| 5 | Voting system: grant votes, cast votes, history | pending |
+| 6 | WebSocket live vote count (Laravel Reverb + Echo + transparency page) | pending |
+| 7 | Audit log system | pending |
+| 8 | PDF export | pending |
+| 9 | Mobile UI polish (Tailwind, all views) | pending |
+| 10 | Deployment + Reverb systemd service + Nginx WS proxy + DNS | pending |
+| 11 | UAT + security review + load test (simulate 1,000 connections) | pending |
+
+---
+
+## 15. Security Implementation
+
+### 15.1 Authentication Security
 
 #### Password Policy
 - Minimum 8 characters, must contain uppercase, lowercase, number
@@ -501,52 +712,52 @@ Per-account lockout:
 
 Per-IP throttle:
   - 20 login attempts per IP per 10 minutes → 429 Too Many Requests
-  - Implemented in LoginController using ThrottleRequests middleware
+  - Implemented via ThrottleRequests middleware on login route
 ```
 
 #### Account Status Checks on Login
 ```
 STEP 1 — Credentials valid?
 STEP 2 — is_active = true? (admin can deactivate accounts)
-STEP 3 — email_verified_at NOT null? (if email verification is enabled)
+STEP 3 — email_verified_at NOT null? (if email verification enabled)
 STEP 4 — Account not locked by brute-force?
 STEP 5 — Regenerate session ID after login (session fixation prevention)
 ```
 
 ---
 
-### 14.2 CSRF Protection
-- Laravel's built-in `VerifyCsrfToken` middleware applied to ALL POST/PATCH/DELETE routes
+### 15.2 CSRF Protection
+- Laravel's built-in `VerifyCsrfToken` middleware on ALL POST/PATCH/DELETE routes
 - Every form includes `@csrf` Blade directive
-- AJAX requests must send `X-CSRF-TOKEN` header (set automatically via `meta[name=csrf-token]`)
+- AJAX requests must send `X-CSRF-TOKEN` header (auto-set via `meta[name=csrf-token]`)
 - Transparency page (public, read-only) exempt from CSRF
 
 ---
 
-### 14.3 SQL Injection Prevention
+### 15.3 SQL Injection Prevention
 - **All** DB queries use Eloquent ORM or Query Builder with parameter binding
 - Zero raw SQL with user input — no `DB::statement("... $userInput ...")`
-- If raw queries ever needed: use `DB::select('... WHERE col = ?', [$value])`
+- If raw queries ever needed: `DB::select('... WHERE col = ?', [$value])`
 - PostgreSQL prepared statements enforced at the driver level
 
 ---
 
-### 14.4 XSS Prevention
-- Blade's `{{ }}` syntax auto-escapes all output
-- `{!! !!}` (unescaped) used ONLY for admin-controlled rich text (booth descriptions)
-- Admin-entered HTML sanitized with `HTMLPurifier` before storing to DB
-- Content-Security-Policy header set via middleware:
+### 15.4 XSS Prevention
+- Blade's `{{ }}` auto-escapes all output
+- `{!! !!}` (unescaped) used ONLY for admin-controlled booth descriptions
+- Admin-entered HTML sanitized with `HTMLPurifier` before storing
+- Content-Security-Policy header:
 ```
 Content-Security-Policy: default-src 'self'; script-src 'self' cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:;
 ```
 
 ---
 
-### 14.5 Authorization — Role & Policy Layer
+### 15.5 Authorization — Role & Policy Layer
 
 #### Middleware Stack
 ```
-web routes      → web middleware group (session, CSRF)
+web routes      → web (session, CSRF, security headers)
 student routes  → auth + active (ActiveUserMiddleware)
 admin routes    → auth + admin (AdminMiddleware)
 ```
@@ -558,20 +769,16 @@ if (auth()->user()->role !== 'admin') {
 }
 ```
 
-#### Laravel Policies (fine-grained)
+#### Laravel Policies
 | Policy | Rules |
 |---|---|
-| `VotePolicy@cast` | user.role = student, votes_remaining > 0, booth active, within voting window |
-| `VotePolicy@modify` | user.role = admin only, justification required |
+| `VotePolicy@cast` | role=student, votes_remaining > 0, booth active, within voting window |
+| `VotePolicy@modify` | admin only, justification required |
 | `BoothPolicy@manage` | admin only |
 | `StudentPolicy@grantVotes` | admin only, max grant cap enforced |
 
 #### Voting Window Enforcement
 ```php
-// system_settings table (key-value)
-// voting_open_at  → datetime
-// voting_close_at → datetime
-
 // In VoteService::cast():
 $open  = SystemSetting::get('voting_open_at');
 $close = SystemSetting::get('voting_close_at');
@@ -582,22 +789,21 @@ if (now()->notBetween($open, $close)) {
 
 ---
 
-### 14.6 Vote Integrity Safeguards
+### 15.6 Vote Integrity Safeguards
 
 #### Database-Level Constraints
 ```sql
--- Prevent same user voting for same booth twice (DB enforced, not just app-level)
+-- Prevent same user voting for same booth twice (DB enforced)
 ALTER TABLE votes ADD CONSTRAINT uq_user_booth UNIQUE (user_id, booth_id);
 
 -- votes_remaining cannot go negative
 ALTER TABLE users ADD CONSTRAINT chk_votes_remaining CHECK (votes_remaining >= 0);
 ```
 
-#### Atomic Vote Transaction with Pessimistic Locking
+#### Atomic Transaction with Pessimistic Locking
 ```php
 DB::transaction(function () use ($user, $booth) {
-    // Lock the user row to prevent race conditions (two simultaneous votes)
-    $user = User::lockForUpdate()->find($user->id);
+    $user = User::lockForUpdate()->find($user->id);  // prevent race conditions
 
     if ($user->votes_remaining < 1) {
         throw new InsufficientVotesException();
@@ -610,107 +816,82 @@ DB::transaction(function () use ($user, $booth) {
 });
 ```
 
-This prevents **race condition attacks** where a student rapidly double-submits to cast more votes than granted.
-
-#### Vote Tampering Detection
-- `vote_tallies.total_votes` must always equal `COUNT(*) FROM votes WHERE booth_id = ?`
-- Scheduled command `php artisan votes:reconcile` runs every 5 minutes to verify tally integrity
-- Any mismatch triggers an alert email to admin and an audit log entry
+#### Vote Tally Reconciliation
+- Scheduled command `votes:reconcile` runs every 5 minutes
+- Compares `vote_tallies.total_votes` against `COUNT(*) FROM votes WHERE booth_id = ?`
+- Mismatch → admin alert email + audit log entry
 
 ---
 
-### 14.7 File Upload Security (Import + Booth Images)
+### 15.7 File Upload Security
 
 #### CSV/Excel Import
 ```php
-// Validation rules
 $request->validate([
-    'file' => [
-        'required',
-        'file',
-        'mimes:csv,xlsx',
-        'max:10240',  // 10MB max
-    ]
+    'file' => ['required', 'file', 'mimes:csv,xlsx', 'max:10240']
 ]);
-
-// Processing
-// - Files saved to storage/app/private/imports/ (not publicly accessible)
-// - Processed in a queued job — never parsed in the HTTP request cycle
-// - Virus scan hook (optional): integrate ClamAV via Laravel job
+// Saved to storage/app/private/imports/ (not web-accessible)
+// Processed in queued job — never in the HTTP request cycle
 ```
 
 #### Booth Banner Images
 ```php
 $request->validate([
     'banner_image' => [
-        'required',
-        'image',                    // must be actual image (checks MIME, not extension)
-        'mimes:jpeg,png,webp',
-        'max:5120',                 // 5MB max
-        'dimensions:min_width=400,min_height=200',
+        'required', 'image', 'mimes:jpeg,png,webp',
+        'max:5120', 'dimensions:min_width=400,min_height=200',
     ]
 ]);
-
-// Stored in storage/app/public/booths/ — served via symlink, not direct web path
-// Filename: UUID-based (not user-supplied) to prevent path traversal
+// UUID filename — prevents path traversal
 $filename = Str::uuid() . '.' . $file->extension();
 ```
 
 ---
 
-### 14.8 HTTP Security Headers
+### 15.8 HTTP Security Headers
 
-Set via `SecurityHeaders` middleware applied globally:
+Applied globally via `SecurityHeadersMiddleware`:
 
-```php
-$response->headers->set('X-Frame-Options', 'DENY');
-$response->headers->set('X-Content-Type-Options', 'nosniff');
-$response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-$response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-$response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+```
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Strict-Transport-Security: max-age=31536000; includeSubDomains
 ```
 
 ---
 
-### 14.9 Environment & Secrets Management
+### 15.9 Environment & Secrets Management
 
 ```
-# .env (never committed to git — in .gitignore)
+# .env — never committed to git
 APP_ENV=production
 APP_DEBUG=false          # CRITICAL: false in production
-APP_KEY=base64:...       # Generated with php artisan key:generate
+APP_KEY=base64:...
 
 DB_CONNECTION=pgsql
-DB_PASSWORD=...          # Strong random password
+DB_PASSWORD=...
 
-PUSHER_APP_SECRET=...
+REVERB_APP_ID=...
+REVERB_APP_KEY=...
+REVERB_APP_SECRET=...
+REVERB_HOST=yourdomain.com
+REVERB_PORT=443
+REVERB_SCHEME=https
+
 MAIL_PASSWORD=...
-
-# Secrets rotation plan:
-# - APP_KEY: rotate yearly or after suspected compromise
-# - DB passwords: rotate per deployment environment
 ```
 
-- `.env` added to `.gitignore`
-- `.env.example` committed with placeholder values only
-- Production secrets stored in DigitalOcean environment variables (not in repo)
+- `.env` in `.gitignore`; `.env.example` committed with placeholders only
+- Production secrets stored as DigitalOcean environment variables
 
 ---
 
-### 14.10 Logging & Intrusion Detection
+### 15.10 Security Logging
 
-#### Application Logs
 ```php
-// Log suspicious activity to Laravel's log channel
-Log::channel('security')->warning('Suspicious registration attempt', [
-    'ip'             => $request->ip(),
-    'student_number' => $request->student_number,
-    'reason'         => 'student_number not found',
-]);
-```
-
-#### Security Log Channel (config/logging.php)
-```php
+// config/logging.php — dedicated security channel
 'security' => [
     'driver' => 'daily',
     'path'   => storage_path('logs/security.log'),
@@ -719,51 +900,50 @@ Log::channel('security')->warning('Suspicious registration attempt', [
 ],
 ```
 
-#### Events Logged to Security Log
 | Event | Severity |
 |---|---|
-| Failed login (wrong password) | warning |
+| Failed login | warning |
 | Account locked (brute force) | critical |
 | Registration cross-check failure | warning |
 | Vote cast outside voting window | warning |
 | Vote tally mismatch detected | critical |
-| Admin action without justification attempt | error |
+| Admin action without justification | error |
 | File upload rejected (wrong type) | warning |
 | Rate limit exceeded | warning |
 
 ---
 
-### 14.11 additional Database Security
+### 15.11 Database Least-Privilege
 
 ```sql
--- Create a restricted DB user for the application (principle of least privilege)
--- Application user cannot DROP tables, ALTER schema, or access pg_catalog
 CREATE USER itechtivity_app WITH PASSWORD '...';
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO itechtivity_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO itechtivity_app;
--- Admin seeder runs as a separate privileged user (migrations only)
+-- App user cannot DROP, ALTER, or access system catalogs
+-- Migrations run under a separate privileged user
 ```
 
 ---
 
-### 14.12 Security Checklist for Go-Live
+### 15.12 Security Go-Live Checklist
 
 - [ ] `APP_DEBUG=false` in production `.env`
-- [ ] All routes return 404 (not 500) for invalid IDs (use `findOrFail` + exception handler)
-- [ ] HTTPS enforced — Certbot SSL installed, HTTP redirects to HTTPS
-- [ ] Database not publicly accessible (firewall: only allow app server IP)
+- [ ] All routes return 404 for invalid IDs (`findOrFail` + exception handler)
+- [ ] HTTPS enforced — Certbot SSL, HTTP → HTTPS redirect
+- [ ] Database not publicly accessible (firewall: app server IP only)
 - [ ] File upload directory not web-accessible (`storage/app/private/`)
 - [ ] `php artisan config:cache` and `route:cache` run in production
 - [ ] Security headers verified via securityheaders.com
-- [ ] Rate limiting tested: confirm 429 on 6th attempt
-- [ ] Vote race condition tested: concurrent submissions only produce 1 vote
-- [ ] Audit log verified: every admin action has a corresponding log entry
+- [ ] Rate limiting tested: 429 on 6th registration attempt
+- [ ] Vote race condition tested: concurrent submissions produce only 1 vote
+- [ ] Reverb tested: 1,000 simulated concurrent connections hold stable
+- [ ] Audit log verified: every admin action has a log entry
 - [ ] Passwords never appear in logs (no `$request->all()` logging)
 - [ ] Old/test admin accounts deactivated before event day
 
 ---
 
-## 15. Verification / Testing Checklist
+## 16. Verification / Testing Checklist
 
 - [ ] Register with valid student_number + email → account created, is_claimed set true
 - [ ] Register with wrong email for a student_number → rejected with correct message
@@ -773,9 +953,11 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO itechtivity_app;
 - [ ] Admin grants 3 votes to a student → votes_remaining = 3
 - [ ] Student casts 3 votes for 3 different booths → votes_remaining = 0
 - [ ] Student tries 4th vote → rejected
-- [ ] Transparency page updates live when vote is cast (< 1s)
+- [ ] Transparency page updates live via WebSocket when vote is cast (< 1s)
+- [ ] WebSocket fallback: disable Reverb → transparency page switches to polling every 5s
 - [ ] Admin modifies vote without justification → validation error
 - [ ] Admin modifies vote with justification → audit log entry created
 - [ ] PDF export generates correct ranked results
 - [ ] All pages render correctly on 375px mobile screen
 - [ ] Admin audit log shows all admin actions in chronological order
+- [ ] 1,000 simulated WebSocket connections hold stable under vote broadcast events
