@@ -93,7 +93,7 @@ Read the code and list:
 - [ ] Passwords never in logs — no `Log::info($request->all())`
 - [ ] Error pages don't leak stack traces in production
 - [ ] `.env` in `.gitignore`
-- [ ] API responses don't include unnecessary user data (only booth_id, total_votes, booth_name)
+- [ ] API responses don't include unnecessary user data
 
 **Search for**: `Log::` with `$request`, `dd(`, `dump(`, `APP_DEBUG=true`
 
@@ -110,9 +110,33 @@ Read the code and list:
 
 ### Step 3 — Report findings
 
-For each issue found, report:
-- **Vuln class**: (e.g., SQL Injection, XSS, CSRF)
-- **Severity**: critical / high / medium / low
-- **File + line**: exact location
-- **Issue**: what's wrong
-- **Fix**: concrete code to apply
+## Output Format
+
+Present findings as a markdown table grouped by vulnerability class:
+
+**SQL Injection**
+| Severity | File:Line | Issue | Fix |
+|---|---|---|---|
+| critical | `VoteController.php:34` | Raw SQL with interpolated `$id` | Use `Vote::where('id', $id)->first()` |
+
+**XSS**
+| Severity | File:Line | Issue | Fix |
+|---|---|---|---|
+| (no issues found) | | | |
+
+End with a summary table:
+
+| Category | Status |
+|---|---|
+| SQL Injection | PASS |
+| XSS | PASS |
+| CSRF | 1 issue found |
+| Authentication | PASS |
+| Authorization | PASS |
+| File Uploads | N/A (not present) |
+| Race Conditions | PASS |
+| Data Exposure | PASS |
+| Rate Limiting | PASS |
+| Security Headers | PASS |
+
+**Overall: PASS / FAIL (X critical, Y high, Z medium, W low issues)**

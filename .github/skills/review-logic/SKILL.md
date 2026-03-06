@@ -39,7 +39,7 @@ Walk through with **valid, typical input**:
 
 Test these inputs mentally:
 
-| Input | What should happen |
+| Input | Expected Behavior |
 |---|---|
 | `votes_remaining = 0` | Reject vote — not allow it through |
 | `votes_remaining = 1` | Allow exactly 1 more vote, then 0 remaining |
@@ -92,7 +92,16 @@ For documented algorithms, verify each step:
 
 ### Step 6 — Report findings
 
-List issues found with:
-- **Severity**: critical (data corruption, race condition) / warning (edge case unhandled) / info (style)
-- **Location**: exact method and line
-- **Fix**: concrete code change
+## Output Format
+
+Present findings as a markdown table:
+
+| Severity | Location | Issue | Fix |
+|---|---|---|---|
+| critical | `VoteService::castVote()` line 42 | `votes_remaining` decremented before check | Move check `if ($user->votes_remaining < 1)` before `$user->decrement()` |
+| warning | `VoteService::castVote()` line 58 | Event dispatched inside transaction | Move `VoteCast::dispatch()` after `DB::transaction()` closure or add `afterCommit` |
+| info | `VoteService::castVote()` line 30 | Variable `$v` is not descriptive | Rename to `$vote` |
+
+End with a summary: **"X critical, Y warning, Z info issues found."**
+
+If no issues: **"0 issues found — logic verified against ARCHITECTURE.md."**
