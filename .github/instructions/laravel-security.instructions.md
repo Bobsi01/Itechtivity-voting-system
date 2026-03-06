@@ -9,14 +9,14 @@ applyTo: "**/*.php"
 Every controller action that accepts user input MUST use a dedicated Form Request class:
 
 ```php
-// CORRECT — dedicated Form Request
+// DO — dedicated Form Request
 public function store(CastVoteRequest $request)
 {
     $validated = $request->validated();
     // ...
 }
 
-// WRONG — inline validation in controller
+// DON'T — inline validation in controller
 public function store(Request $request)
 {
     $request->validate([...]); // Never do this
@@ -30,11 +30,11 @@ public function store(Request $request)
 ## Database Queries — Parameterized Only
 
 ```php
-// CORRECT
+// DO — parameterized queries
 User::where('student_number', $studentNumber)->first();
 DB::select('SELECT * FROM users WHERE id = ?', [$id]);
 
-// FORBIDDEN — SQL injection risk
+// DON'T — SQL injection risk
 DB::statement("DELETE FROM users WHERE id = $id");
 DB::raw("WHERE name = '{$name}'");
 ```
@@ -60,10 +60,10 @@ DB::raw("WHERE name = '{$name}'");
 ## Output Escaping
 
 ```php
-// CORRECT — auto-escaped
+// DO — auto-escaped
 {{ $booth->name }}
 
-// DANGEROUS — only for admin-controlled, HTML-purified content
+// DON'T — unless content is sanitized through HTMLPurifier
 {!! $purifiedDescription !!}
 ```
 
@@ -118,3 +118,31 @@ AuditService::log(
 
 - Vote modifications REQUIRE a non-empty `justification` field
 - Audit logs are append-only — no delete capability
+
+## Error Handling
+
+```php
+// DO — let Laravel's exception handler manage standard errors
+public function show(Booth $booth)
+{
+    // Route model binding handles 404 automatically
+    return view('booths.show', compact('booth'));
+}
+
+// DO — use abort() for authorization/not-found
+abort(403, 'You are not authorized to modify this vote.');
+abort(404);
+
+// DON'T — catch exceptions silently
+try {
+    $service->castVote($user, $booth);
+} catch (\Exception $e) {
+    // Never swallow exceptions with no logging or feedback
+}
+```
+
+- Let Laravel's exception handler manage 404/403/500 — don't catch `ModelNotFoundException` unless you need custom behavior
+- Use `abort(403)` / `abort(404)` for authorization and not-found — not custom exception classes
+- In Services: throw specific exceptions, let the controller or exception handler translate to HTTP responses
+- Never catch exceptions silently — always log or re-throw
+- Never log full request payloads — they may contain passwords (`Log::info($request->all())` is forbidden)

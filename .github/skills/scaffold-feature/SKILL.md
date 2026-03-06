@@ -29,6 +29,7 @@ Determine from the user's request:
 1. **Migration** (if new table needed)
    - File: `database/migrations/{timestamp}_create_{table}_table.php`
    - Include foreign keys, indexes, CHECK constraints per ARCHITECTURE.md §1
+   - Follow rules in `database.instructions.md`
 
 2. **Model**
    - File: `app/Models/{ModelName}.php`
@@ -58,11 +59,16 @@ Determine from the user's request:
    - Directory: `resources/views/{area}/{feature}/`
    - Mobile-first layout, Tailwind utility classes
    - `@csrf` in every form, `{{ }}` for all output
-   - Follow component patterns from `.github/instructions/ui-tailwind.instructions.md`
+   - Follow rules in `ui-tailwind.instructions.md`
 
 7. **Routes**
    - Add to `routes/web.php` in the correct middleware group
-   - Follow patterns from ARCHITECTURE.md §5
+   - Follow patterns from ARCHITECTURE.md §5 and `routing.instructions.md`
+
+8. **Tests**
+   - File: `tests/Feature/{Area}/{Feature}Test.php`
+   - Cover happy path, validation failures, authorization
+   - Follow rules in `testing.instructions.md`
 
 ### Step 3 — Self-evaluate
 
@@ -74,6 +80,12 @@ After generating all files, run through these checks:
 4. **Check naming**: All class/method/variable names readable and consistent?
 5. **Check architecture**: Controller thin? Logic in service? Model clean?
 
+### Step 4 — Run follow-up reviews
+
+After scaffolding is complete, run these skills on the generated code:
+1. **`review-logic`** — on any Service class generated (catches race conditions, off-by-one errors)
+2. **`security-audit`** — on the controller and form request (catches auth gaps, input handling issues)
+
 ## File Naming Convention
 
 | Component | Pattern | Example |
@@ -84,3 +96,20 @@ After generating all files, run through these checks:
 | Model | `{ModelName}` | `Booth`, `StudentReference` |
 | Migration | `create_{table}_table` | `create_booths_table` |
 | View | `{area}/{feature}/{action}.blade.php` | `admin/booths/create.blade.php` |
+| Test | `{Area}/{Feature}Test` | `Admin/BoothManagementTest` |
+
+## Output Format
+
+After scaffolding, present a summary table of all files created:
+
+| File | Purpose |
+|---|---|
+| `database/migrations/..._create_booths_table.php` | Migration with FK, indexes, constraints |
+| `app/Models/Booth.php` | Model with relationships and scopes |
+| `app/Services/BoothService.php` | Business logic for booth CRUD |
+| `app/Http/Requests/StoreBoothRequest.php` | Validation for creating a booth |
+| `app/Http/Controllers/Admin/BoothController.php` | Thin controller delegating to service |
+| `resources/views/admin/booths/index.blade.php` | Listing page |
+| `tests/Feature/Admin/BoothManagementTest.php` | Feature tests for booth CRUD |
+
+Then state: **"Scaffolding complete. Running review-logic and security-audit..."**

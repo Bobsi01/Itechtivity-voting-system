@@ -9,11 +9,11 @@ applyTo: "resources/views/**"
 Design for 375px (phone) first, then add responsive prefixes:
 
 ```html
-<!-- CORRECT — mobile-first, scales up -->
+<!-- DO — mobile-first, scales up -->
 <div class="p-4 sm:p-6 lg:p-8">
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
-<!-- WRONG — desktop-first -->
+<!-- DON'T — desktop-first -->
 <div class="p-8 md:p-4">
 ```
 
@@ -45,15 +45,15 @@ The UI must look like a real student project, not a SaaS landing page.
 
 ## Consistent Spacing
 
-Use multiples of 4 only — Tailwind's default scale:
+Stick to Tailwind's default spacing scale (multiples of 4px):
 
 ```
-p-2 p-4 p-6 p-8    (8px, 16px, 24px, 32px)
-gap-2 gap-4 gap-6   (spacing between grid/flex items)
-space-y-4 space-y-6  (vertical stacking)
+p-1 p-2 p-3 p-4 p-5 p-6 p-8 p-10 p-12   (4px–48px)
+gap-2 gap-4 gap-6 gap-8                    (spacing between grid/flex items)
+space-y-2 space-y-4 space-y-6              (vertical stacking)
 ```
 
-- Never use arbitrary values like `mt-7`, `pb-13`, `gap-5`
+- Never use non-standard values like `mt-7`, `pb-13`, `gap-9`, or arbitrary `mt-[23px]`
 - Use `space-y-*` or `gap-*` for consistent vertical/horizontal rhythm
 
 ## Component Consistency
