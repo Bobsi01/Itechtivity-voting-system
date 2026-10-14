@@ -190,6 +190,7 @@ TICKETS_PER_BATCH=50
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.53.0",
     "recharts": "^2.13.0",
+    "pg-boss": "^10.1.2",
     "sonner": "^1.7.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
