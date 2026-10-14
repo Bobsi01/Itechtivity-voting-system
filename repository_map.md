@@ -13,9 +13,11 @@ c:\Workspace\Itech 2027\
 │   ├── rules/                               # Modular governance & quality rules
 │   │   ├── security.md                      # Security, HMAC, timing attacks, atomic locks, RBAC
 │   │   ├── ui-ux.md                         # UI rules: NO emojis, NO background color on text/icons
-│   │   └── code-craftsmanship.md            # Anti-slop, zero 'any', no trivial comments
+│   │   ├── code-craftsmanship.md            # Anti-slop, zero 'any', no trivial comments
+│   │   └── code-quality.md                  # Student-friendly naming, vertical spacing, balanced comments
 │   └── skills/                              # Modular specialized agent workflows
 │       ├── anti-slop/SKILL.md               # Anti-slop craftsmanship guidelines
+│       ├── code-quality/SKILL.md            # Code formatting mannerisms, spacing, and naming standards
 │       ├── web-design/SKILL.md              # Web design & UI styling standards (Zero emoji/bg-color)
 │       ├── nextjs-app-router/SKILL.md       # Next.js 15 App Router architecture & boundaries
 │       ├── qr-crypto-idempotency/SKILL.md   # HMAC-SHA256, single-redemption & idempotency
