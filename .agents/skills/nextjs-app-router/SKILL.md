@@ -1,9 +1,10 @@
 ---
 name: nextjs-app-router
 description: >-
-  Best practices, patterns, and boundaries for Next.js 15 App Router.
+  Provides best practices, patterns, and boundaries for Next.js 15 App Router.
   Use when creating or modifying routes, Server Actions, Server Components, Client Components,
-  route handlers, or data mutations in the Next.js App Router.
+  route handlers, or data mutations in the Next.js App Router. Do not use for visual styling,
+  cryptographic token hashing, or PDF rendering layout.
 ---
 
 # Next.js 15 App Router Engineering Skill

@@ -1,9 +1,9 @@
 ---
 name: code-quality
 description: >-
-  Guidelines and formatting runbook for clean, student-friendly, highly maintainable code.
-  Enforces standard naming conventions, proper vertical spacing mannerisms, balanced comments,
-  and clear mental models without compromising security.
+  Enforces guidelines and formatting standards for student-friendly, maintainable code.
+  Use when structuring functions, adding spacing, writing balanced comments, or reviewing
+  naming conventions. Do not use for security verification, cryptography, or Appwrite configuration.
 ---
 
 # Code Quality & Readability Runbook

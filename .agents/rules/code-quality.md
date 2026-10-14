@@ -40,23 +40,27 @@ export async function redeemTicketStub(
     return { success: false, error: 'MALFORMED_SERIAL_CODE' };
   }
 
-  // Step 2: Atomic database state transition
-  const updatedStub = await database.ticketStub.updateAtomicStatus({
-    serial: stubSerial,
-    targetStatus: 'REDEEMED',
-    requiredCurrentStatus: 'ACTIVATED',
-  });
+  // Step 2: Atomic database state transition using Prisma ORM
+  const updatedStub = await prisma.$queryRaw<Array<{ id: string; award_id: string }>>`
+    UPDATE "TICKET_STUB"
+    SET "status" = 'REDEEMED', "updated_at" = NOW()
+    WHERE "stub_serial" = ${stubSerial}
+      AND "status" = 'ACTIVATED'
+    RETURNING "id", "award_id";
+  `;
 
-  if (!updatedStub) {
+  if (!updatedStub || updatedStub.length === 0) {
     return { success: false, error: 'STUB_ALREADY_USED_OR_INACTIVE' };
   }
 
-  // Step 3: Insert vote record and emit realtime event
-  const voteRecord = await database.vote.createRecord({
-    stubId: updatedStub.id,
-    boothId: boothId,
-    awardId: updatedStub.awardId,
-    userId: scannedByUserId,
+  // Step 3: Insert vote record protected by UNIQUE constraint
+  const voteRecord = await prisma.vote.create({
+    data: {
+      ticketStubId: updatedStub[0].id,
+      boothId: boothId,
+      awardId: updatedStub[0].award_id,
+      scannedByUserId: scannedByUserId,
+    },
   });
 
   return { success: true, data: voteRecord };

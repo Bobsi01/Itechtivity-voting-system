@@ -3,7 +3,7 @@
 ## 1. Absolute Styling Invariants (Strict User Directives)
 
 ### Rule 1: NEVER Use Emoji in the UI
-* **Strict Prohibition:** Emojis (e.g., 🚀, ✅, ❌, 🎉, 📱, 🔒) are strictly forbidden across all user interfaces, alerts, buttons, badges, headings, and toast messages.
+* **Strict Prohibition:** Emojis (such as rocket, checkmark, cross mark, party popper, mobile phone, lock, or any Unicode pictograph) are strictly forbidden across all user interfaces, alerts, buttons, badges, headings, and toast messages.
 * **Alternative:** Use clean, professional monochrome vector icons from `lucide-react` (e.g., `<Check />`, `<AlertCircle />`, `<Camera />`, `<Lock />`) or concise, high-contrast typography.
 
 ### Rule 2: NEVER Use Background Colors on Text or Icons

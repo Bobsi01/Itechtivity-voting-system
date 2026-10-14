@@ -3,7 +3,8 @@ name: streaming-pdf-ticket
 description: >-
   Procedures for low-memory, high-speed streaming PDF generation of Bingo Cards and perforated
   ticket stubs with vector QR codes using pdfkit. Use when implementing, debugging, or optimizing
-  ticket sheet generation, printing layouts, or memory usage on Heroku.
+  ticket sheet generation, printing layouts, or memory usage on Heroku. Do not use for ticket
+  redemption transactions, QR cryptographic signing, or real-time vote broadcasting.
 ---
 
 # Streaming PDF Ticket & Bingo Card Generator Skill

@@ -1,9 +1,10 @@
 ---
 name: web-design
 description: >-
-  Best practices, design guidelines, and component standards for modern web design in Next.js
-  with Tailwind CSS and shadcn/ui. Use when building UI layouts, styling components, designing
-  mobile viewports, or formatting typography.
+  Defines component standards, responsive layouts, and tactile UI patterns in Next.js
+  with Tailwind CSS and shadcn/ui. Use when building UI layouts, styling components,
+  designing mobile viewports, or formatting typography. Do not use for server actions,
+  route handlers, database mutations, or cryptographic operations.
 ---
 
 # Web Design & Interface Craftsmanship Skill
@@ -14,9 +15,9 @@ description: >-
 * **Rule:** Never use emojis anywhere in the interface (no buttons, toasts, dialogs, headers, or cards).
 * **Implementation:** Always use clean, scalable vector icons from `lucide-react` with explicit sizing and stroke widths:
   ```tsx
-  // BAD
-  <button>🚀 Submit Vote</button>
-  <p>✅ Vote recorded successfully!</p>
+  // BAD: Embedding literal emojis in UI
+  <button>[Rocket-Emoji] Submit Vote</button>
+  <p>[Checkmark-Emoji] Vote recorded successfully!</p>
 
   // GOOD
   import { ArrowRight, Check } from 'lucide-react';

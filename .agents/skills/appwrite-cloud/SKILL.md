@@ -3,7 +3,8 @@ name: appwrite-cloud
 description: >-
   Procedures for integrating Appwrite Cloud Storage (PDF exports) and Appwrite Realtime WebSockets
   (live tally broadcasts). Use when uploading card print sheets, streaming files, or dispatching
-  and subscribing to real-time vote updates in Next.js.
+  and subscribing to real-time vote updates in Next.js. Do not use for PostgreSQL database mutations,
+  QR code cryptographic verification, or PDF rendering layout.
 ---
 
 # Appwrite Cloud Storage & Realtime WebSocket Skill
@@ -48,14 +49,14 @@ export async function broadcastVoteEvent(payload: VoteUpdatePayload): Promise<vo
 
 ## 3. Streaming PDF Upload to Appwrite Storage
 ```typescript
-import { InputFile } from 'node-appwrite';
+import { InputFile, ID } from 'node-appwrite';
 import { appwriteStorage } from './server';
 
 export async function uploadBatchPdf(fileBuffer: Buffer, fileName: string): Promise<string> {
   const BUCKET_ID = process.env.APPWRITE_STORAGE_BUCKET_ID!;
   const file = InputFile.fromBuffer(fileBuffer, fileName);
   
-  const result = await appwriteStorage.createFile(BUCKET_ID, 'unique()', file);
+  const result = await appwriteStorage.createFile(BUCKET_ID, ID.unique(), file);
   return result.$id;
 }
 ```

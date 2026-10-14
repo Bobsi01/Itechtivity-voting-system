@@ -69,8 +69,8 @@ This document records critical failure modes, architectural traps, and technical
 ## 4. UI/UX Invariants (User Directives)
 
 ### Lesson 4.1: Strictly Zero Emojis
-* **The Directive:** Never use emojis (🚀, ✅, ❌, 🎉, 📱) in UI buttons, toasts, alerts, headers, or metadata.
-* **The Rule:** Always use clean, professional monochrome vector icons from `lucide-react` with precise stroke widths.
+* **The Directive:** Never use emojis (such as rocket, checkmark, cross mark, party popper, mobile phone, lock, or any Unicode pictograph) anywhere in UI buttons, toasts, alerts, headers, or metadata.
+* **The Rule:** Always use clean, professional monochrome vector icons from `lucide-react` with precise stroke widths. The prohibition extends to negative examples and documentation: never write literal Unicode pictographs anywhere in the codebase.
 
 ### Lesson 4.2: Zero Background Colors on Text and Icons
 * **The Directive:** Never place colored background fills behind text (e.g. colored pill badges) or behind icons (e.g. colored circle bubble containers) unless explicitly instructed by the user.
@@ -83,3 +83,15 @@ This document records critical failure modes, architectural traps, and technical
 ### Lesson 5.1: Cross-Module Token Specification Drift
 * **The Failure Mode:** The cryptographic module generated a truncated 12-character HMAC, but the validation schema demanded a 16-character string (`z.string().length(16)`), causing valid tokens to fail validation.
 * **The Rule:** Maintain a single source of truth for all token length constants and Zod schemas across the entire codebase.
+
+---
+
+## 6. Agent Governance & Skill Optimization
+
+### Lesson 6.1: Missing Negative Triggers in Skill Frontmatter
+* **The Failure Mode:** Frontmatter descriptions that only declare positive triggers ("Use when...") risk false-positive activation, causing the agent to load irrelevant skills that pollute the active context window.
+* **The Rule:** Every `SKILL.md` description must include both positive triggers and explicit negative triggers ("Do not use for...").
+
+### Lesson 6.2: Mock API Snippets in Governance Rules
+* **The Failure Mode:** Writing fictional/mock ORM code in governance rules confuses automated coding agents into generating non-existent database calls.
+* **The Rule:** All governance code examples must use real, idiomatic repository libraries (Prisma ORM `$transaction` / `$queryRaw`).

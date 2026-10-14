@@ -4,6 +4,7 @@ description: >-
   Enforces clean, high-signal, anti-slop craftsmanship in code, UI design, and documentation.
   Use when writing, refactoring, or reviewing code to eliminate generic AI boilerplate,
   placeholder comments, unneeded abstractions, loose typing, and formulaic AI layouts.
+  Do not use for implementing domain-specific business logic, database migrations, or cryptographic verification.
 ---
 
 # Anti-Slop Engineering & Clean Craftsmanship Skill
