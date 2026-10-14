@@ -11,25 +11,33 @@ The system is architected as a **unified full-stack Web Application** built with
 |                                  CLIENT LAYER                                     |
 |  Mobile Safari / Android Chrome (PWA-Ready)  |  Desktop Admin / Registration UI   |
 |  - html5-qrcode (Camera stream)              |  - shadcn/ui + Radix UI + Recharts |
+|  - Appwrite Client SDK (WebSocket Live Feed) |  - Instant audio & haptic feedback |
 +-----------------------------------------------------------------------------------+
-                                         │ HTTPS / WSS
-                                         ▼
-+-----------------------------------------------------------------------------------+
-|                        APPLICATION LAYER (HEROKU DYNO)                            |
-|  Next.js 15 App Router (Node.js 20 LTS Runtime)                                   |
-|  ├── Server Actions & API Route Handlers                                          |
-|  ├── NextAuth.js v5 (JWT Session & RBAC Middleware)                               |
+                                    │                ▲ WebSockets
+                        HTTPS / API │                │ (Appwrite Realtime)
+                                    ▼                │
++----------------------------------------------------+------------------------------+
+|                        APPLICATION LAYER (HEROKU DYNOS)                           |
+|  1x Web Dyno: Next.js 15 App Router (Node.js 20 LTS Runtime)                      |
+|  ├── Idempotency Engine (`Idempotency-Key` validation)                            |
+|  ├── Server Actions & Atomic Scan Routes (`/api/vote`)                            |
 |  ├── Crypto Engine (HMAC-SHA256 Token Signer / Verifier)                          |
-|  └── PDF Generation Engine (PDFKit / Streamed Buffer)                             |
+|  └── Appwrite Server SDK (`node-appwrite` event trigger)                          |
+|                                                                                   |
+|  1x Worker Dyno (Free/Basic Tier): Advance Card Batch Processor                   |
+|  ├── `pg-boss` Job Consumer (Advance ticket generation)                           |
+|  ├── Streaming PDFKit Engine (Vector QR generation)                               |
+|  └── Uploads completed print PDFs directly to Appwrite Storage                     |
 +-----------------------------------------------------------------------------------+
-                                         │ TLS Encrypted Pool
-                                         ▼
-+-----------------------------------------------------------------------------------+
-|                           DATA LAYER (HEROKU POSTGRES)                            |
-|  PostgreSQL 16 (Essential / Standard Tier)                                        |
-|  ├── Connection Pooling: PgBouncer / Prisma Accelerate or pg-pool                  |
-|  └── ACID Transactions with Row-Level Locking (`FOR UPDATE`)                      |
-+-----------------------------------------------------------------------------------+
+             │ Direct TLS Pool                               │ Storage & Events
+             ▼                                               ▼
++----------------------------------------+   +--------------------------------------+
+|       DATA LAYER (HEROKU POSTGRES)     |   |          APPWRITE CLOUD              |
+|  PostgreSQL 16 (Essential/Standard)    |   |  - Storage: `bingo-cards-pdf` bucket |
+|  - PgBouncer in Transaction Mode       |   |  - Realtime: WebSocket Live Channels |
+|  - Atomic row locks (`FOR UPDATE`)     |   |    (Live Tally for Admin & Booths)   |
+|  - `UNIQUE(ticket_stub_id)` constraint |   +--------------------------------------+
++----------------------------------------+
 ```
 
 ---
@@ -107,28 +115,65 @@ Printing 1,000+ high-resolution Bingo Cards with 7 vector QR codes each (1 Maste
 | **ID Generation** | `nanoid` (`^5.0.0`) | Cryptographically secure, URL-safe random identifiers (avoids predictable sequential integer IDs). |
 | **Security Headers** | Next.js Security Config | Enforces `HSTS`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and strict `Permissions-Policy: camera=(self)` for webcam security. |
 
+### 7.1 Idempotency & Single-Redemption Guarantee Protocol
+
+To guarantee that tickets are strictly **single-use** and resilient to network retries, the system implements a 3-layer protection protocol:
+
+```
+[Mobile Scanner]
+       │ Scans Stub (Generates client-side UUID nonce)
+       │ Dispatches POST /api/vote with Header:
+       │ `Idempotency-Key: booth_cs01:B27-0104-S3:9f8e7d6c`
+       ▼
+[Next.js Server: /api/vote]
+       │
+       ├── Step 1: Crypto Check (HMAC-SHA256)
+       │   Recomputes hash in 0.005ms. If invalid, throws 400 Bad Request immediately.
+       │
+       ├── Step 2: Idempotency Cache Check
+       │   If this exact `Idempotency-Key` was already successfully processed:
+       │   --> Returns previous 200 OK result without incrementing any counts!
+       │
+       └── Step 3: Atomic Conditional Database Execution
+           ```sql
+           UPDATE "TICKET_STUB"
+           SET "status" = 'REDEEMED', "updated_at" = NOW()
+           WHERE "id" = :stub_id AND "status" = 'ACTIVATED'
+           RETURNING *;
+           ```
+           - If rows updated == 0: Ticket was already redeemed or never activated.
+             Returns 409 Conflict: "Ticket already redeemed or inactive".
+           - If rows updated == 1: Atomically inserts vote record:
+             `INSERT INTO "VOTE" (ticket_stub_id, booth_id, award_id) ...`
+             Protected by database-level `UNIQUE("ticket_stub_id")`.
+           - Emits WebSocket event to Appwrite Realtime.
+           - Returns 200 OK: "Vote Accepted".
+```
+
 ---
 
-## 8. Real-Time Streaming & Live Tallying
+## 8. Cloud Storage & Real-Time WebSockets (Appwrite Integration)
 
-| Feature | Method | Details |
+| Service | Technology / Package | Details |
 | :--- | :--- | :--- |
-| **Live Updates (Admin)** | **Server-Sent Events (SSE)** via Next.js Route Handlers | Lightweight, unidirectional streaming over standard HTTP/1.1 without heavy WebSocket infrastructure. |
-| **Heartbeat Keep-Alive** | Periodic SSE comment (`: ping\n\n`) every 25 seconds | **Critical for Heroku:** Prevents Heroku router 55-second silent timeout on idle HTTP streams. |
-| **Polling Fallback** | SWR / TanStack Query (5s interval) | Graceful fallback if mobile networks intermittently drop SSE connections. |
+| **Object Storage** | **Appwrite Cloud Storage** (`node-appwrite`) | • Storage bucket: `bingo-cards-pdf`.<br>• Advance card batch exports are uploaded directly from the worker dyno.<br>• Generates time-limited download URLs for the production team to print.<br>• Completely solves Heroku's ephemeral filesystem constraint with zero disk pollution. |
+| **Real-time WebSockets** | **Appwrite Realtime** (`appwrite` client SDK) | • Native WebSocket subscriptions on `databases.[id].collections.[votes].documents` or dedicated channel.<br>• Offloads hundreds of persistent mobile WebSocket connections from the Heroku dyno to Appwrite's global network.<br>• Admin live leaderboard updates within <100ms when a vote is verified.<br>• Exhibitors receive instant real-time increments on their own booth score. |
+| **Server Event Dispatch** | Server SDK `node-appwrite` (`^14.0.0`) | Dispatches real-time broadcast events when Next.js completes an atomic vote transaction. |
 
 ---
 
-## 9. Heroku Deployment & Infrastructure
+## 9. Heroku Deployment & 1-Worker Dyno Configuration
 
 ```
                                HEROKU CONFIGURATION
 ===================================================================================
-Dyno Type:             Standard-1X (512MB RAM) or Standard-2X (1024MB RAM for event day)
+Web Dyno:              1x Standard-1X (or Eco) — Handles HTTP API & Next.js Server Actions
+Worker Dyno:           1x Worker Dyno — Consumes pg-boss queue for advance batch PDF generation
 Node Buildpack:        heroku/nodejs
-Postgres Add-on:       heroku-postgresql:essential-0 (or standard-0 for connection pooling)
+Postgres Add-on:       heroku-postgresql:essential-0 (with PgBouncer transaction pooling)
 SSL / HTTPS:           Heroku Automated Certificate Management (ACM) - Required for Camera
 Procfile:              web: npm run start
+                       worker: npm run worker
                        release: npx prisma migrate deploy
 ===================================================================================
 ```
@@ -142,11 +187,18 @@ NEXTAUTH_SECRET=super_secret_jwt_key_min_32_chars
 EVENT_HMAC_SECRET=super_secret_cryptographic_signing_key
 
 # Heroku Postgres
-DATABASE_URL=postgres://user:password@host:5432/dbname?sslmode=require
+DATABASE_URL=postgres://user:password@host:5432/dbname?pgbouncer=true&connection_limit=5&statement_cache_size=0
+DIRECT_URL=postgres://user:password@host:5432/dbname?sslmode=require
+
+# Appwrite Cloud (Storage & WebSockets)
+APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
+APPWRITE_PROJECT_ID=itechtivity-2027
+APPWRITE_API_KEY=standard_appwrite_server_secret_key
+APPWRITE_STORAGE_BUCKET_ID=bingo-cards-pdf
 
 # App Settings
 MAX_AWARDS=6
-TICKETS_PER_BATCH=50
+CARDS_PER_PDF_CHUNK=50
 ```
 
 ---
@@ -194,6 +246,8 @@ TICKETS_PER_BATCH=50
     "sonner": "^1.7.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
+    "appwrite": "^16.0.0",
+    "node-appwrite": "^14.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

@@ -36,7 +36,7 @@ sequenceDiagram
     participant DB as Heroku Postgres
     participant Queue as Job Queue (PG-Boss)
     participant Worker as Heroku Worker Dyno
-    participant S3 as Object Storage (S3/R2)
+    participant Appwrite as Appwrite Storage & Realtime
 
     Admin->>Web: POST /api/admin/cards/generate (1000 cards)
     Web->>DB: INSERT INTO batch_jobs (PENDING)
@@ -48,34 +48,33 @@ sequenceDiagram
     
     loop Stream in Chunks (50 cards/chunk)
         Worker->>Worker: Generate HMACs + Render Vector Pages
-        Worker->>S3: Multipart Upload Part
+        Worker->>Appwrite: Upload PDF to `bingo-cards-pdf` bucket
         Worker->>DB: UPDATE progress (e.g. 20%, 40%...)
     end
     
-    Worker->>S3: Complete Multipart Upload
+    Worker->>Appwrite: Complete Upload & Retrieve File URL
     Worker->>DB: UPDATE batch_jobs SET status = 'READY', download_url = ...
+    Worker->>Appwrite: Emit Realtime Event: `batch.ready`
     
-    Admin->>Web: GET /api/admin/cards/status?jobId=...
-    Web->>DB: Query status
-    Web-->>Admin: { status: "READY", downloadUrl: "https://s3..." }
+    Admin->>Appwrite: WebSocket Realtime listener receives `batch.ready`
+    Admin-->>Admin: Updates UI: "Batch Ready for Download"
 ```
 
 ### 1.2 512MB RAM Limit on Standard-1X Dynos (R14 / R15 Mitigation)
 * **The Failure Mode:** Standard-1X dynos provide only 512MB of RAM. If memory exceeds 512MB, Heroku logs `R14 - Memory quota exceeded` and begins aggressive disk swapping, resulting in latency spikes. If memory hits ~1GB, Heroku issues `R15 - Memory quota drastically exceeded` and kills the process (`SIGKILL`).
 * **Root Cause in Node.js:** Buffering a 1,000-page PDF in RAM requires building an in-memory DOM/tree structure of all objects, fonts, and base64/vector QRs simultaneously, consuming 800MB–1.8GB of RAM.
 * **Mitigation Protocol:**
-  1. **Strict Stream Pipeline:** Never build the entire document in memory. Use a streaming PDF engine (`pdfkit`) piped directly into a streaming multipart S3 upload (`@aws-sdk/lib-storage` `Upload`).
-  2. **Page Recycling / Garbage Collection:** Evict rendered QR buffers and card references after writing them to the write-stream.
-  3. **Node V8 Memory Flags:** Explicitly set `--max-old-space-size=384` in the `Procfile` (`web: node --max-old-space-size=384 .next/standalone/server.js`). This forces V8 garbage collection before the dyno reaches the 512MB physical limit.
+  1. **Advance Preparation Timeline:** Cards are generated and printed **weeks in advance**, ensuring dyno memory and CPU are 100% idle and dedicated to live vote processing during event day.
+  2. **Strict Stream Pipeline:** Never build the entire document in memory. Use a streaming PDF engine (`pdfkit`) piped directly into the Appwrite Storage bucket via `node-appwrite`.
+  3. **Page Recycling / Garbage Collection:** Evict rendered QR buffers and card references after writing them to the write-stream.
+  4. **Node V8 Memory Flags:** Explicitly set `--max-old-space-size=384` in the `Procfile` (`web: node --max-old-space-size=384 .next/standalone/server.js`). This forces V8 garbage collection before the dyno reaches the 512MB physical limit.
 
-### 1.3 Ephemeral Filesystem & Distributed Exports
-* **The Constraint:** Heroku dynos run on ephemeral containers. Any file saved to local disk (`/tmp` or `./public/exports`) is:
-  - Destroyed whenever a dyno restarts, deploys, or auto-recovers.
-  - **Inaccessible across dynos:** If Dyno `web.1` saves `batch_01.pdf` to local disk, a subsequent download request routed by Heroku’s load balancer to Dyno `web.2` will return a `404 Not Found`.
+### 1.3 Ephemeral Filesystem & Distributed Exports (Appwrite Cloud Storage)
+* **The Constraint:** Heroku dynos run on ephemeral containers. Any file saved to local disk (`/tmp` or `./public/exports`) is destroyed whenever a dyno restarts, deploys, or auto-recovers.
 * **Solution:** 
   - Strictly prohibit saving generated PDFs to the local dyno disk.
-  - Stream directly to **Cloudflare R2** or **AWS S3** via presigned `PUT` streams or backend streaming SDK.
-  - Issue time-limited presigned `GET` URLs (valid for 15 minutes) for the Production team to download the PDF.
+  - Stream directly to **Appwrite Cloud Storage** (`bingo-cards-pdf` bucket) using `node-appwrite`.
+  - Issue download tokens through Appwrite, enabling the Production team to download the high-resolution vector PDFs safely.
 
 ### 1.4 Database Connection Pool Exhaustion (Heroku Postgres + Prisma)
 * **The Constraint:** Heroku Postgres plans impose hard connection limits:

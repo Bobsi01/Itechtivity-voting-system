@@ -104,7 +104,24 @@ Each stub QR encodes a URL-safe compact payload:
 $$\text{Payload} = \text{base64url}\left(\text{StubUUID} \mathbin{\Vert} \text{SlotNumber} \mathbin{\Vert} \text{HMAC-SHA256}(\text{StubUUID} + \text{SlotNumber}, K_{\text{event}})\right)$$
 
 * **Tamper-Proof:** Visitors cannot modify the slot number or fabricate counterfeit QR codes without the server's private key $K_{\text{event}}$.
-* **Anti-Double-Spend:** The database enforces a `status = 'ACTIVATED'` check in an atomic transaction. Once redeemed, the record is locked to `status = 'REDEEMED'`.
+* **Anti-Double-Spend & One-Time Scan Guarantee:** The database enforces an atomic transition check:
+  ```sql
+  UPDATE "TICKET_STUB"
+  SET "status" = 'REDEEMED', "updated_at" = NOW()
+  WHERE "id" = :stub_id AND "status" = 'ACTIVATED'
+  RETURNING *;
+  ```
+  If zero rows match (ticket was never activated or already redeemed), the transaction fails immediately. A database-level `UNIQUE(ticket_stub_id)` constraint on the `VOTE` table provides a second unbreachable layer of defense.
+* **Idempotency Protocol (Network Drops & Retries):**
+  * When an exhibitor scans a stub, the client sends an `Idempotency-Key: <booth_id>:<stub_serial>:<uuid>`.
+  * If a flaky mobile network drops right after the server processes the vote but before the client receives the HTTP 200, the scanner will auto-retry with the same idempotency key.
+  * The server recognizes the idempotency key and returns the original success response (`"Vote Accepted"`) instead of throwing an error or double-counting the vote.
+* **Advance Batch Production & Appwrite Cloud Storage:**
+  * Cards are generated **weeks in advance** of the event, avoiding any live server crunch.
+  * Generated print-ready PDFs are streamed directly to **Appwrite Storage** (`bingo-cards-pdf` bucket). The production team downloads the vector PDFs from Appwrite for professional printing, perforating, and packaging.
+* **Real-time Live Streaming via Appwrite Realtime (WebSockets):**
+  * Clients (Admin leaderboard, Exhibitor booth dashboards) connect to **Appwrite Realtime** WebSockets.
+  * When Next.js records a valid vote in PostgreSQL, it dispatches an event via the Appwrite Server SDK (`node-appwrite`). Appwrite handles WebSocket fan-out to hundreds of connected devices, freeing the Heroku web dyno from managing persistent socket connections.
 * **Physical Backup:** Exhibitors keep the physical stubs in a sealed ballot box. If there is a dispute, the committee can match physical stubs against the database log.
 
 ---
