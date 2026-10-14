@@ -49,5 +49,37 @@ src/app/
 │   └── exhibitor/
 └── api/
     ├── vote/
+    │   └── route.ts
     └── webhooks/
+```
+
+## 5. Next.js 15 Route Handler with Header Inspection (`/api/vote/route.ts`)
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { ScanPayloadSchema } from '@/lib/validation/scan-schema';
+
+export async function POST(req: NextRequest) {
+  // 1. Extract Idempotency Key from Request Headers
+  const idempotencyKey = req.headers.get('Idempotency-Key');
+  if (!idempotencyKey) {
+    return NextResponse.json(
+      { success: false, error: 'MISSING_IDEMPOTENCY_KEY' },
+      { status: 400 }
+    );
+  }
+
+  // 2. Safely parse and validate request body
+  const body = await req.json();
+  const parseResult = ScanPayloadSchema.safeParse(body);
+  if (!parseResult.success) {
+    return NextResponse.json(
+      { success: false, error: 'INVALID_PAYLOAD', details: parseResult.error.flatten() },
+      { status: 422 }
+    );
+  }
+
+  // 3. Delegate to business logic module
+  // ...
+  return NextResponse.json({ success: true, message: 'Vote recorded' });
+}
 ```

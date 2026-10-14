@@ -52,7 +52,7 @@ Code slop, bloated boilerplate, and generic "vibe-coded" patterns are strictly f
   ```sql
   UPDATE "TICKET_STUB"
   SET "status" = 'REDEEMED', "updated_at" = NOW()
-  WHERE "id" = :stub_id AND "status" = 'ACTIVATED'
+  WHERE "stub_serial" = :stub_serial AND "status" = 'ACTIVATED'
   RETURNING *;
   ```
 * **Unique Constraints:** The database must enforce `UNIQUE(ticket_stub_id)` on the `VOTE` table.

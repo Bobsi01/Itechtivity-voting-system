@@ -12,9 +12,9 @@ description: >-
 * **Server-side (Next.js Node.js runtime):** Use `node-appwrite`. Requires `APPWRITE_API_KEY`.
 * **Client-side (React browsers):** Use `appwrite`. Never expose the API Key; use public Project ID.
 
-## 2. Server Setup (`src/lib/appwrite/server.ts`)
+## 2. Server Setup & Broadcast (`src/lib/appwrite/server.ts`)
 ```typescript
-import { Client, Storage, Databases } from 'node-appwrite';
+import { Client, Storage, Databases, ID } from 'node-appwrite';
 
 const client = new Client()
   .setEndpoint(process.env.APPWRITE_ENDPOINT!)
@@ -23,6 +23,27 @@ const client = new Client()
 
 export const appwriteStorage = new Storage(client);
 export const appwriteDatabases = new Databases(client);
+
+export interface VoteUpdatePayload {
+  boothId: string;
+  awardId: string;
+  slotNumber: number;
+  totalVotesForAward: number;
+  timestamp: string;
+}
+
+// Broadcasts real-time updates by creating or updating a document in the Appwrite votes collection
+export async function broadcastVoteEvent(payload: VoteUpdatePayload): Promise<void> {
+  const databaseId = process.env.APPWRITE_DATABASE_ID!;
+  const collectionId = process.env.APPWRITE_VOTES_COLLECTION_ID!;
+
+  await appwriteDatabases.createDocument(
+    databaseId,
+    collectionId,
+    ID.unique(),
+    payload
+  );
+}
 ```
 
 ## 3. Streaming PDF Upload to Appwrite Storage
@@ -41,16 +62,23 @@ export async function uploadBatchPdf(fileBuffer: Buffer, fileName: string): Prom
 
 ## 4. Realtime WebSockets on Client (`src/lib/appwrite/client.ts`)
 ```typescript
-import { Client } from 'appwrite';
+import { Client, RealtimeResponseEvent } from 'appwrite';
+import type { VoteUpdatePayload } from './server';
 
 export const appwriteClient = new Client()
   .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
   .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
 
-// Hook for live leaderboard subscription
-export function subscribeToVoteEvents(onVoteUpdate: (data: any) => void) {
-  return appwriteClient.subscribe('channels.votes', (response) => {
-    onVoteUpdate(response.payload);
+// Hook for live leaderboard subscription using standard Appwrite resource channel
+export function subscribeToVoteEvents(onVoteUpdate: (data: VoteUpdatePayload) => void) {
+  const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+  const collectionId = process.env.NEXT_PUBLIC_APPWRITE_VOTES_COLLECTION_ID!;
+  const channel = `databases.${databaseId}.collections.${collectionId}.documents`;
+
+  return appwriteClient.subscribe(channel, (response: RealtimeResponseEvent<VoteUpdatePayload>) => {
+    if (response.events.some((event) => event.includes('.create') || event.includes('.update'))) {
+      onVoteUpdate(response.payload);
+    }
   });
 }
 ```

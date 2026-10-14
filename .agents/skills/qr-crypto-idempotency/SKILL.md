@@ -21,14 +21,20 @@ export function generateStubSignature(stubSerial: string, slotNumber: number): s
   const data = `${stubSerial}:${slotNumber}`;
   const hmac = crypto.createHmac('sha256', SECRET_KEY);
   hmac.update(data);
-  // Return truncated 8-byte base64url string (11-12 chars)
+  // Return truncated 8-byte base64url string (exactly 12 chars)
   return hmac.digest('base64url').substring(0, 12);
 }
 
 export function verifyStubSignature(stubSerial: string, slotNumber: number, signature: string): boolean {
   const expected = generateStubSignature(stubSerial, slotNumber);
-  // Constant-time comparison to prevent timing attacks
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  const expectedBuf = Buffer.from(expected);
+  const signatureBuf = Buffer.from(signature);
+
+  // Guard: timingSafeEqual throws a fatal TypeError if buffer lengths differ
+  if (expectedBuf.byteLength !== signatureBuf.byteLength) {
+    return false;
+  }
+  return crypto.timingSafeEqual(expectedBuf, signatureBuf);
 }
 ```
 
@@ -42,8 +48,10 @@ export function verifyStubSignature(stubSerial: string, slotNumber: number, sign
 Never do a check-then-act. Execute an atomic single-statement update with row-level locking:
 
 ```typescript
+import { Prisma } from '@prisma/client';
+
 export async function redeemTicketStub(
-  tx: PrismaTransaction,
+  tx: Prisma.TransactionClient,
   stubSerial: string,
   boothId: string,
   userId: string
@@ -73,7 +81,55 @@ export async function redeemTicketStub(
 }
 ```
 
-## 4. Idempotency Key Handling
-* Check request header: `Idempotency-Key: <boothId>:<stubSerial>:<nonce>`.
-* If key exists in cache/table: return stored response (status 200) without incrementing counters.
-* If key is new: process transaction and store key for 24 hours.
+## 4. PostgreSQL Idempotency Key Protocol
+
+To survive dyno restarts and support multiple web dynos without Redis, store idempotency keys in PostgreSQL:
+
+### Schema
+```sql
+CREATE TABLE "IDEMPOTENCY_LOG" (
+  "key" VARCHAR(128) PRIMARY KEY,
+  "booth_id" UUID NOT NULL,
+  "response_payload" JSONB NOT NULL,
+  "status_code" INT NOT NULL DEFAULT 200,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### Handler Pattern
+```typescript
+export async function withIdempotency(
+  tx: Prisma.TransactionClient,
+  idempotencyKey: string,
+  boothId: string,
+  operation: () => Promise<{ statusCode: number; payload: Record<string, unknown> }>
+) {
+  // Check if already processed
+  const existing = await tx.$queryRaw<Array<{ status_code: number; response_payload: Record<string, unknown> }>>`
+    SELECT "status_code", "response_payload"
+    FROM "IDEMPOTENCY_LOG"
+    WHERE "key" = ${idempotencyKey} AND "booth_id" = ${boothId}::uuid
+    LIMIT 1;
+  `;
+
+  if (existing && existing.length > 0) {
+    return {
+      isRetry: true,
+      statusCode: existing[0].status_code,
+      payload: existing[0].response_payload,
+    };
+  }
+
+  // Execute operation
+  const result = await operation();
+
+  // Record key atomically
+  await tx.$executeRaw`
+    INSERT INTO "IDEMPOTENCY_LOG" ("key", "booth_id", "status_code", "response_payload")
+    VALUES (${idempotencyKey}, ${boothId}::uuid, ${result.statusCode}, ${JSON.stringify(result.payload)}::jsonb)
+    ON CONFLICT ("key") DO NOTHING;
+  `;
+
+  return { isRetry: false, ...result };
+}
+```

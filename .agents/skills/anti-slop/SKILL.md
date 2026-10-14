@@ -41,7 +41,7 @@ import { z } from 'zod';
 
 export const ScanPayloadSchema = z.object({
   stubSerial: z.string().regex(/^B27-\d{4}-S[1-6]$/),
-  signature: z.string().length(16),
+  signature: z.string().length(12),
   boothId: z.string().uuid(),
 });
 
