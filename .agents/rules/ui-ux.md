@@ -32,3 +32,31 @@
   1. **Visual:** Clean high-contrast border and status text.
   2. **Acoustic:** Immediate synthesized audio beep via HTML5 Web Audio API.
   3. **Haptic:** Hardware vibration pulse (`navigator.vibrate([80])`) on mobile devices.
+
+---
+
+## 3. Mandatory Mobile-First Web App Architecture
+
+All user interfaces must be conceptualized, styled, and coded as **Mobile-First Web Applications** before consideration for tablet or desktop viewports.
+
+### Rule 6: Unprefixed Mobile-First Styling
+* Write all Tailwind CSS utility classes targeting compact handheld viewports ($360\text{px} - 430\text{px}$) directly without breakpoint prefixes.
+* Breakpoint prefixes (`sm:`, `md:`, `lg:`) must strictly be used as progressive enhancements for desktop screens, never as the base styling.
+
+### Rule 7: Dynamic Viewport Height (`dvh`)
+* Never use `h-screen` or `100vh` on full-screen layouts, scanner shells, or modals.
+* Always use `h-dvh` or `min-h-dvh` to prevent layout jumps and clipped action bars when mobile browser toolbars expand or collapse in Safari and Chrome.
+
+### Rule 8: Hardware Safe-Area Insets
+* Layouts must integrate hardware notch and home indicator safe areas:
+  * Headers: `pt-[env(safe-area-inset-top)]`
+  * Sticky footers & bottom bars: `pb-[max(0.75rem,env(safe-area-inset-bottom))]` (ensures a baseline padding buffer on devices where the inset evaluates to 0px).
+  * Next.js 15 viewport export must include `viewportFit: 'cover'`.
+
+### Rule 9: iOS Auto-Zoom Prevention
+* All `<input>` and `<textarea>` fields must enforce a minimum font size of $16\text{px}$ (`text-base` or `text-[16px]`). This prevents iOS Safari from triggering an automatic viewport zoom upon focus.
+
+### Rule 10: Touch Ergonomics & Thumb Zone
+* Apply `touch-manipulation` to interactive elements to eliminate the 300ms tap delay.
+* Apply `select-none` on buttons to prevent accidental text highlighting during rapid booth scanning.
+* Primary actionable buttons (camera controls, binding confirmation, manual serial entry) must reside in the bottom 40% of the viewport (the natural thumb zone).

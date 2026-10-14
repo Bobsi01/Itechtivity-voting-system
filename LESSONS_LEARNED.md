@@ -76,6 +76,14 @@ This document records critical failure modes, architectural traps, and technical
 * **The Directive:** Never place colored background fills behind text (e.g. colored pill badges) or behind icons (e.g. colored circle bubble containers) unless explicitly instructed by the user.
 * **The Rule:** Use borders, clean typography, font weights, and spacing (`border border-neutral-300`, `text-neutral-900`) for visual hierarchy.
 
+### Lesson 4.3: Mobile Safari Auto-Zoom & Viewport Address-Bar Jumping
+* **The Failure Mode:** Setting form input font sizes below 16px triggers automatic browser viewport zoom on iOS Safari, disrupting touch ergonomics and layout alignment. Furthermore, using `100vh` or `h-screen` causes jarring layout recalculations when mobile address bars expand or collapse.
+* **The Rule:** Enforce `text-base` (minimum 16px) on all form inputs and use dynamic viewport units (`h-dvh` / `min-h-dvh`) with `viewportFit: 'cover'` and safe area insets (`pt-[env(safe-area-inset-top)]`, `pb-[max(0.75rem,env(safe-area-inset-bottom))]`).
+
+### Lesson 4.4: WebKit AudioContext Hardware Channel Limits
+* **The Failure Mode:** Calling `new AudioContext()` on every scan without closing or reusing it exhausts mobile browser hardware audio channel limits (~6 simultaneous contexts in WebKit/Blink), muting scan audio feedback or throwing console warnings during high-velocity ticket scanning.
+* **The Rule:** Always close the instantiated audio context on completion (`osc.onended = () => { audioCtx.close(); }`) or manage a single shared AudioContext instance.
+
 ---
 
 ## 5. Token & Type Contract Drift

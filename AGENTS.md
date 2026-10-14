@@ -22,6 +22,7 @@ The following modular governance rules located in `.agents/rules/` are active at
    * Idempotency key handling via PostgreSQL `IDEMPOTENCY_LOG`.
 
 2. **UI & UX Standards:** [`./.agents/rules/ui-ux.md`](file:///c:/Workspace/Itech%202027/.agents/rules/ui-ux.md)
+   * **MANDATORY MOBILE-FIRST WEB APP UI:** All UI layouts, viewports, forms, and touch interactions must be engineered mobile-first (360px-430px) using unprefixed Tailwind utilities, `h-dvh` dynamic viewport height, and safe-area padding before tablet/desktop scaling.
    * **STRICT NO EMOJI POLICY:** Never use emojis anywhere in chat responses, code, comments, or UI templates. Emitting any emoji is an explicit failure of context awareness.
    * **STRICT NO BACKGROUND COLOR POLICY:** Never use background color fills on text or icons (no colored badge pills, no colored circle containers behind icons) unless explicitly instructed by the user. Use clean borders (`border border-neutral-300`) and high-contrast typography instead.
    * Minimum touch target size of 44x44px for mobile booth scanning in dim lighting.
@@ -45,6 +46,7 @@ Consult and utilize the specialized runbooks located in `.agents/skills/`:
 * **`anti-slop`:** [`.agents/skills/anti-slop/SKILL.md`](file:///c:/Workspace/Itech%202027/.agents/skills/anti-slop/SKILL.md) — Eliminating generic AI boilerplate, loose types, and formulaic AI layouts.
 * **`code-quality`:** [`.agents/skills/code-quality/SKILL.md`](file:///c:/Workspace/Itech%202027/.agents/skills/code-quality/SKILL.md) — Code formatting mannerisms, vertical spacing, and naming standards.
 * **`web-design`:** [`.agents/skills/web-design/SKILL.md`](file:///c:/Workspace/Itech%202027/.agents/skills/web-design/SKILL.md) — High-contrast, tactile UI styling with zero emojis and zero background colors on text/icons.
+* **`mobile-web-ui`:** [`.agents/skills/mobile-web-ui/SKILL.md`](file:///c:/Workspace/Itech%202027/.agents/skills/mobile-web-ui/SKILL.md) — Mobile-first web app viewports, dynamic heights (dvh), touch ergonomics, safe areas, and handheld booth scanner UX.
 * **`nextjs-app-router`:** [`.agents/skills/nextjs-app-router/SKILL.md`](file:///c:/Workspace/Itech%202027/.agents/skills/nextjs-app-router/SKILL.md) — Next.js 15 App Router boundaries, async request APIs, and route handlers.
 * **`qr-crypto-idempotency`:** [`.agents/skills/qr-crypto-idempotency/SKILL.md`](file:///c:/Workspace/Itech%202027/.agents/skills/qr-crypto-idempotency/SKILL.md) — Cryptographic tokens, timing-safe checks, and single-redemption transactions.
 * **`appwrite-cloud`:** [`.agents/skills/appwrite-cloud/SKILL.md`](file:///c:/Workspace/Itech%202027/.agents/skills/appwrite-cloud/SKILL.md) — Appwrite Cloud Storage and Realtime WebSockets.

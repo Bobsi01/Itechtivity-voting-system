@@ -19,6 +19,7 @@ c:\Workspace\Itech 2027\
 │       ├── anti-slop/SKILL.md               # Anti-slop craftsmanship guidelines
 │       ├── code-quality/SKILL.md            # Code formatting mannerisms, spacing, and naming standards
 │       ├── web-design/SKILL.md              # Web design & UI styling standards (Zero emoji/bg-color)
+│       ├── mobile-web-ui/SKILL.md           # Mobile-first web app viewports, dvh, touch ergonomics & PWA UX
 │       ├── nextjs-app-router/SKILL.md       # Next.js 15 App Router architecture & boundaries
 │       ├── qr-crypto-idempotency/SKILL.md   # HMAC-SHA256, single-redemption & idempotency
 │       ├── appwrite-cloud/SKILL.md          # Appwrite Cloud Storage & Realtime WebSockets
