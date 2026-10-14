@@ -23,12 +23,14 @@ Visitors purchase physical Bingo Cards at the registration counter. Each card in
 ### 2. Visitor Registration & Buyer Demographics
 When selling and binding Bingo Cards at the Registration Booth, the system records the buyer's category and demographic information to ensure transparency, prevent botting/scalping, and provide attendance analytics:
 
-| Buyer Type | Description | Required Registration Data |
-| :--- | :--- | :--- |
-| **CSD Student** | Current students under the College of Science & Department of Computer Studies | Student Number, Full Name, Program (BSCS, BSIT, etc.), Year & Section, Quantity Purchased |
-| **Non-CSD Student** | Students from other departments/colleges across the campus | Student ID, Full Name, College/Department, Program, Quantity Purchased |
-| **Visitor** | External guests, industry partners, family, high school visitors | Full Name, Affiliation / Organization / Guest, Contact Number / Email, Quantity Purchased |
-| **Alumni** | Former CSD graduates returning as guests or industry evaluators | Full Name, Graduating Batch Year, Degree Program, Contact Info, Quantity Purchased |
+* **CSD Student:** Current students under the College of Science & Department of Computer Studies.
+  * Required Data: Student Number, Full Name, Program (BSCS, BSIT, etc.), Year & Section, Quantity Purchased.
+* **Non-CSD Student:** Students from other departments/colleges across the campus.
+  * Required Data: Student ID, Full Name, College/Department, Program, Quantity Purchased.
+* **Visitor:** External guests, industry partners, family, high school visitors.
+  * Required Data: Full Name, Affiliation / Organization / Guest, Contact Number / Email, Quantity Purchased.
+* **Alumni:** Former CSD graduates returning as guests or industry evaluators.
+  * Required Data: Full Name, Graduating Batch Year, Degree Program, Contact Info, Quantity Purchased.
 
 * **Multi-Card Binding:** A single purchaser transaction can buy $N$ cards. The registration scanner reads $N$ Master QRs sequentially to bind all $N$ cards to that single buyer record in one atomic operation.
 
@@ -43,26 +45,10 @@ When selling and binding Bingo Cards at the Registration Booth, the system recor
 
 Authentication uses standard **Email + Password** credentials with secure, HTTP-only session cookies and Role-Based Access Control (RBAC).
 
-```
-+---------------------------------------------------------------------------------+
-|                                USER ROLES (RBAC)                                |
-+------------------+-----------------------+--------------------------------------+
-| Role             | Identifier            | Permissions                          |
-+------------------+-----------------------+--------------------------------------+
-| 1. ADMIN         | admin@itech2027.edu   | Full control: Manage awards, lock    |
-|                  |                       | config, create booths, view global   |
-|                  |                       | leaderboard, freeze/audit voting.    |
-+------------------+-----------------------+--------------------------------------+
-| 2. PRODUCTION    | prod@itech2027.edu    | Batch generator: Generate serials,   |
-|                  |                       | sign QR payloads, export print PDFs. |
-+------------------+-----------------------+--------------------------------------+
-| 3. REGISTRATION  | reg.desk1@itech2027...| Sales counter: Register buyer info,  |
-|                  |                       | scan & bind Master QRs in bulk.      |
-+------------------+-----------------------+--------------------------------------+
-| 4. EXHIBITOR     | booth.cs01@itech20... | Booth scanner: Web camera scanner,   |
-|                  |                       | view own booth tally only.           |
-+------------------+-----------------------+--------------------------------------+
-```
+* **Admin (`admin@itech2027.edu`):** Full control: Manage awards, lock config, create booths, view global leaderboard, freeze/audit voting.
+* **Production (`prod@itech2027.edu`):** Batch generator: Generate serials, sign QR payloads, export print PDFs.
+* **Registration (`reg.desk1@itech2027...`):** Sales counter: Register buyer info, scan & bind Master QRs in bulk.
+* **Exhibitor (`booth.cs01@itech20...`):** Booth scanner: Web camera scanner, view own booth tally only.
 
 ---
 
@@ -285,13 +271,13 @@ erDiagram
 
 ## 8. Summary of Completed Decisions & Next Steps
 
-| Area | Status / Decision |
-| :--- | :--- |
-| **Authentication** | Email + Password with Role-Based Access Control (Admin, Production, Registration, Exhibitor). |
-| **Award Assignment** | Generic 6-slot stubs with Admin pre-assignment and lock capability. |
-| **Voting Flexibility** | One card = 6 separate award stubs. A visitor can award multiple different stubs to the same booth. |
-| **Registration Tracking** | Multi-type demographic collection (CSD, Non-CSD, Visitor, Alumni) with batch card binding. |
-| **Leaderboard Visibility** | Admin gets full real-time tally. Exhibitor views only their own booth's scans. |
+|Area|Status / Decision|
+|---|---|
+|**Authentication**|Email + Password with Role-Based Access Control (Admin, Production, Registration, Exhibitor).|
+|**Award Assignment**|Generic 6-slot stubs with Admin pre-assignment and lock capability.|
+|**Voting Flexibility**|One card = 6 separate award stubs. A visitor can award multiple different stubs to the same booth.|
+|**Registration Tracking**|Multi-type demographic collection (CSD, Non-CSD, Visitor, Alumni) with batch card binding.|
+|**Leaderboard Visibility**|Admin gets full real-time tally. Exhibitor views only their own booth's scans.|
 
 ### Ready to proceed with:
 1. Setting up the Next.js project with PostgreSQL + Prisma.

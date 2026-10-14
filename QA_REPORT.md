@@ -209,13 +209,21 @@ Exhibition halls present adverse mobile web environments. The scanner must be en
 
 ## 4. Specific NPM Packages & Architecture Evaluation
 
-| Component | Recommended Package | Rationale | Alternatives to AVOID | Why Avoid? |
-| :--- | :--- | :--- | :--- | :--- |
-| **PDF Generation** | **`pdfkit`** + **`qrcode`** | Native streaming write, memory <80MB for 1,000 pages, zero external binaries. | **`puppeteer`** / **`playwright`** | Chromium binary consumes 400MB+ RAM and crashes on Standard-1X dynos. |
-| **Background Jobs** | **`pg-boss`** | Job queue built directly on PostgreSQL with `SKIP LOCKED`. Zero external Redis cost. | **`bullmq`** (unless Redis is already provisioned) | Requires Redis, adding $15–$30/mo extra add-on costs. |
-| **QR Client** | **`html5-qrcode`** | Robust mobile camera state machine, torch controls, and auto-fallback. | Raw **`@zxing/library`** | Can leave camera hardware locked on iOS Safari without complex teardown code. |
-| **Authentication** | **Stateless JWT in `httpOnly` Cookie** | Zero DB lookups per vote scan, preserving database connection pool. | **NextAuth with Database Adapter** | Executes a DB query on *every single incoming API request*, wasting 50–70% of connection pool. |
-| **Realtime** | **Server-Sent Events (SSE)** with 25s keep-alive | Lightweight, works over standard HTTP/1.1 without WebSocket proxy issues. | **Socket.io** on standalone dynos | Complicates horizontal scaling without Redis adapter and holds open persistent connections. |
+* **PDF Generation:**
+  * Recommended: **`pdfkit`** + **`qrcode`** — Native streaming write, memory <80MB for 1,000 pages, zero external binaries.
+  * Avoid: **`puppeteer`** / **`playwright`** — Chromium binary consumes 400MB+ RAM and crashes on Standard-1X dynos.
+* **Background Jobs:**
+  * Recommended: **`pg-boss`** — Job queue built directly on PostgreSQL with `SKIP LOCKED`. Zero external Redis cost.
+  * Avoid: **`bullmq`** (unless Redis is already provisioned) — Requires Redis, adding $15–$30/mo extra add-on costs.
+* **QR Client:**
+  * Recommended: **`html5-qrcode`** — Robust mobile camera state machine, torch controls, and auto-fallback.
+  * Avoid: Raw **`@zxing/library`** — Can leave camera hardware locked on iOS Safari without complex teardown code.
+* **Authentication:**
+  * Recommended: **Stateless JWT in `httpOnly` Cookie** — Zero DB lookups per vote scan, preserving database connection pool.
+  * Avoid: **NextAuth with Database Adapter** — Executes a DB query on *every single incoming API request*, wasting 50–70% of connection pool.
+* **Realtime:**
+  * Recommended: **Server-Sent Events (SSE)** with 25s keep-alive — Lightweight, works over standard HTTP/1.1 without WebSocket proxy issues.
+  * Avoid: **Socket.io** on standalone dynos — Complicates horizontal scaling without Redis adapter and holds open persistent connections.
 
 ---
 

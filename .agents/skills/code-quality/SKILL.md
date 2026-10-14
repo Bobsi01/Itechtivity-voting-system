@@ -15,13 +15,13 @@ This skill ensures that all code produced in the Itechtivity 2027 codebase is ap
 
 ## 2. Naming Conventions Reference
 
-| Element | Format | Rule | Example |
-| :--- | :--- | :--- | :--- |
-| **Functions / Actions** | `camelCase` | Start with an action verb | `registerBuyerTransaction`, `verifyStubPayload` |
-| **Variables / Properties** | `camelCase` | Full words, no cryptic abbreviations | `selectedAwardCategory`, `scannerTorchActive` |
-| **Types / Interfaces** | `PascalCase` | Descriptive noun phrase | `TicketRedemptionReceipt`, `BoothSummary` |
-| **Components** | `PascalCase` | Descriptive component name | `LiveTallyBoard`, `StubScannerModal` |
-| **Constants / Env** | `UPPER_SNAKE_CASE` | Strict uppercase with underscores | `MAX_AWARDS_PER_CARD`, `EVENT_HMAC_SECRET` |
+|Element|Format|Rule|Example|
+|---|---|---|---|
+|**Functions / Actions**|`camelCase`|Start with an action verb|`registerBuyerTransaction`, `verifyStubPayload`|
+|**Variables / Properties**|`camelCase`|Full words, no cryptic abbreviations|`selectedAwardCategory`, `scannerTorchActive`|
+|**Types / Interfaces**|`PascalCase`|Descriptive noun phrase|`TicketRedemptionReceipt`, `BoothSummary`|
+|**Components**|`PascalCase`|Descriptive component name|`LiveTallyBoard`, `StubScannerModal`|
+|**Constants / Env**|`UPPER_SNAKE_CASE`|Strict uppercase with underscores|`MAX_AWARDS_PER_CARD`, `EVENT_HMAC_SECRET`|
 
 ---
 

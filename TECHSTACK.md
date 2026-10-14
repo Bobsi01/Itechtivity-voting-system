@@ -44,38 +44,36 @@ The system is architected as a **unified full-stack Web Application** built with
 
 ## 2. Core Runtime, Language & Framework
 
-| Technology | Version / Spec | Justification & Role |
-| :--- | :--- | :--- |
-| **Node.js** | `v20.x LTS` (or `v22.x LTS`) | Recommended LTS version for Heroku deployments with long-term stability and native crypto support. |
-| **TypeScript** | `v5.x` | End-to-end static typing across frontend forms, backend actions, and database entities to eliminate runtime casting errors. |
-| **Next.js** | `v15.x` (App Router) | Full-stack server-rendered framework with React Server Components (RSC), fast Server Actions for low-latency scanning, and built-in edge/node route handlers. |
-| **Package Manager** | `npm` (or `pnpm`) | Standard dependency manager, fully supported by the Heroku Node.js buildpack. |
+* **Node.js (`v20.x LTS` / `v22.x LTS`):** Recommended LTS version for Heroku deployments with long-term stability and native crypto support.
+* **TypeScript (`v5.x`):** End-to-end static typing across frontend forms, backend actions, and database entities to eliminate runtime casting errors.
+* **Next.js (`v15.x` App Router):** Full-stack server-rendered framework with React Server Components (RSC), fast Server Actions for low-latency scanning, and built-in edge/node route handlers.
+* **Package Manager (`npm` / `pnpm`):** Standard dependency manager, fully supported by the Heroku Node.js buildpack.
 
 ---
 
 ## 3. Frontend Layer & UI Design System
 
-| Category | Library / Package | Rationale |
-| :--- | :--- | :--- |
-| **CSS Framework** | `tailwindcss` (`^3.4` or `^4.0`) | Utility-first styling for fast responsive development, mobile-first scanner layouts, and print stylesheet rules. |
-| **Component Primitives** | `@radix-ui/*` primitives | Accessible, unstyled, composable UI primitives for modals, dropdowns, tabs, dialogs, and alert boxes. |
-| **UI Design System** | `shadcn/ui` | Copy-and-paste Tailwind components that are fully customizable, lightweight, and have zero vendor lock-in. |
-| **Icons** | `lucide-react` | Clean, lightweight icon suite for scanner status, navigation bars, and print indicators. |
-| **Form Handling** | `react-hook-form` | High-performance, uncontrolled form management for high-speed counter data entry at Registration. |
-| **Schema Validation** | `zod` | Declarative type-safe validation for buyer forms, PINs, card IDs, and API request payloads. |
-| **Data Visualization** | `recharts` | Responsive SVG charts for the Admin live leaderboard, vote velocity, and buyer demographic breakdowns. |
-| **Toast Notifications** | `sonner` | Highly responsive toast engine for instant visual and audio-style feedback on ticket scan success or rejection. |
-| **Animation** | `framer-motion` | Smooth transition animations for booth score increments and live leaderboard ranking changes. |
+* **CSS Framework (`tailwindcss ^3.4` / `^4.0`):** Utility-first styling for fast responsive development, mobile-first scanner layouts, and print stylesheet rules.
+* **Component Primitives (`@radix-ui/*` primitives):** Accessible, unstyled, composable UI primitives for modals, dropdowns, tabs, dialogs, and alert boxes.
+* **UI Design System (`shadcn/ui`):** Copy-and-paste Tailwind components that are fully customizable, lightweight, and have zero vendor lock-in.
+* **Icons (`lucide-react`):** Clean, lightweight icon suite for scanner status, navigation bars, and print indicators.
+* **Form Handling (`react-hook-form`):** High-performance, uncontrolled form management for high-speed counter data entry at Registration.
+* **Schema Validation (`zod`):** Declarative type-safe validation for buyer forms, PINs, card IDs, and API request payloads.
+* **Data Visualization (`recharts`):** Responsive SVG charts for the Admin live leaderboard, vote velocity, and buyer demographic breakdowns.
+* **Toast Notifications (`sonner`):** Highly responsive toast engine for instant visual and audio-style feedback on ticket scan success or rejection.
+* **Animation (`framer-motion`):** Smooth transition animations for booth score increments and live leaderboard ranking changes.
 
 ---
 
 ## 4. Mobile QR Scanner Engine & Camera Integration
 
-| Library | Package | Role & Implementation Details |
-| :--- | :--- | :--- |
-| **Scanner Engine** | `html5-qrcode` (`^2.3.8`) | • Cross-platform browser camera access (iOS Safari & Android Chrome).<br>• Automatic back/environment camera selection (`facingMode: "environment"`).<br>• Native torch/flashlight toggle support for dark venue lighting.<br>• Fallback to file/image scanning and manual serial entry. |
-| **Sound Feedback** | `use-sound` / Web Audio API | Instant auditory feedback: pleasant beep on vote accepted, warning buzzer on duplicate or invalid stub. |
-| **Vibration Feedback** | `navigator.vibrate()` (HTML5) | Haptic vibration on mobile devices to confirm scan without looking directly at screen. |
+* **Scanner Engine (`html5-qrcode ^2.3.8`):**
+  * Cross-platform browser camera access (iOS Safari & Android Chrome).
+  * Automatic back/environment camera selection (`facingMode: "environment"`).
+  * Native torch/flashlight toggle support for dark venue lighting.
+  * Fallback to file/image scanning and manual serial entry.
+* **Sound Feedback (`use-sound` / Web Audio API):** Instant auditory feedback: pleasant beep on vote accepted, warning buzzer on duplicate or invalid stub.
+* **Vibration Feedback (`navigator.vibrate()` HTML5):** Haptic vibration on mobile devices to confirm scan without looking directly at screen.
 
 ---
 
@@ -83,37 +81,38 @@ The system is architected as a **unified full-stack Web Application** built with
 
 Printing 1,000+ high-resolution Bingo Cards with 7 vector QR codes each (1 Master + 6 Stubs) requires careful memory and performance management.
 
-| Component | Selected Solution | Rationale & Performance Comparison |
-| :--- | :--- | :--- |
-| **PDF Engine** | **`pdfkit`** (`^0.15.0`) + **`qrcode`** (`^1.5.4`) | **Recommended for Heroku:**<br>• Uses pure JavaScript without headless browser overhead.<br>• Generates documents in **under 25MB RAM**.<br>• Streams binary PDF chunks directly to client HTTP response without writing to Heroku's ephemeral disk. |
-| *Alternative Considered* | `@react-pdf/renderer` | Great JSX syntax, but can consume higher memory when rendering large batches. Can be used for single-card / preview exports. |
-| *Rejected Solution* | `puppeteer` / headless Chrome | **Avoid on Heroku Standard-1X:** Consumes 400MB+ RAM, requires bulky Chrome buildpacks, and causes `H13` / `R14` (Memory Exceeded) crashes. |
-| **Batch Chunking** | Server-side chunking (e.g., 50 cards per PDF download) | Bypasses Heroku's 30-second request timeout (`H12`) by generating cards in manageable chunks (e.g., Cards 1–50, 51–100, etc.). |
+* **PDF Engine (`pdfkit ^0.15.0` + `qrcode ^1.5.4` — Recommended):**
+  * Uses pure JavaScript without headless browser overhead.
+  * Generates documents in under 25MB RAM.
+  * Streams binary PDF chunks directly to client HTTP response without writing to Heroku's ephemeral disk.
+* **Alternative Considered (`@react-pdf/renderer`):** Great JSX syntax, but can consume higher memory when rendering large batches. Can be used for single-card / preview exports.
+* **Rejected Solution (`puppeteer` / headless Chrome):** Avoid on Heroku Standard-1X. Consumes 400MB+ RAM, requires bulky Chrome buildpacks, and causes `H13` / `R14` (Memory Exceeded) crashes.
+* **Batch Chunking:** Server-side chunking (e.g., 50 cards per PDF download) bypasses Heroku's 30-second request timeout (`H12`) by generating cards in manageable chunks (e.g., Cards 1–50, 51–100, etc.).
 
 ---
 
 ## 6. Database & Persistence Layer (Heroku Postgres)
 
-| Layer | Technology | Details |
-| :--- | :--- | :--- |
-| **Database Engine** | **PostgreSQL 16** | Robust relational database supporting ACID transactions and row-level locks. |
-| **Hosting Add-on** | **Heroku Postgres** | Essential or Standard-0 dyno tier with SSL encryption (`sslmode=require`). |
-| **ORM** | **Prisma ORM** (`@prisma/client`, `prisma`) | Auto-generated TypeScript types, schema migrations, and declarative relation handling. |
-| **Connection Pooling** | `pg-pool` / Heroku PgBouncer | Heroku Postgres has strict connection limits (e.g., 20 connections on Essential tier). Prisma connection pooling or PgBouncer prevents `too many clients` connection errors during voting surges. |
-| **Atomic Concurrency** | Prisma `$transaction` with raw SQL `FOR UPDATE` | Ensures two exhibitors scanning the same stub within milliseconds cannot double-spend a vote. |
+* **Database Engine (PostgreSQL 16):** Robust relational database supporting ACID transactions and row-level locks.
+* **Hosting Add-on (Heroku Postgres):** Essential or Standard-0 dyno tier with SSL encryption (`sslmode=require`).
+* **ORM (Prisma ORM `@prisma/client`, `prisma`):** Auto-generated TypeScript types, schema migrations, and declarative relation handling.
+* **Connection Pooling (`pg-pool` / Heroku PgBouncer):** Heroku Postgres has strict connection limits (e.g., 20 connections on Essential tier). Prisma connection pooling or PgBouncer prevents `too many clients` connection errors during voting surges.
+* **Atomic Concurrency (Prisma `$transaction` with raw SQL `FOR UPDATE`):** Ensures two exhibitors scanning the same stub within milliseconds cannot double-spend a vote.
 
 ---
 
 ## 7. Authentication, Security & Cryptography
 
-| Functionality | Technology / Method | Implementation Details |
-| :--- | :--- | :--- |
-| **User Authentication** | **NextAuth.js v5 (Auth.js)** | Email + Password credentials provider with stateless encrypted **JWT cookies** (resilient to Heroku dyno restarts). |
-| **Password Hashing** | `bcryptjs` / `@node-rs/bcrypt` | Salted SHA-512 / bcrypt hashing with 12 salt rounds for administrative and exhibitor passwords. |
-| **Role-Based Guards** | Next.js Edge Middleware (`middleware.ts`) | Strict URL isolation:<br>• `/admin/*` -> Role: `ADMIN`<br>• `/production/*` -> Role: `PRODUCTION`<br>• `/registration/*` -> Role: `REGISTRATION`<br>• `/exhibitor/*` -> Role: `EXHIBITOR` |
-| **QR Code Cryptography** | Native Node.js `crypto` (`HMAC-SHA256`) | Each stub QR contains a signed cryptographic hash preventing visitor forgery. |
-| **ID Generation** | `nanoid` (`^5.0.0`) | Cryptographically secure, URL-safe random identifiers (avoids predictable sequential integer IDs). |
-| **Security Headers** | Next.js Security Config | Enforces `HSTS`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and strict `Permissions-Policy: camera=(self)` for webcam security. |
+* **User Authentication (NextAuth.js v5 / Auth.js):** Email + Password credentials provider with stateless encrypted JWT cookies (resilient to Heroku dyno restarts).
+* **Password Hashing (`bcryptjs` / `@node-rs/bcrypt`):** Salted SHA-512 / bcrypt hashing with 12 salt rounds for administrative and exhibitor passwords.
+* **Role-Based Guards (Next.js Edge Middleware `middleware.ts`):** Strict URL isolation:
+  * `/admin/*` -> Role: `ADMIN`
+  * `/production/*` -> Role: `PRODUCTION`
+  * `/registration/*` -> Role: `REGISTRATION`
+  * `/exhibitor/*` -> Role: `EXHIBITOR`
+* **QR Code Cryptography (Native Node.js `crypto` HMAC-SHA256):** Each stub QR contains a signed cryptographic hash preventing visitor forgery.
+* **ID Generation (`nanoid ^5.0.0`):** Cryptographically secure, URL-safe random identifiers (avoids predictable sequential integer IDs).
+* **Security Headers (Next.js Security Config):** Enforces `HSTS`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and strict `Permissions-Policy: camera=(self)` for webcam security.
 
 ### 7.1 Idempotency & Single-Redemption Guarantee Protocol
 
@@ -154,11 +153,17 @@ To guarantee that tickets are strictly **single-use** and resilient to network r
 
 ## 8. Cloud Storage & Real-Time WebSockets (Appwrite Integration)
 
-| Service | Technology / Package | Details |
-| :--- | :--- | :--- |
-| **Object Storage** | **Appwrite Cloud Storage** (`node-appwrite`) | • Storage bucket: `bingo-cards-pdf`.<br>• Advance card batch exports are uploaded directly from the worker dyno.<br>• Generates time-limited download URLs for the production team to print.<br>• Completely solves Heroku's ephemeral filesystem constraint with zero disk pollution. |
-| **Real-time WebSockets** | **Appwrite Realtime** (`appwrite` client SDK) | • Native WebSocket subscriptions on `databases.[id].collections.[votes].documents` or dedicated channel.<br>• Offloads hundreds of persistent mobile WebSocket connections from the Heroku dyno to Appwrite's global network.<br>• Admin live leaderboard updates within <100ms when a vote is verified.<br>• Exhibitors receive instant real-time increments on their own booth score. |
-| **Server Event Dispatch** | Server SDK `node-appwrite` (`^14.0.0`) | Dispatches real-time broadcast events when Next.js completes an atomic vote transaction. |
+* **Object Storage (Appwrite Cloud Storage `node-appwrite`):**
+  * Storage bucket: `bingo-cards-pdf`.
+  * Advance card batch exports are uploaded directly from the worker dyno.
+  * Generates time-limited download URLs for the production team to print.
+  * Completely solves Heroku's ephemeral filesystem constraint with zero disk pollution.
+* **Real-time WebSockets (Appwrite Realtime `appwrite` client SDK):**
+  * Native WebSocket subscriptions on `databases.[id].collections.[votes].documents` or dedicated channel.
+  * Offloads hundreds of persistent mobile WebSocket connections from the Heroku dyno to Appwrite's global network.
+  * Admin live leaderboard updates within <100ms when a vote is verified.
+  * Exhibitors receive instant real-time increments on their own booth score.
+* **Server Event Dispatch (Server SDK `node-appwrite ^14.0.0`):** Dispatches real-time broadcast events when Next.js completes an atomic vote transaction.
 
 ---
 
