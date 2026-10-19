@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+.env
+.env.*
+!.env.example
+storage/
+output/
+public/generated-pdfs/
+.playwright-cli/
+certificates/
+cookies.txt
+*.pem
+*.key
+*.tsbuildinfo

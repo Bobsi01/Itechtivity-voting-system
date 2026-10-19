@@ -5,9 +5,18 @@ description: >-
   ticket stubs with vector QR codes using pdfkit. Use when implementing, debugging, or optimizing
   ticket sheet generation, printing layouts, or memory usage on Heroku. Do not use for ticket
   redemption transactions, QR cryptographic signing, or real-time vote broadcasting.
+author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
+assisted_by:
+  - OpenAI Codex
+  - Google Gemini
 ---
 
 # Streaming PDF Ticket & Bingo Card Generator Skill
+
+> **Author:** Daniel Bobis (GitHub: @ItsMeYourNightmare)  
+> **Assisted by:** OpenAI Codex and Google Gemini
+
+---
 
 ## 1. Core Principles
 * **Never Buffer 1,000 Cards in RAM:** Building a massive document tree in memory exceeds Heroku's 512MB dyno RAM.

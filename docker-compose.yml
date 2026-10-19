@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: itech2027-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: itech_admin
+      POSTGRES_PASSWORD: itech_local_password_2027
+      POSTGRES_DB: itech2027
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U itech_admin -d itech2027"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

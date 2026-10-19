@@ -5,9 +5,18 @@ description: >-
   Use when creating or modifying routes, Server Actions, Server Components, Client Components,
   route handlers, or data mutations in the Next.js App Router. Do not use for visual styling,
   cryptographic token hashing, or PDF rendering layout.
+author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
+assisted_by:
+  - OpenAI Codex
+  - Google Gemini
 ---
 
 # Next.js 15 App Router Engineering Skill
+
+> **Author:** Daniel Bobis (GitHub: @ItsMeYourNightmare)  
+> **Assisted by:** OpenAI Codex and Google Gemini
+
+---
 
 ## 1. Component Boundary Hierarchy
 1. **Server Components by Default:** Fetch data directly on the server without `useEffect` or client fetchers.

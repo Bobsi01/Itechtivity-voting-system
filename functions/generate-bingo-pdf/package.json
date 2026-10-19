@@ -1,0 +1,13 @@
+{
+  "name": "generate-bingo-pdf",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Appwrite Serverless Function for asynchronous A4 vector Bingo Card PDF generation and Storage upload",
+  "main": "src/main.js",
+  "dependencies": {
+    "node-appwrite": "^14.2.0",
+    "pdfkit": "^0.15.1",
+    "pg": "^8.13.1",
+    "qrcode": "^1.5.4"
+  }
+}

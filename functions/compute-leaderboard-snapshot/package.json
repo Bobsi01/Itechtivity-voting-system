@@ -1,0 +1,11 @@
+{
+  "name": "compute-leaderboard-snapshot",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Appwrite Function to aggregate live vote rankings from Supabase and cache in Appwrite Database for high-concurrency spectators",
+  "main": "src/main.js",
+  "dependencies": {
+    "node-appwrite": "^14.2.0",
+    "pg": "^8.13.1"
+  }
+}

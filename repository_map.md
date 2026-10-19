@@ -15,15 +15,17 @@ c:\Workspace\Itech 2027\
 │   │   ├── ui-ux.md                         # UI rules: NO emojis, NO background color on text/icons
 │   │   ├── code-craftsmanship.md            # Anti-slop, zero 'any', no trivial comments
 │   │   └── code-quality.md                  # Student-friendly naming, vertical spacing, balanced comments
-│   └── skills/                              # Modular specialized agent workflows
-│       ├── anti-slop/SKILL.md               # Anti-slop craftsmanship guidelines
-│       ├── code-quality/SKILL.md            # Code formatting mannerisms, spacing, and naming standards
-│       ├── web-design/SKILL.md              # Web design & UI styling standards (Zero emoji/bg-color)
-│       ├── mobile-web-ui/SKILL.md           # Mobile-first web app viewports, dvh, touch ergonomics & PWA UX
-│       ├── nextjs-app-router/SKILL.md       # Next.js 15 App Router architecture & boundaries
-│       ├── qr-crypto-idempotency/SKILL.md   # HMAC-SHA256, single-redemption & idempotency
-│       ├── appwrite-cloud/SKILL.md          # Appwrite Cloud Storage & Realtime WebSockets
-│       └── streaming-pdf-ticket/SKILL.md    # Low-memory streaming vector PDF ticket generator
+│   ├── skills/                              # Modular specialized agent workflows
+│   │   ├── anti-slop/SKILL.md               # Anti-slop craftsmanship guidelines
+│   │   ├── code-quality/SKILL.md            # Code formatting mannerisms, spacing, and naming standards
+│   │   ├── web-design/SKILL.md              # Web design & UI styling standards (Zero emoji/bg-color)
+│   │   ├── mobile-web-ui/SKILL.md           # Mobile-first web app viewports, dvh, touch ergonomics & PWA UX
+│   │   ├── nextjs-app-router/SKILL.md       # Next.js 15 App Router architecture & boundaries
+│   │   ├── qr-crypto-idempotency/SKILL.md   # HMAC-SHA256, single-redemption & idempotency
+│   │   ├── appwrite-cloud/SKILL.md          # Appwrite Cloud Storage & Realtime WebSockets
+│   │   └── streaming-pdf-ticket/SKILL.md    # Low-memory streaming vector PDF ticket generator
+│   └── README.md                            # Agent evaluation guidelines & architectural checklist
+├── README.md                                # Root repository guide, user roles & CSD contribution guide
 ├── AGENTS.md                                # Root repository development directives
 ├── CONCEPT.md                               # Comprehensive concept, workflow, security & data model
 ├── TECHSTACK.md                             # Exhaustive tech stack, packages, Heroku & Appwrite spec

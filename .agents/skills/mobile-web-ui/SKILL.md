@@ -6,9 +6,18 @@ description: >-
   shells (dvh), safe-area insets, mobile touch ergonomics, bottom sheets, mobile camera scanner
   viewfinders, or virtual keyboard form interactions. Do not use for server actions, route
   handlers, database migrations, or cryptographic verification.
+author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
+assisted_by:
+  - OpenAI Codex
+  - Google Gemini
 ---
 
 # Mobile-First Web App UI Engineering Skill
+
+> **Author:** Daniel Bobis (GitHub: @ItsMeYourNightmare)  
+> **Assisted by:** OpenAI Codex and Google Gemini
+
+---
 
 This skill governs the development of mobile-first web application interfaces for handheld devices (smartphones, mobile Safari, and Android Chrome). It establishes concrete rules for viewports, touch ergonomics, virtual keyboard behaviors, safe areas, and handheld booth scanner workflows.
 

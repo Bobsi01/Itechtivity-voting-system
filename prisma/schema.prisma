@@ -1,0 +1,205 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  PRODUCTION
+  REGISTRATION
+  EXHIBITOR
+}
+
+enum BuyerType {
+  CSD_STUDENT
+  NON_CSD_STUDENT
+  VISITOR
+  ALUMNI
+}
+
+enum CardStatus {
+  GENERATED
+  ACTIVATED
+  VOID
+}
+
+enum StubStatus {
+  INACTIVE
+  ACTIVATED
+  REDEEMED
+}
+
+enum BatchStatus {
+  PENDING
+  GENERATING
+  COMPLETED
+  FAILED
+}
+
+model EventConfig {
+  id              String   @id @default(uuid())
+  eventName       String   @default("Itechtivity 2027")
+  isAwardsLocked  Boolean  @default(false)
+  maxAwards       Int      @default(6)
+  isVotingOpen    Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AcademicProgram {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Award {
+  id          String       @id @default(uuid())
+  slotNumber  Int          @unique
+  title       String
+  description String?
+  isActive    Boolean      @default(true)
+  ticketStubs TicketStub[]
+  votes       Vote[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Booth {
+  id               String   @id @default(uuid())
+  code             String   @unique
+  projectTitle     String
+  capstoneCategory String
+  teamMembers      String?
+  tableNumber      String?
+  logoUrl          String?
+  users            User[]
+  votes            Vote[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model User {
+  id           String                    @id @default(uuid())
+  email        String                    @unique
+  passwordHash String
+  fullName     String
+  role         Role
+  boothId      String?
+  booth        Booth?                    @relation(fields: [boothId], references: [id])
+  transactions RegistrationTransaction[]
+  votesScanned Vote[]
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+}
+
+model RegistrationTransaction {
+  id                String      @id @default(uuid())
+  processedByUserId String
+  processedByUser   User        @relation(fields: [processedByUserId], references: [id])
+  buyerType         BuyerType
+  buyerName         String
+  studentNumber     String?
+  program           String?
+  yearAndSection    String?
+  affiliation       String?
+  contactInfo       String?
+  quantityBought    Int
+  cards             BingoCard[]
+  createdAt         DateTime    @default(now())
+}
+
+model BingoCard {
+  id            String                   @id @default(uuid())
+  cardSerial    String                   @unique
+  masterQrHash  String                   @unique
+  transactionId String?
+  transaction   RegistrationTransaction? @relation(fields: [transactionId], references: [id])
+  status        CardStatus               @default(GENERATED)
+  stubs         TicketStub[]
+  pdfBatchId    String?
+  pdfBatch      PdfBatch?                @relation(fields: [pdfBatchId], references: [id])
+  activatedAt   DateTime?
+  createdAt     DateTime                 @default(now())
+}
+
+model TicketStub {
+  id            String     @id @default(uuid())
+  bingoCardId   String
+  bingoCard     BingoCard  @relation(fields: [bingoCardId], references: [id], onDelete: Cascade)
+  slotNumber    Int
+  awardId       String?
+  award         Award?     @relation(fields: [awardId], references: [id])
+  stubSerial    String     @unique
+  signatureHash String
+  status        StubStatus @default(INACTIVE)
+  vote          Vote?
+  updatedAt     DateTime   @updatedAt
+  createdAt     DateTime   @default(now())
+
+  @@index([stubSerial, status])
+}
+
+model Vote {
+  id              String     @id @default(uuid())
+  ticketStubId    String     @unique
+  ticketStub      TicketStub @relation(fields: [ticketStubId], references: [id])
+  boothId         String
+  booth           Booth      @relation(fields: [boothId], references: [id])
+  awardId         String
+  award           Award      @relation(fields: [awardId], references: [id])
+  scannedByUserId String
+  scannedByUser   User       @relation(fields: [scannedByUserId], references: [id])
+  scannedAt       DateTime   @default(now())
+
+  @@index([boothId, awardId])
+}
+
+model IdempotencyLog {
+  id             String   @id @default(uuid())
+  idempotencyKey String   @unique
+  responseStatus Int
+  responseBody   String
+  createdAt      DateTime @default(now())
+}
+
+model PdfBatch {
+  id          String      @id @default(uuid())
+  batchNumber Int         @unique
+  fileId      String?
+  fileName    String
+  fileSize    Int?
+  totalCards  Int
+  totalSheets Int
+  status      BatchStatus @default(PENDING)
+  cards       BingoCard[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  actorName  String?
+  actorEmail String?
+  actorRole  String?
+  action     String
+  resource   String
+  summary    String?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([action, createdAt])
+  @@index([userId, createdAt])
+  @@index([resource, createdAt])
+}
+

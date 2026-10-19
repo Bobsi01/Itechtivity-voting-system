@@ -1,0 +1,167 @@
+name: CI/CD Pipeline (Appwrite + Supabase)
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      full_e2e_test:
+        description: 'Run full E2E production verification (PDF batch + QR vote + Realtime) after deploy'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+# PRs cancel stale runs; production pushes queue instead so a deploy is never killed mid-migration.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: 26
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      database: ${{ steps.diff.outputs.database }}
+      functions: ${{ steps.diff.outputs.functions }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - id: diff
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || ! git rev-parse HEAD~1 >/dev/null 2>&1; then
+            echo "database=true" >> "$GITHUB_OUTPUT"
+            echo "functions=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          echo "$CHANGED" | grep -qE '^prisma/schema\.prisma$' && echo "database=true" >> "$GITHUB_OUTPUT" || echo "database=false" >> "$GITHUB_OUTPUT"
+          echo "$CHANGED" | grep -qE '^(functions/|scripts/deploy-appwrite-functions\.mjs$)' && echo "functions=true" >> "$GITHUB_OUTPUT" || echo "functions=false" >> "$GITHUB_OUTPUT"
+
+  verify:
+    name: Verify (${{ matrix.check }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - check: typecheck
+            command: npx tsc --noEmit
+          - check: lint
+            command: npm run lint
+          - check: crypto-pdf-audit
+            command: npm run test:crypto && npm run test:pdf && npm run test:audit
+    env:
+      EVENT_HMAC_SECRET: ci_only_hmac_secret_key_with_at_least_32_characters
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # postinstall already runs prisma generate and prepare-pdf-viewer
+      - run: npm ci --no-audit --no-fund
+
+      - run: ${{ matrix.command }}
+
+  database-migration:
+    name: Supabase Schema Sync
+    needs: [changes, verify]
+    if: github.event_name != 'pull_request' && needs.changes.outputs.database == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    env:
+      DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.SUPABASE_DIRECT_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - run: npx prisma validate
+
+      # No --accept-data-loss: destructive schema changes fail the pipeline instead of dropping data.
+      - run: npx prisma db push --skip-generate
+
+  deploy-functions:
+    name: Deploy Appwrite Functions
+    needs: [changes, verify, database-migration]
+    if: >-
+      always() && !cancelled() && needs.verify.result == 'success'
+      && needs.database-migration.result != 'failure'
+      && github.event_name != 'pull_request' && needs.changes.outputs.functions == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+      APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+      APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+      DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.SUPABASE_DIRECT_URL }}
+      EVENT_HMAC_SECRET: ${{ secrets.EVENT_HMAC_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund --ignore-scripts
+
+      - run: npm run deploy:functions
+
+  deploy-site:
+    name: Deploy Appwrite Site
+    needs: [verify, database-migration]
+    if: >-
+      always() && !cancelled() && needs.verify.result == 'success'
+      && needs.database-migration.result != 'failure'
+      && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+      APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+      APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+      DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.SUPABASE_DIRECT_URL }}
+      EVENT_HMAC_SECRET: ${{ secrets.EVENT_HMAC_SECRET }}
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+      BASE_URL: ${{ vars.SITE_URL || 'https://itech2027-voting.appwrite.network' }}
+      SMOKE_ONLY: ${{ inputs.full_e2e_test && 'false' || 'true' }}
+      SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The site deploy and verification scripts use only Node built-ins, so no npm install is needed here.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Sync variables, build, and activate on Appwrite Sites
+        run: npm run deploy:site
+
+      - name: Verify live deployed site
+        run: node scripts/test-deployed-site.mjs

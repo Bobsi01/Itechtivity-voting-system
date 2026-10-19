@@ -1,0 +1,68 @@
+{
+  "name": "itech-2027-voting",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=26.0.0"
+  },
+  "scripts": {
+    "dev": "node scripts/prepare-pdf-viewer.mjs && next dev",
+    "build": "node scripts/prepare-pdf-viewer.mjs && next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "postinstall": "prisma generate && node scripts/prepare-pdf-viewer.mjs",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "test": "npm run test:crypto && npm run test:pdf && npm run test:e2e:flow",
+    "test:crypto": "tsx src/lib/crypto/test-tokens.ts",
+    "test:pdf": "tsx src/lib/pdf/test-geometry.ts",
+    "test:e2e:flow": "tsx src/lib/pdf/test-e2e-flow.ts",
+    "test:e2e:browser": "tsx src/lib/test/multi-agent-qa-suite.ts",
+    "test:audit": "tsx src/lib/test/audit-regressions.ts",
+    "deploy:functions": "node scripts/deploy-appwrite-functions.mjs",
+    "deploy:site": "node scripts/deploy-appwrite-site.mjs",
+    "test:smoke": "node scripts/test-deployed-site.mjs",
+    "test:deployed": "node scripts/test-deployed-site.mjs"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "appwrite": "^16.1.0",
+    "bcryptjs": "^3.0.3",
+    "html5-qrcode": "^2.3.8",
+    "jsqr": "^1.4.0",
+    "lucide-react": "^1.57.0",
+    "next": "^16.4.1",
+    "node-appwrite": "^14.2.0",
+    "pdfjs-dist": "^6.4.299",
+    "pdfkit": "^0.20.2",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "sonner": "^2.0.8",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^26.6.5",
+    "@types/pdfkit": "^0.17.6",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.4.1",
+    "postcss": "^8.5.30",
+    "prisma": "^6.19.3",
+    "puppeteer-core": "^25.14.0",
+    "tailwindcss": "^3.4.19",
+    "tsx": "^4.19.3",
+    "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "braces": "3.0.3",
+    "deepmerge-ts": "8.0.2",
+    "postcss-selector-parser": "7.1.6"
+  }
+}

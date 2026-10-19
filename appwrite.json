@@ -1,0 +1,71 @@
+{
+  "projectId": "itechtivity-2027",
+  "projectName": "Itechtivity 2027 Voting",
+  "functions": [
+    {
+      "$id": "generate-bingo-pdf",
+      "name": "generate-bingo-pdf",
+      "runtime": "node-26",
+      "path": "functions/generate-bingo-pdf",
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "execute": [],
+      "events": [],
+      "schedule": "",
+      "timeout": 300,
+      "enabled": true,
+      "logging": true,
+      "ignore": [
+        "node_modules",
+        ".git"
+      ]
+    },
+    {
+      "$id": "cleanup-idempotency-sessions",
+      "name": "cleanup-idempotency-sessions",
+      "runtime": "node-26",
+      "path": "functions/cleanup-idempotency-sessions",
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "execute": [],
+      "events": [],
+      "schedule": "0 */6 * * *",
+      "timeout": 60,
+      "enabled": true,
+      "logging": true,
+      "ignore": [
+        "node_modules",
+        ".git"
+      ]
+    },
+    {
+      "$id": "compute-leaderboard-snapshot",
+      "name": "compute-leaderboard-snapshot",
+      "runtime": "node-26",
+      "path": "functions/compute-leaderboard-snapshot",
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "execute": [],
+      "events": [],
+      "schedule": "",
+      "timeout": 60,
+      "enabled": true,
+      "logging": true,
+      "ignore": [
+        "node_modules",
+        ".git"
+      ]
+    }
+  ],
+  "sites": [
+    {
+      "$id": "itechtivity-2027-site",
+      "name": "itechtivity-2027",
+      "framework": "nextjs",
+      "installCommand": "npm install",
+      "buildCommand": "npm run build",
+      "outputDirectory": ".next",
+      "runtime": "node-26"
+    }
+  ]
+}

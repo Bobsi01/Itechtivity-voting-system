@@ -4,9 +4,18 @@ description: >-
   Enforces guidelines and formatting standards for student-friendly, maintainable code.
   Use when structuring functions, adding spacing, writing balanced comments, or reviewing
   naming conventions. Do not use for security verification, cryptography, or Appwrite configuration.
+author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
+assisted_by:
+  - OpenAI Codex
+  - Google Gemini
 ---
 
 # Code Quality & Readability Runbook
+
+> **Author:** Daniel Bobis (GitHub: @ItsMeYourNightmare)  
+> **Assisted by:** OpenAI Codex and Google Gemini
+
+---
 
 ## 1. Core Objectives
 This skill ensures that all code produced in the Itechtivity 2027 codebase is approachable, intuitive, and clean for university students and peer reviewers, while maintaining rigorous enterprise-grade security and performance standards.

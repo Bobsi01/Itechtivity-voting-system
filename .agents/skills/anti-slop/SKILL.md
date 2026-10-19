@@ -5,9 +5,18 @@ description: >-
   Use when writing, refactoring, or reviewing code to eliminate generic AI boilerplate,
   placeholder comments, unneeded abstractions, loose typing, and formulaic AI layouts.
   Do not use for implementing domain-specific business logic, database migrations, or cryptographic verification.
+author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
+assisted_by:
+  - OpenAI Codex
+  - Google Gemini
 ---
 
 # Anti-Slop Engineering & Clean Craftsmanship Skill
+
+> **Author:** Daniel Bobis (GitHub: @ItsMeYourNightmare)  
+> **Assisted by:** OpenAI Codex and Google Gemini
+
+---
 
 ## 1. Principles
 This skill provides deterministic rules to purge generic, low-effort AI patterns ("slop") from the codebase.
@@ -74,7 +83,10 @@ try {
 
 ## 3. UI/UX Anti-Slop Rules
 
-* **No Glowing Neon Gradients:** Do not default to purple/cyan gradient borders on cards.
-* **Touch-First Accessibility:** Minimum touch target size is $44 \times 44\text{px}$.
-* **Real-World Contrast:** Use high-contrast color palettes (WCAG AAA for text) so screens are readable under direct sunlight or dark exhibition lighting.
-* **Instant Tactile Feedback:** Every scan must trigger immediate visual, haptic, and acoustic confirmation.
+Only enforce the following four UI anti-slop constraints so common design flows are not hindered:
+
+1. **Avoid Gradients (Unless Semantically Meaningful):** Do not apply decorative or default gradients to backgrounds, cards, text, or borders unless the gradient carries explicit functional or semantic meaning.
+2. **Avoid Background Colors on Text and Icons:** Do not wrap text labels or icons in colored background fills, badge pills, or circle containers. Use clean typography, stroke colors, and borders (`border border-neutral-300`) instead.
+3. **Avoid Redundant Eyebrow Labels:** Avoid small uppercase tracked-out "eyebrow" labels above headings (e.g., `COMPUTER STUDIES DEPARTMENT • UNIVERSITY OF CALOOCAN CITY` stacked above `ITECHTIVITY 2027`) when the context is already established or redundant. Only use eyebrow labels when they add non-redundant hierarchy or disambiguation.
+4. **Avoid UI Redundancies:** Eliminate repeated titles, duplicate status indicators, and redundant descriptive subtitles that restate what the heading or surrounding layout already communicates.
+
