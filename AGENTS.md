@@ -57,6 +57,7 @@ Consult and utilize the specialized runbooks located in `.agents/skills/`:
 * **`qr-crypto-idempotency`:** [`.agents/skills/qr-crypto-idempotency/SKILL.md`](file:///c:/Workspace/Itech%202027/.agents/skills/qr-crypto-idempotency/SKILL.md) — Cryptographic tokens, timing-safe checks, and single-redemption transactions.
 * **`appwrite-cloud`:** [`.agents/skills/appwrite-cloud/SKILL.md`](file:///c:/Workspace/Itech%202027/.agents/skills/appwrite-cloud/SKILL.md) — Appwrite Cloud Storage and Realtime WebSockets.
 * **`streaming-pdf-ticket`:** [`.agents/skills/streaming-pdf-ticket/SKILL.md`](file:///c:/Workspace/Itech%202027/.agents/skills/streaming-pdf-ticket/SKILL.md) — Low-memory vector PDF generation using PDFKit.
+* **`versioning`:** [`.agents/skills/versioning/SKILL.md`](file:///c:/Workspace/Itech%202027/.agents/skills/versioning/SKILL.md) — 3-tier semantic versioning, owner-governed major releases, points-based patch increments, and contributor attribution.
 
 ---
 

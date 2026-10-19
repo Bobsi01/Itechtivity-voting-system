@@ -2,9 +2,9 @@ name: CI/CD Pipeline (Appwrite + Supabase)
 
 on:
   push:
-    branches: [master, main]
+    branches: [production, Production, staging, master, main]
   pull_request:
-    branches: [master, main]
+    branches: [production, Production, staging, master, main]
   workflow_dispatch:
     inputs:
       full_e2e_test:

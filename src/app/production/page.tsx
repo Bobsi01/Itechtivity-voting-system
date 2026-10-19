@@ -9,6 +9,7 @@ import { PdfPreviewModal } from "@/components/production/pdf-preview-modal";
 import { type PdfFileItem } from "@/lib/utils/format";
 import { subscribeToBatchEvents } from "@/lib/appwrite/client";
 import { toast } from "sonner";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export default function ProductionPage() {
 
@@ -75,16 +76,19 @@ export default function ProductionPage() {
           </div>
         </div>
 
-        <form action="/api/auth/logout" method="POST">
-          <button
-            type="submit"
-            aria-label="Logout"
-            className="flex items-center justify-center gap-2 px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 transition-colors min-h-[44px] min-w-[44px]"
-          >
-            <LogOut className="w-4 h-4 text-neutral-600" />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-        </form>
+        <div className="flex items-center gap-2">
+          <NotificationBell autoOpenIfUnseen={true} />
+          <form action="/api/auth/logout" method="POST">
+            <button
+              type="submit"
+              aria-label="Logout"
+              className="flex items-center justify-center gap-2 px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 transition-colors min-h-[44px] min-w-[44px]"
+            >
+              <LogOut className="w-4 h-4 text-neutral-600" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </form>
+        </div>
       </header>
 
       {/* Production Metrics Overview */}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { MobileScanner } from "@/components/exhibitor/mobile-scanner";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export default function ExhibitorPage() {
   return (
@@ -25,16 +26,19 @@ export default function ExhibitorPage() {
           </div>
         </div>
 
-        <form action="/api/auth/logout" method="POST">
-          <button
-            type="submit"
-            aria-label="Logout"
-            className="flex items-center justify-center gap-1.5 px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 transition-colors min-h-[44px] min-w-[44px]"
-          >
-            <LogOut className="w-4 h-4 text-neutral-600" />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-        </form>
+        <div className="flex items-center gap-2">
+          <NotificationBell autoOpenIfUnseen={true} />
+          <form action="/api/auth/logout" method="POST">
+            <button
+              type="submit"
+              aria-label="Logout"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 transition-colors min-h-[44px] min-w-[44px]"
+            >
+              <LogOut className="w-4 h-4 text-neutral-600" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </form>
+        </div>
       </header>
 
       {/* Main Mobile Scanner */}

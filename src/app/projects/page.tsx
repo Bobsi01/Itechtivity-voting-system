@@ -1,5 +1,6 @@
 import prisma from "@/lib/db/prisma";
 import { BoothDirectory, type PublicBoothItem, type PublicAwardItem } from "@/components/public/booth-directory";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export const dynamic = "force-dynamic";
 
@@ -47,16 +48,21 @@ export default async function ProjectsPage() {
 
   return (
     <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
-      <header className="border-b border-neutral-300 pb-4 mb-6">
-        <p className="text-xs uppercase tracking-widest text-neutral-500 font-mono">
-          Computer Studies Department • University of Caloocan City
-        </p>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 uppercase mt-1">
-          ITECHTIVITY 2027 SHOWCASE
-        </h1>
-        <p className="text-sm text-neutral-600 mt-1">
-          Capstone Project Exhibition, Booth Guide & Voting Directory
-        </p>
+      <header className="border-b border-neutral-300 pb-4 mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-neutral-500 font-mono">
+            Computer Studies Department • University of Caloocan City
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 uppercase mt-1">
+            ITECHTIVITY 2027 SHOWCASE
+          </h1>
+          <p className="text-sm text-neutral-600 mt-1">
+            Capstone Project Exhibition, Booth Guide & Voting Directory
+          </p>
+        </div>
+        <div className="flex-shrink-0">
+          <NotificationBell autoOpenIfUnseen={false} />
+        </div>
       </header>
 
       <BoothDirectory booths={publicBooths} awards={publicAwards} />

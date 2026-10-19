@@ -23,7 +23,8 @@ c:\Workspace\Itech 2027\
 │   │   ├── nextjs-app-router/SKILL.md       # Next.js 15 App Router architecture & boundaries
 │   │   ├── qr-crypto-idempotency/SKILL.md   # HMAC-SHA256, single-redemption & idempotency
 │   │   ├── appwrite-cloud/SKILL.md          # Appwrite Cloud Storage & Realtime WebSockets
-│   │   └── streaming-pdf-ticket/SKILL.md    # Low-memory streaming vector PDF ticket generator
+│   │   ├── streaming-pdf-ticket/SKILL.md    # Low-memory streaming vector PDF ticket generator
+│   │   └── versioning/SKILL.md              # 3-tier semantic versioning & points-based patch scoring
 │   └── README.md                            # Agent evaluation guidelines & architectural checklist
 ├── README.md                                # Root repository guide, user roles & CSD contribution guide
 ├── AGENTS.md                                # Root repository development directives
