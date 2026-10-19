@@ -1,8 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { execSync } from 'node:child_process';
-import { Client, Functions } from 'node-appwrite';
-import { InputFile } from 'node-appwrite/file';
 
 function loadDotEnv() {
 
@@ -26,10 +25,14 @@ function loadDotEnv() {
   }
 }
 
-async function syncFunctionVariables(functionsClient, functionId, envMap) {
+async function syncFunctionVariables(endpoint, headers, functionId, envMap) {
 
-  const existingList = await functionsClient.listVariables(functionId);
-  const existingByKey = new Map(existingList.variables.map((v) => [v.key, v]));
+  const existingRes = await fetch(`${endpoint}/functions/${functionId}/variables`, { headers });
+  if (!existingRes.ok) {
+    throw new Error(`Failed to list variables for ${functionId}: ${await existingRes.text()}`);
+  }
+  const existingList = await existingRes.json();
+  const existingByKey = new Map((existingList.variables || []).map((v) => [v.key, v]));
 
   const entries = Object.entries(envMap).filter(([, value]) => Boolean(value));
   await Promise.all(
@@ -37,18 +40,38 @@ async function syncFunctionVariables(functionsClient, functionId, envMap) {
       const existing = existingByKey.get(key);
       if (existing) {
         if (existing.value === value) return;
-        await functionsClient.updateVariable(functionId, existing.$id, key, value);
+        const updateRes = await fetch(`${endpoint}/functions/${functionId}/variables/${existing.$id}`, {
+          method: 'PUT',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key, value }),
+        });
+        if (!updateRes.ok) {
+          throw new Error(`Failed to update variable ${key} for ${functionId}: ${await updateRes.text()}`);
+        }
       } else {
-        await functionsClient.createVariable(functionId, key, value);
+        const createRes = await fetch(`${endpoint}/functions/${functionId}/variables`, {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key, value }),
+        });
+        if (!createRes.ok) {
+          throw new Error(`Failed to create variable ${key} for ${functionId}: ${await createRes.text()}`);
+        }
       }
     })
   );
 }
 
-async function deployFunction(functionsClient, functionDef, envMap, endpoint, headers) {
+async function deployFunction(functionDef, envMap, endpoint, headers) {
 
   const { id, dir, entrypoint, commands, runtime = 'node-26' } = functionDef;
-  const currentFn = await functionsClient.get(id);
+
+  const getRes = await fetch(`${endpoint}/functions/${id}`, { headers });
+  if (!getRes.ok) {
+    throw new Error(`Failed to get function ${id}: ${await getRes.text()}`);
+  }
+  const currentFn = await getRes.json();
+
   if (currentFn.runtime !== runtime) {
     console.log(`[Appwrite Deploy] Updating ${id} runtime from ${currentFn.runtime} to ${runtime}...`);
     const updateRes = await fetch(`${endpoint}/functions/${id}`, {
@@ -74,10 +97,10 @@ async function deployFunction(functionsClient, functionDef, envMap, endpoint, he
   }
 
   console.log(`[Appwrite Deploy] Syncing variables for ${id}...`);
-  await syncFunctionVariables(functionsClient, id, envMap);
+  await syncFunctionVariables(endpoint, headers, id, envMap);
 
   const absDir = path.join(process.cwd(), dir);
-  const tarPath = path.join(process.cwd(), `tmp-${id}.tar.gz`);
+  const tarPath = path.join(os.tmpdir(), `tmp-${id}-${Date.now()}.tar.gz`);
 
   if (fs.existsSync(tarPath)) {
     fs.unlinkSync(tarPath);
@@ -88,19 +111,30 @@ async function deployFunction(functionsClient, functionDef, envMap, endpoint, he
   fs.unlinkSync(tarPath);
 
   console.log(`[Appwrite Deploy] Uploading ${id} (${tarBuffer.length} bytes)...`);
-  const deployment = await functionsClient.createDeployment(
-    id,
-    InputFile.fromBuffer(tarBuffer, 'code.tar.gz'),
-    true,
-    entrypoint,
-    commands
-  );
+  const form = new FormData();
+  form.append('code', new Blob([tarBuffer], { type: 'application/gzip' }), 'code.tar.gz');
+  form.append('activate', 'true');
+  form.append('entrypoint', entrypoint);
+  form.append('commands', commands);
+
+  const deployRes = await fetch(`${endpoint}/functions/${id}/deployments`, {
+    method: 'POST',
+    headers,
+    body: form,
+  });
+  if (!deployRes.ok) {
+    throw new Error(`Failed to create deployment for ${id}: ${await deployRes.text()}`);
+  }
+  const deployment = await deployRes.json();
 
   console.log(`[Appwrite Deploy] ${id} -> deployment ${deployment.$id} queued. Waiting for build...`);
 
   for (let attempt = 1; attempt <= 60; attempt++) {
     await new Promise((r) => setTimeout(r, 2000));
-    const current = await functionsClient.getDeployment(id, deployment.$id);
+    const statusRes = await fetch(`${endpoint}/functions/${id}/deployments/${deployment.$id}`, { headers });
+    if (!statusRes.ok) continue;
+    const current = await statusRes.json();
+
     if (current.status === 'ready') {
       console.log(`[Appwrite Deploy] ${id} deployment ${deployment.$id} is READY and ACTIVE.`);
       return current;
@@ -124,13 +158,6 @@ async function main() {
   if (!apiKey || apiKey.includes('placeholder')) {
     throw new Error('Missing valid APPWRITE_API_KEY environment variable.');
   }
-
-  const client = new Client()
-    .setEndpoint(endpoint)
-    .setProject(projectId)
-    .setKey(apiKey);
-
-  const functionsClient = new Functions(client);
 
   const envMap = {
     DATABASE_URL: process.env.DATABASE_URL || '',
@@ -173,7 +200,7 @@ async function main() {
   };
 
   // Deploy all 3 functions concurrently to minimize CI pipeline latency
-  await Promise.all(functionsToDeploy.map((fn) => deployFunction(functionsClient, fn, envMap, endpoint, headers)));
+  await Promise.all(functionsToDeploy.map((fn) => deployFunction(fn, envMap, endpoint, headers)));
 
   console.log('\nAll 3 Appwrite Serverless Functions deployed and verified READY.');
 }

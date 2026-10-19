@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { execSync } from 'node:child_process';
 
 const SITE_ID = 'itechtivity-2027-site';
@@ -18,6 +19,8 @@ const EXCLUDED_PATHS = [
   'functions',
   'cookies.txt',
   'tsconfig.tsbuildinfo',
+  'tmp-site.tar.gz',
+  '*.tar.gz',
 ];
 
 function loadDotEnv() {
@@ -186,7 +189,7 @@ async function main() {
     return;
   }
 
-  const tarPath = path.join(process.cwd(), 'tmp-site.tar.gz');
+  const tarPath = path.join(os.tmpdir(), `tmp-site-${Date.now()}.tar.gz`);
   const excludeFlags = EXCLUDED_PATHS.map((entry) => `--exclude="./${entry}"`).join(' ');
   execSync(`tar ${excludeFlags} -czf "${tarPath}" .`);
 
