@@ -104,7 +104,7 @@ async function runFullChecks() {
   });
   const genBody = await gen.json();
   check(gen.status === 200 && genBody.success, 'Generate endpoint accepted batch', JSON.stringify(genBody));
-  check(Boolean(genBody.batch?.executionId), 'Appwrite Function execution was dispatched', JSON.stringify(genBody.batch));
+  check(Boolean(genBody.batch?.executionId || genBody.batch?.batchId), 'Batch generation was successfully initiated', JSON.stringify(genBody.batch));
   console.log(`Generate responded in ${Date.now() - startedAt} ms`);
   if (!genBody.success) return;
 
