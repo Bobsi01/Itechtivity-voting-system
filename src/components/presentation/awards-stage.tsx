@@ -65,7 +65,7 @@ export function AwardsStage({ awards }: AwardsStageProps) {
   }
 
   return (
-    <div className="min-h-[80vh] flex flex-col justify-between space-y-8">
+    <div className="min-h-[80dvh] flex flex-col justify-between space-y-8">
       {/* Top Ceremony Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-300 pb-4">
         <div className="flex items-center gap-3">
@@ -77,9 +77,6 @@ export function AwardsStage({ awards }: AwardsStageProps) {
             <span>Exit Stage</span>
           </Link>
           <div>
-            <span className="text-xs font-mono uppercase tracking-widest text-neutral-500 block">
-              Computer Studies Department • University of Caloocan City
-            </span>
             <h1 className="text-xl font-bold tracking-tight text-neutral-900 uppercase">
               ITECHTIVITY 2027 AWARDS CEREMONY
             </h1>

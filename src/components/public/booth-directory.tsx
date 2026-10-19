@@ -112,7 +112,7 @@ export function BoothDirectory({ booths, awards }: BoothDirectoryProps) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by project name, team, or CS-XX code..."
-                className="w-full border border-neutral-300 pl-9 pr-3 py-2.5 text-sm rounded font-mono placeholder:text-neutral-500 min-h-[44px]"
+                className="w-full border border-neutral-300 pl-9 pr-3 py-2.5 text-base sm:text-sm rounded font-mono placeholder:text-neutral-500 min-h-[44px]"
               />
             </div>
 
@@ -124,7 +124,7 @@ export function BoothDirectory({ booths, awards }: BoothDirectoryProps) {
                     key={cat}
                     type="button"
                     onClick={() => setSelectedCategory(cat)}
-                    className={`text-[11px] font-mono px-2.5 py-1.5 rounded border whitespace-nowrap min-h-[36px] transition-colors ${
+                    className={`text-[11px] font-mono px-3 py-2 rounded border whitespace-nowrap min-h-[44px] transition-colors ${
                       selectedCategory === cat
                         ? "border-neutral-900 text-neutral-900 font-bold"
                         : "border-neutral-300 text-neutral-600 hover:border-neutral-800"

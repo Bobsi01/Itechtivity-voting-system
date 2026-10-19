@@ -164,7 +164,7 @@ export function AuditTrailCard() {
               setPage(1);
             }}
             placeholder="Search by attendee, serial, booth, actor, or keyword..."
-            className="w-full pl-9 pr-3 py-2.5 font-mono text-xs border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+            className="w-full pl-9 pr-3 py-2.5 font-mono text-base sm:text-xs border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
           />
         </div>
 
@@ -180,7 +180,7 @@ export function AuditTrailCard() {
               setResourceFilter(e.target.value);
               setPage(1);
             }}
-            className="w-full px-3 py-2.5 font-mono text-xs border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] bg-white"
+            className="w-full px-3 py-2.5 font-mono text-base sm:text-xs border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] bg-white"
           >
             <option value="ALL">All Event Categories</option>
             <option value="AUTH">Authentication & Sessions</option>
@@ -207,7 +207,7 @@ export function AuditTrailCard() {
               setRoleFilter(e.target.value);
               setPage(1);
             }}
-            className="w-full px-3 py-2.5 font-mono text-xs border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] bg-white"
+            className="w-full px-3 py-2.5 font-mono text-base sm:text-xs border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] bg-white"
           >
             <option value="ALL">All Actor Roles</option>
             <option value="ADMIN">Admin Staff</option>
@@ -329,7 +329,7 @@ export function AuditTrailCard() {
           aria-labelledby="log-detail-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
         >
-          <div className="bg-white border border-neutral-300 rounded-lg max-w-2xl w-full p-6 space-y-4 shadow-xl max-h-[85vh] flex flex-col justify-between">
+          <div className="bg-white border border-neutral-300 rounded-lg max-w-2xl w-full p-6 space-y-4 shadow-xl max-h-[85dvh] flex flex-col justify-between">
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
               <div>
                 <span className="font-mono text-xs uppercase tracking-wider text-neutral-500 block">
@@ -349,7 +349,7 @@ export function AuditTrailCard() {
               </button>
             </div>
 
-            <div className="space-y-3 overflow-y-auto max-h-[50vh] pr-1">
+            <div className="space-y-3 overflow-y-auto max-h-[50dvh] pr-1">
               <div className="space-y-1">
                 <span className="text-xs font-bold uppercase tracking-wider text-neutral-700 font-mono">
                   Human-Readable Summary

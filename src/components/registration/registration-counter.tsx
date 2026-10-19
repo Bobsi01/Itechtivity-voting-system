@@ -641,7 +641,7 @@ export function RegistrationCounter() {
                   value={rangeStart}
                   onChange={(e) => setRangeStart(e.target.value)}
                   placeholder="e.g. B27-B01-0001"
-                  className="w-full px-3 py-2 text-sm font-mono border border-neutral-300 rounded min-h-[44px]"
+                  className="w-full px-3 py-2 text-base sm:text-sm font-mono border border-neutral-300 rounded min-h-[44px]"
                 />
               </div>
               <div>
@@ -651,7 +651,7 @@ export function RegistrationCounter() {
                   value={rangeEnd}
                   onChange={(e) => setRangeEnd(e.target.value)}
                   placeholder="e.g. B27-B01-0020"
-                  className="w-full px-3 py-2 text-sm font-mono border border-neutral-300 rounded min-h-[44px]"
+                  className="w-full px-3 py-2 text-base sm:text-sm font-mono border border-neutral-300 rounded min-h-[44px]"
                 />
               </div>
             </div>

@@ -13,3 +13,4 @@ cookies.txt
 *.pem
 *.key
 *.tsbuildinfo
+.agents/teamwork/
