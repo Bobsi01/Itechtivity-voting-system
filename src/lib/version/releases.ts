@@ -1,6 +1,9 @@
+export type PointAllocation = 1 | 2 | 3 | 4 | 5;
+export type ReleaseVersion = `V${number}.${number}.${number}`;
+
 export interface MinorChangeItem {
   description: string;
-  points: number; // 1 to 5 points
+  points: PointAllocation; // 1 to 5 points
   type: 'fix' | 'feature' | 'perf' | 'security';
 }
 
@@ -11,7 +14,7 @@ export interface ContributorItem {
 }
 
 export interface VersionRelease {
-  version: string;
+  version: ReleaseVersion;
   releaseDate: string;
   title: string;
   isLatest: boolean;

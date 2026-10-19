@@ -1,9 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { MobileScanner } from "@/components/exhibitor/mobile-scanner";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { getCurrentUser } from "@/lib/auth/session";
 
-export default function ExhibitorPage() {
+export default async function ExhibitorPage() {
+
+  const user = await getCurrentUser();
+  if (!user || (user.role !== "EXHIBITOR" && user.role !== "ADMIN")) {
+    redirect("/login?error=UNAUTHORIZED_ROLE");
+  }
+
   return (
     <main className="flex-1 max-w-md lg:max-w-5xl mx-auto w-full px-4 py-4 flex flex-col justify-between">
       {/* Top Header */}
@@ -17,9 +25,6 @@ export default function ExhibitorPage() {
             <ArrowLeft className="w-5 h-5 text-neutral-800" />
           </Link>
           <div>
-            <span className="text-[11px] font-mono uppercase tracking-widest text-neutral-500">
-              Computer Studies Department • University of Caloocan City
-            </span>
             <h1 className="text-base font-bold uppercase tracking-tight text-neutral-900">
               Stub QR Scanner
             </h1>

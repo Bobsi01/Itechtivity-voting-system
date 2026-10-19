@@ -157,9 +157,16 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
         payload.serials = serialsList;
       }
 
+      const idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `batch-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
       const res = await fetch("/api/admin/cards/batch", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
         body: JSON.stringify(payload),
       });
 

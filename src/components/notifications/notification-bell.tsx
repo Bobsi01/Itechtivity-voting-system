@@ -37,7 +37,7 @@ export function NotificationBell({ autoOpenIfUnseen = false }: NotificationBellP
     }
   }, [latestRelease.version, autoOpenIfUnseen]);
 
-  // Click-outside listener to close dropdown
+  // Click-outside and Escape key listener to close dropdown
   useEffect(() => {
 
     if (!isOpen) return;
@@ -48,8 +48,18 @@ export function NotificationBell({ autoOpenIfUnseen = false }: NotificationBellP
       }
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
     document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen]);
 
   const markVersionAsSeen = () => {
@@ -83,6 +93,7 @@ export function NotificationBell({ autoOpenIfUnseen = false }: NotificationBellP
         aria-label="View system notifications and version updates"
         aria-expanded={isOpen}
         aria-haspopup="true"
+        aria-controls="notification-dropdown-menu"
         className="relative min-h-[44px] min-w-[44px] p-2 border border-neutral-300 hover:border-neutral-900 rounded transition-colors flex items-center justify-center text-neutral-800 hover:text-neutral-900 touch-manipulation"
       >
         <Bell className="w-5 h-5" />
@@ -98,9 +109,10 @@ export function NotificationBell({ autoOpenIfUnseen = false }: NotificationBellP
       {/* Notification Dropdown */}
       {isOpen && (
         <div
+          id="notification-dropdown-menu"
           role="menu"
           aria-label="System version notifications"
-          className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border-2 border-neutral-900 rounded-lg shadow-xl z-50 p-4 space-y-3 animate-in fade-in zoom-in-95 duration-100"
+          className="fixed inset-x-4 top-16 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-96 bg-white border-2 border-neutral-900 rounded-lg shadow-xl z-50 p-4 space-y-3 animate-in fade-in zoom-in-95 duration-100"
         >
           {/* Dropdown Header */}
           <div className="flex items-center justify-between border-b border-neutral-200 pb-2">

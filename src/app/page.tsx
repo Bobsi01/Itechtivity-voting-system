@@ -40,10 +40,7 @@ export default function HomePage() {
       <div className="space-y-6">
         <header className="border-b border-neutral-300 pb-4 flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-widest text-neutral-500 font-mono">
-              Computer Studies Department • University of Caloocan City
-            </p>
-            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 uppercase mt-1">ITECHTIVITY 2027</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 uppercase">ITECHTIVITY 2027</h1>
             <p className="text-sm text-neutral-600 mt-1">Capstone Awards & Bingo Voting System</p>
           </div>
           <div className="flex-shrink-0">

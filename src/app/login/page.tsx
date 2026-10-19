@@ -22,18 +22,6 @@ function LoginForm() {
     ? "That page belongs to a different account role. Sign in or open your own portal."
     : searchParams.has("error") ? "Your session ended. Please sign in again." : null;
 
-  const testAccounts = [
-    { label: "Admin", email: "admin@itech2027.edu", pass: "AdminPass2027!", role: "ADMIN" },
-    { label: "Production", email: "prod@itech2027.edu", pass: "ProdPass2027!", role: "PRODUCTION" },
-    { label: "Registration", email: "reg.desk1@itech2027.edu", pass: "RegPass2027!", role: "REGISTRATION" },
-    { label: "Booth CS-01", email: "booth.cs01@itech2027.edu", pass: "BoothPass2027!", role: "EXHIBITOR" },
-    { label: "Booth CS-02", email: "booth.cs02@itech2027.edu", pass: "BoothPass2027!", role: "EXHIBITOR" },
-  ];
-
-  const SHOW_QA_SHORTCUTS =
-    process.env.NEXT_PUBLIC_HIDE_QA_SHORTCUTS !== "true" &&
-    (process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_ENABLE_QA_SHORTCUTS === "true");
-
   const executeLogin = async (targetEmail: string, targetPassword: string) => {
 
     if (!targetEmail || !targetPassword) {
@@ -65,13 +53,6 @@ function LoginForm() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleQuickFill = (accEmail: string, accPass: string, label: string) => {
-    setEmail(accEmail);
-    setPassword(accPass);
-    setError(null);
-    toast.success(`Filled credentials for ${label}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,9 +94,6 @@ function LoginForm() {
   return (
     <div className="border border-neutral-300 p-6 rounded-lg space-y-6">
       <header className="space-y-1 border-b border-neutral-300 pb-4">
-        <p className="text-xs font-mono uppercase tracking-widest text-neutral-500">
-          Computer Studies Department • University of Caloocan City
-        </p>
         <div className="flex items-center gap-2">
           <KeyRound className="w-5 h-5 text-neutral-900" />
           <h1 className="text-xl font-bold tracking-tight text-neutral-900 uppercase">System Login</h1>
@@ -133,28 +111,6 @@ function LoginForm() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Column 1: Credentials Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {SHOW_QA_SHORTCUTS && (
-            <div className="space-y-2 pb-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-neutral-800 uppercase tracking-wider">Quick Autofill (QA)</span>
-                <span className="text-[11px] font-mono text-neutral-500">Tap to populate</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {testAccounts.map((acc) => (
-                  <button
-                    key={acc.email}
-                    type="button"
-                    onClick={() => handleQuickFill(acc.email, acc.pass, acc.label)}
-                    className="min-h-[44px] px-2 py-1.5 text-xs border border-neutral-300 hover:border-neutral-900 text-neutral-900 rounded text-center transition-colors touch-manipulation select-none flex flex-col justify-center items-center"
-                    title={`Autofill ${acc.label} credentials`}
-                  >
-                    <span className="font-semibold text-neutral-900">{acc.label}</span>
-                    <span className="text-[10px] text-neutral-500 font-mono">{acc.role}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div className="space-y-1.5">
             <label htmlFor="login-email" className="text-xs font-semibold text-neutral-800 uppercase tracking-wider">Email Address</label>

@@ -3,8 +3,15 @@ import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
 import { recordAuditLog } from '@/lib/audit/log';
-import { getClientIp } from '@/lib/security/rate-limiter';
+import { rateLimiter, getClientIp } from '@/lib/security/rate-limiter';
 import { BuyerType, CardStatus, StubStatus } from '@prisma/client';
+
+const IdempotencyKeySchema = z
+  .string()
+  .trim()
+  .min(8)
+  .max(128)
+  .regex(/^[a-zA-Z0-9:._-]+$/);
 
 const BatchActivationInputSchema = z.object({
   mode: z.enum(['BY_BATCH', 'BY_RANGE', 'BY_SERIALS']),
@@ -113,6 +120,48 @@ export async function POST(request: Request) {
   const session = await getCurrentUser();
   if (!session || session.role !== 'ADMIN') {
     return NextResponse.json({ success: false, error: 'UNAUTHORIZED' }, { status: 403 });
+  }
+
+  // Rate limit batch activations to 30 requests per minute
+  const clientIp = getClientIp(request);
+  const rateLimitKey = `admin:batch:${session.userId || clientIp}`;
+  const rateCheck = rateLimiter.check(rateLimitKey, 30, 60 * 1000);
+
+  if (!rateCheck.allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'RATE_LIMIT_EXCEEDED',
+        message: `Too many batch activation requests. Please retry in ${rateCheck.retryAfterSeconds} seconds.`,
+      },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(rateCheck.retryAfterSeconds || 60) },
+      }
+    );
+  }
+
+  // Validate optional or provided Idempotency-Key header for replay defense
+  const rawIdempotencyHeader = request.headers.get('idempotency-key');
+  let scopedIdempotencyKey: string | null = null;
+  if (rawIdempotencyHeader) {
+    const parsedIdempotencyKey = IdempotencyKeySchema.safeParse(rawIdempotencyHeader);
+    if (!parsedIdempotencyKey.success) {
+      return NextResponse.json(
+        { success: false, error: 'INVALID_IDEMPOTENCY_KEY' },
+        { status: 400 }
+      );
+    }
+    scopedIdempotencyKey = `admin:batch:${session.userId}:${parsedIdempotencyKey.data}`;
+    const existingLog = await prisma.idempotencyLog.findUnique({
+      where: { idempotencyKey: scopedIdempotencyKey },
+    });
+    if (existingLog) {
+      return NextResponse.json(
+        JSON.parse(existingLog.responseBody),
+        { status: existingLog.responseStatus }
+      );
+    }
   }
 
   try {
@@ -297,6 +346,31 @@ export async function POST(request: Request) {
           status: StubStatus.ACTIVATED,
         },
       });
+
+      // 5. Persist idempotency log atomically inside the same transaction
+      if (scopedIdempotencyKey) {
+        const txPayload = {
+          success: true,
+          activatedCount: cardIds.length,
+          transaction: {
+            id: transaction.id,
+            buyerName: transaction.buyerName,
+            buyerType: transaction.buyerType,
+            createdAt: transaction.createdAt,
+          },
+          activatedSerials: cardsToActivate.map((c) => c.cardSerial),
+        };
+
+        await tx.idempotencyLog.upsert({
+          where: { idempotencyKey: scopedIdempotencyKey },
+          update: {},
+          create: {
+            idempotencyKey: scopedIdempotencyKey,
+            responseStatus: 200,
+            responseBody: JSON.stringify(txPayload),
+          },
+        });
+      }
 
       return {
         transaction,

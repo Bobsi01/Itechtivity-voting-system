@@ -192,25 +192,31 @@ export async function GET(request: Request) {
       });
     }
 
-    // Default: ADMIN or other roles
-    const recentAuditLogs = await prisma.auditLog.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-    });
+    if (session.role === 'ADMIN') {
+      const recentAuditLogs = await prisma.auditLog.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
 
-    return NextResponse.json({
-      success: true,
-      role: session.role,
-      history: recentAuditLogs.map((log) => ({
-        id: log.id,
-        action: log.action,
-        resource: log.resource,
-        summary: log.summary || log.action,
-        actorName: log.actorName,
-        actorRole: log.actorRole,
-        createdAt: log.createdAt.toISOString(),
-      })),
-    });
+      return NextResponse.json({
+        success: true,
+        role: 'ADMIN',
+        history: recentAuditLogs.map((log) => ({
+          id: log.id,
+          action: log.action,
+          resource: log.resource,
+          summary: log.summary || log.action,
+          actorName: log.actorName,
+          actorRole: log.actorRole,
+          createdAt: log.createdAt.toISOString(),
+        })),
+      });
+    }
+
+    return NextResponse.json(
+      { success: false, error: 'FORBIDDEN_ROLE' },
+      { status: 403 }
+    );
   } catch (error) {
     console.error('History API error:', error);
     return NextResponse.json(

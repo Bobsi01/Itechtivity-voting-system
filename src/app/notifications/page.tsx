@@ -19,9 +19,6 @@ export default function NotificationsPage() {
             <ArrowLeft className="w-5 h-5 text-neutral-800" />
           </Link>
           <div>
-            <span className="text-xs font-mono uppercase tracking-widest text-neutral-500">
-              Computer Studies Department • University of Caloocan City
-            </span>
             <h1 className="text-xl font-bold uppercase tracking-tight text-neutral-900">
               Notification System & Release Updates
             </h1>
@@ -148,10 +145,10 @@ export default function NotificationsPage() {
                       )}
                     </div>
                     <a
-                      href={`https://github.com/${contrib.githubUsername}`}
+                      href={`https://github.com/${contrib.githubUsername.replace(/^@/, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-mono font-semibold text-neutral-800 hover:text-neutral-900 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-mono font-semibold text-neutral-800 hover:text-neutral-900 transition-colors min-h-[44px] touch-manipulation"
                     >
                       <svg
                         className="w-4 h-4 fill-current"

@@ -1,9 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { RegistrationCounter } from "@/components/registration/registration-counter";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { getCurrentUser } from "@/lib/auth/session";
 
-export default function RegistrationPage() {
+export default async function RegistrationPage() {
+
+  const user = await getCurrentUser();
+  if (!user || (user.role !== "REGISTRATION" && user.role !== "ADMIN")) {
+    redirect("/login?error=UNAUTHORIZED_ROLE");
+  }
+
   return (
     <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6 space-y-6">
       {/* Top Header */}
@@ -17,9 +25,6 @@ export default function RegistrationPage() {
             <ArrowLeft className="w-5 h-5 text-neutral-800" />
           </Link>
           <div>
-            <span className="text-xs font-mono uppercase tracking-widest text-neutral-500">
-              Computer Studies Department • University of Caloocan City
-            </span>
             <h1 className="text-xl font-bold uppercase tracking-tight text-neutral-900">
               Registration & Card Binding
             </h1>

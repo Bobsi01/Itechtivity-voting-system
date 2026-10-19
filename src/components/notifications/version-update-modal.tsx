@@ -36,7 +36,7 @@ export function VersionUpdateModal({ release, isOpen, onClose }: VersionUpdateMo
       role="dialog"
       aria-modal="true"
       aria-labelledby="version-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm touch-manipulation select-none"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm touch-manipulation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -129,10 +129,10 @@ export function VersionUpdateModal({ release, isOpen, onClose }: VersionUpdateMo
                     )}
                   </div>
                   <a
-                    href={`https://github.com/${contrib.githubUsername}`}
+                    href={`https://github.com/${contrib.githubUsername.replace(/^@/, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-mono font-medium text-neutral-800 hover:text-neutral-900 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-mono font-medium text-neutral-800 hover:text-neutral-900 transition-colors min-h-[44px] touch-manipulation"
                   >
                     {/* GitHub SVG Icon */}
                     <svg
@@ -160,7 +160,7 @@ export function VersionUpdateModal({ release, isOpen, onClose }: VersionUpdateMo
           <Link
             href="/notifications"
             onClick={onClose}
-            className="text-xs font-semibold text-neutral-700 hover:text-neutral-900 underline flex items-center gap-1"
+            className="text-xs font-semibold text-neutral-700 hover:text-neutral-900 underline flex items-center gap-1 min-h-[44px] touch-manipulation"
           >
             <span>All Updates Log</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -168,7 +168,7 @@ export function VersionUpdateModal({ release, isOpen, onClose }: VersionUpdateMo
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[44px] px-5 py-2 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 rounded text-xs font-bold uppercase tracking-wider transition-colors touch-manipulation"
+            className="min-h-[44px] px-5 py-2 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 rounded text-xs font-bold uppercase tracking-wider transition-colors touch-manipulation select-none"
           >
             Acknowledge & Close
           </button>
