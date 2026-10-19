@@ -79,6 +79,14 @@ class SlidingWindowRateLimiter {
 export const rateLimiter = new SlidingWindowRateLimiter();
 
 export function getClientIp(request: Request): string {
+  const cfConnectingIp = request.headers.get('cf-connecting-ip');
+  if (cfConnectingIp) {
+    return cfConnectingIp.trim();
+  }
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp) {
+    return realIp.trim();
+  }
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) {
     const hops = forwarded
@@ -88,10 +96,6 @@ export function getClientIp(request: Request): string {
     if (hops.length > 0) {
       return hops[hops.length - 1];
     }
-  }
-  const realIp = request.headers.get('x-real-ip');
-  if (realIp) {
-    return realIp.trim();
   }
   return '127.0.0.1';
 }

@@ -30,8 +30,8 @@
 | <!-- Attach before screenshot here --> | <!-- Attach after screenshot here --> |
 
 ## Contributor Attribution
-- **Contributor Name:** <!-- e.g., Jane Doe -->
-- **GitHub Username:** <!-- e.g., @janedoe -->
+- **Contributor Name:** <!-- e.g., Jane -->
+- **GitHub Username:** <!-- e.g., janedoe (without @) -->
 
 ## Quality & Security Verification Checklist
 - [ ] Code compiles cleanly with zero TypeScript errors (`npx tsc --noEmit`).

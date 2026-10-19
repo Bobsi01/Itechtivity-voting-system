@@ -32,7 +32,7 @@ Examples: `V1.0.0`, `V1.2.14`, `V2.10.45` (double digits are fully supported acr
 
 ### 2.1 Tier 1: Major Production Release (`V1.#.#`)
 * **Scope:** Official production releases, university event deployment milestones, or foundational platform paradigm shifts.
-* **Governance:** **Exclusively incremented by the repository owner (`Bobsi01`)**. No contributor or automated pipeline may increment the major version without explicit owner direction.
+* **Governance:** **Exclusively incremented by the repository owner (Daniel Bobis — `@ItsMeYourNightmare` / `Bobsi01`)**. No contributor or automated pipeline may increment the major version without explicit owner direction.
 * **Reset Behavior:** When `major` increments, `minor` and `patch` reset to zero (e.g., `V0.9.42 -> V1.0.0`).
 
 ### 2.2 Tier 2: Major System Update (`V#.1.#`)
@@ -75,7 +75,7 @@ Examples: `V1.0.0`, `V1.2.14`, `V2.10.45` (double digits are fully supported acr
 
 Every version release published to the notification system must include explicit contributor attribution formatted as:
 ```text
-Contributor: First Name (GitHub Icon) @Username
+Contributor: First Name (GitHub Icon) Username
 ```
 Example:
 `Daniel (GitHub Icon) ItsMeYourNightmare`
@@ -89,19 +89,24 @@ Link all GitHub usernames directly to their profile: `https://github.com/<userna
 All version updates rendered in the Notification Modal and Notification Page must conform to the following structured format:
 
 ```typescript
+export type PointAllocation = 1 | 2 | 3 | 4 | 5;
+export type ReleaseVersion = `V${number}.${number}.${number}`;
+
 export interface VersionRelease {
-  version: string; // e.g. "V1.0.0"
+  version: ReleaseVersion; // e.g. "V1.0.0"
   releaseDate: string; // ISO 8601 Date or "October 19, 2026"
   title: string; // Release headline
+  isLatest: boolean;
   majorHighlights: string[]; // Prominently displayed major updates
   minorChanges: {
     description: string;
-    points: number; // 1 to 5 points
+    points: PointAllocation; // 1 to 5 points
     type: 'fix' | 'feature' | 'perf' | 'security';
   }[];
   contributors: {
     name: string; // First name or display name
     githubUsername: string; // GitHub handle without @
+    role?: string;
   }[];
 }
 ```

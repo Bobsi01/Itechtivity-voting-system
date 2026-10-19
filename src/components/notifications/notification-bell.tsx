@@ -140,8 +140,9 @@ export function NotificationBell({ autoOpenIfUnseen = false }: NotificationBellP
           <div className="pt-2 border-t border-neutral-200 flex flex-col gap-2">
             <button
               type="button"
+              role="menuitem"
               onClick={handleOpenModal}
-              className="w-full min-h-[44px] px-3 py-2 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 rounded text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 touch-manipulation"
+              className="w-full min-h-[44px] px-3 py-2 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 rounded text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 touch-manipulation select-none"
             >
               <Eye className="w-4 h-4" />
               <span>View Update Details</span>
@@ -149,8 +150,9 @@ export function NotificationBell({ autoOpenIfUnseen = false }: NotificationBellP
 
             <Link
               href="/notifications"
+              role="menuitem"
               onClick={() => setIsOpen(false)}
-              className="w-full min-h-[44px] px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 hover:text-neutral-900 transition-colors flex items-center justify-center gap-1.5 touch-manipulation"
+              className="w-full min-h-[44px] px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 hover:text-neutral-900 transition-colors flex items-center justify-center gap-1.5 touch-manipulation select-none"
             >
               <span>All Releases & Changelog</span>
               <ArrowRight className="w-3.5 h-3.5" />

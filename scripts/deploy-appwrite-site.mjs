@@ -66,7 +66,7 @@ async function syncSiteVariables(endpoint, headers) {
 
   const listRes = await fetch(`${endpoint}/sites/${SITE_ID}/variables`, { headers });
   if (!listRes.ok) {
-    throw new Error(`Failed to list site variables: ${await listRes.text()}`);
+    throw new Error(`Failed to list site variables (HTTP ${listRes.status})`);
   }
 
   const listData = await listRes.json();
@@ -106,7 +106,7 @@ async function syncSiteVariables(endpoint, headers) {
           body: JSON.stringify({ variableId: 'unique()', key, value, secret: isSecret }),
         });
         if (!createRes.ok) {
-          throw new Error(`Failed to create site variable ${key}: ${await createRes.text()}`);
+          throw new Error(`Failed to create site variable ${key} (HTTP ${createRes.status})`);
         }
       }
     })

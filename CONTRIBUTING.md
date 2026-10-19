@@ -10,7 +10,7 @@ To maintain production stability, cryptographic security, and UI craftsmanship, 
 
 The repository maintains two primary branches:
 
-- **`production`**: The live production branch deployed to Appwrite Sites and Cloud Functions. This branch is strictly protected: **only the repository owner (`Bobsi01`) has merge permissions**.
+- **`Production`**: The live production branch deployed to Appwrite Sites and Cloud Functions. This branch is strictly protected: **only the repository owner (Daniel Bobis — `@ItsMeYourNightmare` / `Bobsi01`) has merge permissions**.
 - **`staging`**: The pre-production integration and staging branch used for testing and validating pull requests before production releases.
 
 ### Branch Workflow
@@ -40,7 +40,7 @@ All pull requests must follow the format defined in `.github/pull_request_templa
 3. **Mandatory UI Screenshots:** If your PR modifies or adds any user interface components:
    - You **must** attach screenshots or screen recordings showing the changes in a mobile viewport (**360px - 430px**).
    - Include both Before and After comparisons where applicable.
-4. **Contributor Attribution:** Provide your first name and GitHub username for inclusion in system release update notes.
+4. **Contributor Attribution:** Provide your first name and GitHub username (without leading `@`) for inclusion in system release update notes.
 
 ---
 
@@ -50,7 +50,7 @@ Itechtivity 2027 follows a 3-part versioning system: `V<major>.<minor>.<patch>` 
 
 | Segment | Significance | Permissions |
 |---|---|---|
-| **`V1.#.#`** (Major) | Official production releases and university event deployment milestones. | **Repository Owner Only (`Bobsi01`)** |
+| **`V1.#.#`** (Major) | Official production releases and university event deployment milestones. | **Repository Owner Only (Daniel Bobis — `@ItsMeYourNightmare` / `Bobsi01`)** |
 | **`V#.1.#`** (System Update) | Major system features, architectural refactors, or new portal subsystems. | Maintained via PR review and owner merge |
 | **`V#.#.1`** (Minor / Patch) | Incremental bug fixes, UI adjustments, and performance enhancements. | Points-based accumulation (1 to 5 pts) |
 

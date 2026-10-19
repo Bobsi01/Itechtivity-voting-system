@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { getBoothCode } from '../pdf/booth-grid';
 import { generateA4BingoPdfBuffer } from '../pdf/a4-sheet-renderer';
 import { getLoginDestination } from '../auth/redirect';
 import { RegistrationBindSchema } from '../registration/demographics';
+import { getAllReleases } from '../version/releases';
+import { config as middlewareConfig } from '../../middleware';
 
 async function main() {
 
@@ -34,6 +36,33 @@ async function main() {
   }
   assert.equal(RegistrationBindSchema.safeParse({ buyerType: 'VISITOR', buyerName: '  ', cardSerials: ['QA-CARD'] }).success, false);
 
+  // Verify SEC-FIND-01: No hardcoded plaintext passwords in client login bundle
+  const loginSource = await readFile('src/app/login/page.tsx', 'utf8');
+  assert.equal(loginSource.includes('AdminPass2027!'), false, 'Login page must not contain hardcoded passwords');
+  assert.equal(loginSource.includes('testAccounts'), false, 'Login page must not embed testAccounts array');
+
+  // Verify SEC-FIND-03: Middleware matcher explicitly covers root portal paths
+  for (const requiredRoute of ['/admin', '/production', '/registration', '/exhibitor', '/presentation']) {
+    assert.equal(
+      middlewareConfig.matcher.includes(requiredRoute),
+      true,
+      `Middleware matcher must include ${requiredRoute}`
+    );
+  }
+
+  // Verify VER-01 & VER-03: Versioning manifest invariants
+  const releases = getAllReleases();
+  assert.equal(releases.length > 0, true, 'At least one release must be defined');
+  for (const release of releases) {
+    assert.match(release.version, /^V\d+\.\d+\.\d+$/, `Invalid version format: ${release.version}`);
+    for (const change of release.minorChanges) {
+      assert.equal(change.points >= 1 && change.points <= 5, true, `Invalid point allocation: ${change.points}`);
+    }
+    for (const contrib of release.contributors) {
+      assert.equal(contrib.githubUsername.startsWith('@'), false, `GitHub username must not start with @: ${contrib.githubUsername}`);
+    }
+  }
+
   const result = await generateA4BingoPdfBuffer({
     batchNumber: 9999, startCardNumber: 1, totalCards: 4,
     awardsList: Array.from({ length: 6 }, (_, index) => ({ slotNumber: index + 1, title: `QA Award ${index + 1}` })),
@@ -42,7 +71,7 @@ async function main() {
   await mkdir('storage/audit-fix-verification', { recursive: true });
   await writeFile('storage/audit-fix-verification/corrected-grid.pdf', result.buffer);
   assert.equal(result.totalSheets, 1);
-  console.log('PASS: 40 unique booth labels, safe role redirects, all four demographic contracts, whitespace validation, and real PDF generation.');
+  console.log('PASS: 40 unique booth labels, safe role redirects, all four demographic contracts, whitespace validation, security invariants, versioning manifest checks, and real PDF generation.');
 }
 
 main().catch((error: unknown) => {

@@ -270,18 +270,25 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const q = searchParams.get('q')?.trim();
+  const q = searchParams.get('q')?.trim().slice(0, 100);
 
   try {
-    const whereClause = q
-      ? {
-          OR: [
-            { buyerName: { contains: q, mode: 'insensitive' as const } },
-            { studentNumber: { contains: q, mode: 'insensitive' as const } },
-            { cards: { some: { cardSerial: { contains: q.toUpperCase() } } } },
-          ],
-        }
-      : {};
+    const scopeFilter =
+      session.role === 'REGISTRATION' && (!q || q.length < 2)
+        ? { processedByUserId: session.userId }
+        : {};
+
+    const whereClause =
+      q && q.length >= 2
+        ? {
+            ...scopeFilter,
+            OR: [
+              { buyerName: { contains: q, mode: 'insensitive' as const } },
+              { studentNumber: { contains: q, mode: 'insensitive' as const } },
+              { cards: { some: { cardSerial: { contains: q.toUpperCase() } } } },
+            ],
+          }
+        : scopeFilter;
 
     const transactions = await prisma.registrationTransaction.findMany({
       where: whereClause,

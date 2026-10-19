@@ -141,27 +141,25 @@ export async function POST(request: Request) {
     );
   }
 
-  // Validate optional or provided Idempotency-Key header for replay defense
+  // Enforce mandatory and bounded Idempotency-Key header for network retry safety
   const rawIdempotencyHeader = request.headers.get('idempotency-key');
-  let scopedIdempotencyKey: string | null = null;
-  if (rawIdempotencyHeader) {
-    const parsedIdempotencyKey = IdempotencyKeySchema.safeParse(rawIdempotencyHeader);
-    if (!parsedIdempotencyKey.success) {
-      return NextResponse.json(
-        { success: false, error: 'INVALID_IDEMPOTENCY_KEY' },
-        { status: 400 }
-      );
-    }
-    scopedIdempotencyKey = `admin:batch:${session.userId}:${parsedIdempotencyKey.data}`;
-    const existingLog = await prisma.idempotencyLog.findUnique({
-      where: { idempotencyKey: scopedIdempotencyKey },
-    });
-    if (existingLog) {
-      return NextResponse.json(
-        JSON.parse(existingLog.responseBody),
-        { status: existingLog.responseStatus }
-      );
-    }
+  const parsedIdempotencyKey = IdempotencyKeySchema.safeParse(rawIdempotencyHeader);
+  if (!parsedIdempotencyKey.success) {
+    return NextResponse.json(
+      { success: false, error: 'MISSING_IDEMPOTENCY_KEY' },
+      { status: 400 }
+    );
+  }
+
+  const scopedIdempotencyKey = `admin:batch:${session.userId}:${parsedIdempotencyKey.data}`;
+  const existingLog = await prisma.idempotencyLog.findUnique({
+    where: { idempotencyKey: scopedIdempotencyKey },
+  });
+  if (existingLog) {
+    return NextResponse.json(
+      JSON.parse(existingLog.responseBody),
+      { status: existingLog.responseStatus }
+    );
   }
 
   try {
@@ -348,29 +346,27 @@ export async function POST(request: Request) {
       });
 
       // 5. Persist idempotency log atomically inside the same transaction
-      if (scopedIdempotencyKey) {
-        const txPayload = {
-          success: true,
-          activatedCount: cardIds.length,
-          transaction: {
-            id: transaction.id,
-            buyerName: transaction.buyerName,
-            buyerType: transaction.buyerType,
-            createdAt: transaction.createdAt,
-          },
-          activatedSerials: cardsToActivate.map((c) => c.cardSerial),
-        };
+      const txPayload = {
+        success: true,
+        activatedCount: cardIds.length,
+        transaction: {
+          id: transaction.id,
+          buyerName: transaction.buyerName,
+          buyerType: transaction.buyerType,
+          createdAt: transaction.createdAt,
+        },
+        activatedSerials: cardsToActivate.map((c) => c.cardSerial),
+      };
 
-        await tx.idempotencyLog.upsert({
-          where: { idempotencyKey: scopedIdempotencyKey },
-          update: {},
-          create: {
-            idempotencyKey: scopedIdempotencyKey,
-            responseStatus: 200,
-            responseBody: JSON.stringify(txPayload),
-          },
-        });
-      }
+      await tx.idempotencyLog.upsert({
+        where: { idempotencyKey: scopedIdempotencyKey },
+        update: {},
+        create: {
+          idempotencyKey: scopedIdempotencyKey,
+          responseStatus: 200,
+          responseBody: JSON.stringify(txPayload),
+        },
+      });
 
       return {
         transaction,
@@ -379,7 +375,6 @@ export async function POST(request: Request) {
       };
     });
 
-    const clientIp = getClientIp(request);
     await recordAuditLog({
       userId: session.userId,
       action: 'BATCH_CARDS_ACTIVATED',

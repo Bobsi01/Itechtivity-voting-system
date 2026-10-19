@@ -29,7 +29,7 @@ async function syncFunctionVariables(endpoint, headers, functionId, envMap) {
 
   const existingRes = await fetch(`${endpoint}/functions/${functionId}/variables`, { headers });
   if (!existingRes.ok) {
-    throw new Error(`Failed to list variables for ${functionId}: ${await existingRes.text()}`);
+    throw new Error(`Failed to list variables for ${functionId} (HTTP ${existingRes.status})`);
   }
   const existingList = await existingRes.json();
   const existingByKey = new Map((existingList.variables || []).map((v) => [v.key, v]));
@@ -46,7 +46,7 @@ async function syncFunctionVariables(endpoint, headers, functionId, envMap) {
           body: JSON.stringify({ key, value }),
         });
         if (!updateRes.ok) {
-          throw new Error(`Failed to update variable ${key} for ${functionId}: ${await updateRes.text()}`);
+          throw new Error(`Failed to update variable ${key} for ${functionId} (HTTP ${updateRes.status})`);
         }
       } else {
         const createRes = await fetch(`${endpoint}/functions/${functionId}/variables`, {
@@ -55,7 +55,7 @@ async function syncFunctionVariables(endpoint, headers, functionId, envMap) {
           body: JSON.stringify({ key, value }),
         });
         if (!createRes.ok) {
-          throw new Error(`Failed to create variable ${key} for ${functionId}: ${await createRes.text()}`);
+          throw new Error(`Failed to create variable ${key} for ${functionId} (HTTP ${createRes.status})`);
         }
       }
     })
