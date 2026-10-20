@@ -92,8 +92,8 @@ export async function GET(request: Request, context: RouteContext) {
           fs.mkdirSync(storageDir, { recursive: true });
         }
         fs.writeFileSync(resolvedPath, fileBuffer);
-      } catch {
-        // Ignore read-only filesystem errors on stateless dynos
+      } catch (cacheErr) {
+        console.warn('PDF cache write skipped on stateless container:', cacheErr);
       }
     }
   }

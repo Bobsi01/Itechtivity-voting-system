@@ -74,6 +74,7 @@ export function CardInspectorCard({ selectedSerial, onClearSelectedSerial }: Car
   const [inspectedCard, setInspectedCard] = useState<InspectedCardRecord | null>(null);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [isMutating, setIsMutating] = useState<boolean>(false);
+  const [showVoidConfirm, setShowVoidConfirm] = useState<boolean>(false);
 
   const fetchCardBySerial = async (targetSerial: string) => {
 
@@ -196,7 +197,7 @@ export function CardInspectorCard({ selectedSerial, onClearSelectedSerial }: Car
         <button
           type="submit"
           disabled={isSearching}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 border border-neutral-900 text-neutral-900 hover:border-neutral-950 rounded text-xs font-semibold transition-colors disabled:opacity-50 min-h-[44px]"
+          className="flex items-center justify-center gap-1.5 px-4 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation select-none"
         >
           <Search className="w-4 h-4" />
           <span>{isSearching ? "Inspecting..." : "Inspect Card"}</span>
@@ -241,9 +242,9 @@ export function CardInspectorCard({ selectedSerial, onClearSelectedSerial }: Car
               {inspectedCard.status !== "VOID" ? (
                 <button
                   type="button"
-                  onClick={() => handleToggleCardVoidStatus("VOID")}
+                  onClick={() => setShowVoidConfirm(true)}
                   disabled={isMutating}
-                  className="flex items-center gap-1.5 px-3 py-2 border border-neutral-900 rounded text-xs font-semibold text-neutral-900 hover:border-neutral-700 transition-colors min-h-[44px]"
+                  className="flex items-center gap-1.5 px-3 py-2 border border-red-500 text-red-600 bg-white hover:bg-red-600 hover:text-white active:bg-red-700 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none"
                 >
                   <ShieldAlert className="w-4 h-4" />
                   <span>Void Card</span>
@@ -253,7 +254,7 @@ export function CardInspectorCard({ selectedSerial, onClearSelectedSerial }: Car
                   type="button"
                   onClick={() => handleToggleCardVoidStatus("RESTORE")}
                   disabled={isMutating}
-                  className="flex items-center gap-1.5 px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 transition-colors min-h-[44px]"
+                  className="flex items-center gap-1.5 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none"
                 >
                   <RotateCcw className="w-4 h-4" />
                   <span>Restore Card</span>
@@ -459,6 +460,44 @@ export function CardInspectorCard({ selectedSerial, onClearSelectedSerial }: Car
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Void Card Confirmation Modal */}
+      {showVoidConfirm && inspectedCard && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="void-card-dialog-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+        >
+          <div className="bg-white border border-neutral-300 rounded-lg max-w-md w-full p-6 space-y-4 shadow-lg">
+            <h3 id="void-card-dialog-title" className="text-base font-bold text-neutral-900 uppercase">
+              Void Bingo Card?
+            </h3>
+            <p className="text-xs text-neutral-600 leading-relaxed font-mono">
+              Are you sure you want to void card <strong className="text-neutral-900 font-bold">{inspectedCard.cardSerial}</strong>? All unredeemed stubs will be deactivated immediately.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowVoidConfirm(false)}
+                className="px-4 py-2 border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowVoidConfirm(false);
+                  handleToggleCardVoidStatus("VOID");
+                }}
+                disabled={isMutating}
+                className="px-4 py-2 border-2 border-red-600 bg-red-600 text-white hover:bg-red-700 active:bg-red-800 rounded text-xs font-bold uppercase tracking-wider transition-colors min-h-[44px] touch-manipulation select-none disabled:opacity-50"
+              >
+                Confirm Void Card
+              </button>
             </div>
           </div>
         </div>

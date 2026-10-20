@@ -3,6 +3,7 @@ import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
 import { recordAuditLog, createHumanReadableSummary } from '@/lib/audit/log';
+import { broadcastSystemConfigEvent } from '@/lib/appwrite/server';
 import { getClientIp } from '@/lib/security/rate-limiter';
 
 const UpdateConfigSchema = z.object({
@@ -124,6 +125,14 @@ export async function POST(request: Request) {
         ipAddress: clientIp,
       });
     }
+
+    // Broadcast updated system configuration and voting freeze state to all clients
+    await broadcastSystemConfigEvent({
+      eventType: 'SYSTEM_CONFIG_EVENT',
+      isVotingOpen: updated.isVotingOpen,
+      isAwardsLocked: updated.isAwardsLocked,
+      timestamp: new Date().toISOString(),
+    });
 
     return NextResponse.json({
       success: true,

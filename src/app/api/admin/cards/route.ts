@@ -169,14 +169,14 @@ export async function PATCH(request: Request) {
           data: { status: 'VOID' },
         });
 
-        // Deactivate any unredeemed stubs so they cannot pass the ACTIVATED SQL guard
+        // Transition unredeemed stubs to VOID status to prevent unauthorized voting attempts
         await tx.ticketStub.updateMany({
           where: {
             bingoCardId: cardId,
-            status: 'ACTIVATED',
+            status: { in: ['ACTIVATED', 'INACTIVE'] },
           },
           data: {
-            status: 'INACTIVE',
+            status: 'VOID',
           },
         });
 
@@ -190,17 +190,16 @@ export async function PATCH(request: Request) {
         data: { status: restoredStatus },
       });
 
-      if (restoredStatus === 'ACTIVATED') {
-        await tx.ticketStub.updateMany({
-          where: {
-            bingoCardId: cardId,
-            status: 'INACTIVE',
-          },
-          data: {
-            status: 'ACTIVATED',
-          },
-        });
-      }
+      // Restore previously voided stubs back to their appropriate pre-void state
+      await tx.ticketStub.updateMany({
+        where: {
+          bingoCardId: cardId,
+          status: 'VOID',
+        },
+        data: {
+          status: restoredStatus === 'ACTIVATED' ? 'ACTIVATED' : 'INACTIVE',
+        },
+      });
 
       return restored;
     });

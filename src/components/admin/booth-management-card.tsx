@@ -162,7 +162,7 @@ export function BoothManagementCard() {
               }
               setIsFormExpanded(!isFormExpanded);
             }}
-            className="flex items-center gap-1.5 px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 transition-colors min-h-[44px]"
+            className="flex items-center gap-1.5 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none"
           >
             {isFormExpanded ? (
               <>
@@ -181,7 +181,7 @@ export function BoothManagementCard() {
             type="button"
             onClick={fetchBooths}
             disabled={isLoading}
-            className="p-2.5 border border-neutral-300 hover:border-neutral-900 rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2.5 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none"
             aria-label="Refresh booths"
           >
             <RefreshCw className={`w-4 h-4 text-neutral-700 ${isLoading ? "animate-spin" : ""}`} />
@@ -312,14 +312,14 @@ export function BoothManagementCard() {
                 resetForm();
                 setIsFormExpanded(false);
               }}
-              className="px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 transition-colors min-h-[44px]"
+              className="px-3 py-2 border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-1.5 px-4 py-2  text-neutral-900  rounded text-xs font-semibold transition-colors disabled:opacity-50 min-h-[44px]"
+              className="flex items-center gap-1.5 px-4 py-2 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 active:bg-black rounded text-xs font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 min-h-[44px] touch-manipulation select-none"
             >
               <Plus className="w-4 h-4" />
               <span>Save Booth Record</span>
@@ -344,7 +344,7 @@ export function BoothManagementCard() {
           aria-label="Previous registry page"
           disabled={page === 0}
           onClick={() => setPageIndex(page - 1)}
-          className="min-h-11 border border-neutral-300 hover:border-neutral-900 rounded px-3 disabled:opacity-40 flex items-center gap-1 transition-colors"
+          className="min-h-11 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded px-3 disabled:opacity-40 flex items-center gap-1 transition-colors touch-manipulation select-none"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Previous</span>
@@ -355,7 +355,7 @@ export function BoothManagementCard() {
           aria-label="Next registry page"
           disabled={page + 1 >= pageCount}
           onClick={() => setPageIndex(page + 1)}
-          className="min-h-11 border border-neutral-300 hover:border-neutral-900 rounded px-3 disabled:opacity-40 flex items-center gap-1 transition-colors"
+          className="min-h-11 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded px-3 disabled:opacity-40 flex items-center gap-1 transition-colors touch-manipulation select-none"
         >
           <span>Next</span>
           <ChevronRight className="w-4 h-4" />
@@ -400,7 +400,7 @@ export function BoothManagementCard() {
                 <button
                   type="button"
                   onClick={() => handleSelectBoothForEdit(booth)}
-                  className="p-2.5 border border-neutral-300 hover:border-neutral-900 rounded text-neutral-700 hover:text-neutral-900 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  className="p-2.5 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none"
                   aria-label={`Edit booth ${booth.code}`}
                 >
                   <Edit2 className="w-4 h-4" />

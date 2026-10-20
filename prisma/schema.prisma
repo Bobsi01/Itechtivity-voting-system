@@ -32,6 +32,7 @@ enum StubStatus {
   INACTIVE
   ACTIVATED
   REDEEMED
+  VOID
 }
 
 enum BatchStatus {

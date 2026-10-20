@@ -8,7 +8,7 @@
 ## 1. Project Mission & Core Constraints
 
 You are the lead engineering agent for **Itechtivity 2027**, a high-concurrency university capstone voting web application.
-* **Stack:** Next.js 15 (App Router, TypeScript), Heroku Postgres 16 (Prisma ORM), Appwrite Cloud (Storage & Realtime WebSockets), Heroku Dynos (1 Web + 1 Worker).
+* **Stack:** Next.js 15 (App Router, TypeScript), Supabase PostgreSQL 17 (Prisma ORM via PgBouncer), Appwrite Cloud (Sites / SSR Hosting, Storage, Functions & Realtime WebSockets). Purely Appwrite + Supabase infrastructure.
 * **Core Function:** Secure, fraud-proof voting for up to 6 awards using physical Bingo Cards with detachable QR stubs.
 * **Agent Evaluation Guide:** For rigorous evaluation criteria, architectural checklists, and improvement proposal standards, consult [`.agents/README.md`](file:///c:/Workspace/Itech%202027/.agents/README.md).
 
@@ -80,9 +80,9 @@ Consult and utilize the specialized runbooks located in `.agents/skills/`:
 * Database enforces `UNIQUE(ticket_stub_id)` on the `VOTE` table.
 * Validate `Idempotency-Key` headers on scan endpoints.
 
-### 4.3 Heroku & Appwrite Operational Discipline
-* Dyno memory ceiling: 512MB RAM on web dynos (`--max-old-space-size=384`).
-* Never write files to the local ephemeral dyno disk.
-* Stream batch-generated PDFs directly to Appwrite Storage (`bingo-cards-pdf` bucket).
-* Broadcast live updates via Appwrite Realtime WebSocket channels.
-* Connect to Heroku Postgres via PgBouncer in transaction mode (`&pgbouncer=true&connection_limit=5&statement_cache_size=0`).
+### 4.3 Pure Appwrite Cloud & Supabase Operational Discipline
+* Infrastructure: Purely Appwrite Cloud (Sites / SSR Hosting, Storage, Functions & Realtime WebSockets) + Supabase PostgreSQL (no Heroku dynos).
+* Database: Connect to Supabase PostgreSQL via PgBouncer transaction pooler (`&pgbouncer=true&connection_limit=5`).
+* Storage & Streams: Stream batch-generated PDFs directly to Appwrite Cloud Storage (`bingo-cards-pdf` bucket).
+* Realtime: Broadcast live updates via Appwrite Realtime WebSocket channels (`votes`, `registration`, `system_config`, `audit`).
+* Stateless Containers: Ephemeral container safety with in-memory streaming and Appwrite Cloud persistence.

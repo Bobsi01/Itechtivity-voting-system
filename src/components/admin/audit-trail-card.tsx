@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import { subscribeToAuditEvents, createResilientPoller } from "@/lib/appwrite/client";
 
 export interface AuditLogItem {
   id: string;
@@ -76,6 +77,25 @@ export function AuditTrailCard() {
 
   useEffect(() => {
     fetchLogs();
+
+    const poller = createResilientPoller(() => fetchLogs(), {
+      initialIntervalMs: 15000,
+      maxIntervalMs: 60000,
+      backoffFactor: 1.5,
+    });
+
+    const unsubscribe = subscribeToAuditEvents((payload) => {
+      toast.info(`Audit Log: ${payload.action} on ${payload.resource}`);
+      fetchLogs();
+      poller.reset();
+    });
+
+    poller.start();
+
+    return () => {
+      unsubscribe();
+      poller.stop();
+    };
   }, [fetchLogs]);
 
   const handleExportAuditCsv = () => {
@@ -164,7 +184,7 @@ export function AuditTrailCard() {
               setPage(1);
             }}
             placeholder="Search by attendee, serial, booth, actor, or keyword..."
-            className="w-full pl-9 pr-3 py-2.5 font-mono text-base sm:text-xs border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+            className="w-full pl-9 pr-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
           />
         </div>
 
@@ -180,7 +200,7 @@ export function AuditTrailCard() {
               setResourceFilter(e.target.value);
               setPage(1);
             }}
-            className="w-full px-3 py-2.5 font-mono text-base sm:text-xs border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] bg-white"
+            className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] bg-white"
           >
             <option value="ALL">All Event Categories</option>
             <option value="AUTH">Authentication & Sessions</option>
@@ -207,7 +227,7 @@ export function AuditTrailCard() {
               setRoleFilter(e.target.value);
               setPage(1);
             }}
-            className="w-full px-3 py-2.5 font-mono text-base sm:text-xs border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] bg-white"
+            className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] bg-white"
           >
             <option value="ALL">All Actor Roles</option>
             <option value="ADMIN">Admin Staff</option>
@@ -282,7 +302,7 @@ export function AuditTrailCard() {
                   <button
                     type="button"
                     onClick={() => setSelectedLog(log)}
-                    className="px-3 py-1.5 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 flex items-center gap-1.5 transition-colors min-h-[44px]"
+                    className="px-3 py-1.5 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors min-h-[44px] touch-manipulation select-none"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     <span>View Payload</span>
@@ -300,7 +320,7 @@ export function AuditTrailCard() {
           type="button"
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={page <= 1 || isLoading}
-          className="px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 disabled:opacity-40 transition-colors min-h-[44px] flex items-center gap-1"
+          className="px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold disabled:opacity-40 transition-colors min-h-[44px] flex items-center gap-1 touch-manipulation select-none"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Previous</span>
@@ -314,7 +334,7 @@ export function AuditTrailCard() {
           type="button"
           onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
           disabled={page >= totalPages || isLoading}
-          className="px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 disabled:opacity-40 transition-colors min-h-[44px] flex items-center gap-1"
+          className="px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold disabled:opacity-40 transition-colors min-h-[44px] flex items-center gap-1 touch-manipulation select-none"
         >
           <span>Next</span>
           <ChevronRight className="w-4 h-4" />
@@ -400,7 +420,7 @@ export function AuditTrailCard() {
               <button
                 type="button"
                 onClick={() => setSelectedLog(null)}
-                className="px-4 py-2 border border-neutral-900 hover:border-neutral-700 rounded text-xs font-bold text-neutral-900 min-h-[44px]"
+                className="px-4 py-2 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 active:bg-black rounded text-xs font-bold uppercase tracking-wider transition-colors min-h-[44px] touch-manipulation select-none"
               >
                 Close Inspector
               </button>

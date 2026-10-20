@@ -60,7 +60,7 @@ export function DataExportCard() {
               <a
                 href={item.href}
                 download={item.filename}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 border-2 border-neutral-900 hover:border-neutral-700 rounded text-xs font-bold text-neutral-900 transition-colors min-h-[44px] whitespace-nowrap self-start sm:self-center"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 border-2 border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white rounded text-xs font-bold transition-colors min-h-[44px] whitespace-nowrap self-start sm:self-center touch-manipulation select-none"
               >
                 <Download className="w-4 h-4 text-neutral-900" />
                 <span>Export CSV</span>

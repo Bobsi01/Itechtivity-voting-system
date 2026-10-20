@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Trophy, Maximize, Minimize, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { subscribeToVoteEvents, createResilientPoller } from "@/lib/appwrite/client";
 
 export interface StageAwardData {
   id: string;
@@ -24,13 +25,122 @@ interface AwardsStageProps {
   awards: StageAwardData[];
 }
 
+interface StatsApiResponse {
+  success: boolean;
+  leaderboard?: Array<{
+    boothId: string;
+    code: string;
+    projectTitle: string;
+    category: string;
+    totalVotes: number;
+    awardCounts: Record<string, number>;
+  }>;
+}
+
 export function AwardsStage({ awards }: AwardsStageProps) {
 
+  const [stageAwards, setStageAwards] = useState<StageAwardData[]>(awards);
   const [selectedSlot, setSelectedSlot] = useState<number>(awards[0]?.slotNumber ?? 1);
   const [revealedRanks, setRevealedRanks] = useState<Record<number, boolean>>({});
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
-  const currentAward = awards.find((a) => a.slotNumber === selectedSlot) || awards[0];
+  const currentAward = stageAwards.find((a) => a.slotNumber === selectedSlot) || stageAwards[0];
+
+  useEffect(() => {
+
+    const fetchLatestStats = async () => {
+
+      try {
+        const res = await fetch("/api/admin/stats");
+        if (!res.ok) return;
+        const data: StatsApiResponse = await res.json();
+        if (!data.success || !Array.isArray(data.leaderboard)) return;
+
+        setStageAwards((prevAwards) => {
+          return prevAwards.map((award) => {
+            const candidates = (data.leaderboard || [])
+              .map((booth) => ({
+                boothCode: booth.code,
+                projectTitle: booth.projectTitle,
+                category: booth.category,
+                tableNumber: null,
+                teamMembers: null,
+                votes: booth.awardCounts[award.title] ?? 0,
+              }))
+              .filter((c) => c.votes > 0)
+              .sort((a, b) => b.votes - a.votes)
+              .slice(0, 3)
+              .map((c, idx) => ({ ...c, rank: idx + 1 }));
+
+            if (candidates.length === 0) return award;
+
+            return {
+              ...award,
+              winners: candidates,
+            };
+          });
+        });
+      } catch (err) {
+        console.warn("AwardsStage polling fallback error:", err);
+      }
+    };
+
+    const poller = createResilientPoller(fetchLatestStats, {
+      initialIntervalMs: 5000,
+      maxIntervalMs: 30000,
+      backoffFactor: 1.5,
+    });
+
+    const unsubscribe = subscribeToVoteEvents((payload) => {
+      setStageAwards((prevAwards) => {
+        return prevAwards.map((award) => {
+          if (award.id !== payload.awardId && award.slotNumber !== payload.slotNumber) {
+            return award;
+          }
+
+          const updatedWinners = [...award.winners];
+          const existingIndex = updatedWinners.findIndex((w) => w.boothCode === payload.boothCode);
+
+          if (existingIndex >= 0) {
+            updatedWinners[existingIndex] = {
+              ...updatedWinners[existingIndex],
+              votes: payload.totalVotesForAward,
+            };
+          } else {
+            updatedWinners.push({
+              rank: 0,
+              boothCode: payload.boothCode,
+              projectTitle: `Booth ${payload.boothCode}`,
+              category: "Capstone",
+              tableNumber: null,
+              teamMembers: null,
+              votes: payload.totalVotesForAward,
+            });
+          }
+
+          updatedWinners.sort((a, b) => b.votes - a.votes);
+          const reRanked = updatedWinners.slice(0, 3).map((item, idx) => ({
+            ...item,
+            rank: idx + 1,
+          }));
+
+          return {
+            ...award,
+            winners: reRanked,
+          };
+        });
+      });
+
+      poller.reset();
+    });
+
+    poller.start();
+
+    return () => {
+      unsubscribe();
+      poller.stop();
+    };
+  }, []);
 
   const toggleFullscreen = () => {
 
@@ -87,7 +197,7 @@ export function AwardsStage({ awards }: AwardsStageProps) {
           <button
             type="button"
             onClick={handleRevealAll}
-            className="px-3 py-2 border border-neutral-900 hover:border-neutral-700 rounded text-xs font-bold text-neutral-900 min-h-[44px] flex items-center gap-1.5"
+            className="px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-bold min-h-[44px] flex items-center gap-1.5 transition-colors touch-manipulation select-none"
           >
             <Eye className="w-3.5 h-3.5" />
             <span>Reveal All</span>
@@ -95,7 +205,7 @@ export function AwardsStage({ awards }: AwardsStageProps) {
           <button
             type="button"
             onClick={handleResetReveals}
-            className="px-3 py-2 border border-neutral-300 hover:border-neutral-700 rounded text-xs font-semibold text-neutral-800 min-h-[44px] flex items-center gap-1.5"
+            className="px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold min-h-[44px] flex items-center gap-1.5 transition-colors touch-manipulation select-none"
           >
             <EyeOff className="w-3.5 h-3.5" />
             <span>Hide Standings</span>
@@ -103,7 +213,7 @@ export function AwardsStage({ awards }: AwardsStageProps) {
           <button
             type="button"
             onClick={toggleFullscreen}
-            className="p-2.5 border border-neutral-300 hover:border-neutral-900 rounded min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-800"
+            className="p-2.5 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors touch-manipulation select-none"
             aria-label="Toggle Fullscreen"
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
@@ -113,7 +223,7 @@ export function AwardsStage({ awards }: AwardsStageProps) {
 
       {/* Award Category Selector Bar */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
-        {awards.map((award) => (
+        {stageAwards.map((award) => (
           <button
             key={award.id}
             type="button"
@@ -186,7 +296,7 @@ export function AwardsStage({ awards }: AwardsStageProps) {
                     <button
                       type="button"
                       onClick={() => toggleRank(2)}
-                      className="px-4 py-2 border border-neutral-900 hover:border-neutral-700 rounded text-xs font-bold text-neutral-900 min-h-[44px] flex items-center justify-center gap-1.5 mx-auto"
+                      className="px-4 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-bold min-h-[44px] flex items-center justify-center gap-1.5 mx-auto transition-colors touch-manipulation select-none"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>Reveal 2nd Place</span>
@@ -290,7 +400,7 @@ export function AwardsStage({ awards }: AwardsStageProps) {
                     <button
                       type="button"
                       onClick={() => toggleRank(3)}
-                      className="px-4 py-2 border border-neutral-900 hover:border-neutral-700 rounded text-xs font-bold text-neutral-900 min-h-[44px] flex items-center justify-center gap-1.5 mx-auto"
+                      className="px-4 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-bold min-h-[44px] flex items-center justify-center gap-1.5 mx-auto transition-colors touch-manipulation select-none"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>Reveal 3rd Place</span>

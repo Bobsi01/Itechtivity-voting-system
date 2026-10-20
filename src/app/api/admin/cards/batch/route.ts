@@ -3,6 +3,7 @@ import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
 import { recordAuditLog } from '@/lib/audit/log';
+import { broadcastCardActivationEvent } from '@/lib/appwrite/server';
 import { rateLimiter, getClientIp } from '@/lib/security/rate-limiter';
 import { BuyerType, CardStatus, StubStatus } from '@prisma/client';
 
@@ -191,9 +192,9 @@ export async function POST(request: Request) {
     } = parsed.data;
 
     let targetCardSerials: string[] = [];
+    let resolvedBatchId = pdfBatchId;
 
     if (mode === 'BY_BATCH') {
-      let resolvedBatchId = pdfBatchId;
       if (!resolvedBatchId && batchNumber) {
         const found = await prisma.pdfBatch.findUnique({
           where: { batchNumber },
@@ -389,6 +390,15 @@ export async function POST(request: Request) {
         lastSerial: result.activatedSerials[result.activatedSerials.length - 1],
       },
       ipAddress: clientIp,
+    });
+
+    // Broadcast sanitized card batch activation signal over Appwrite Realtime WebSockets
+    await broadcastCardActivationEvent({
+      eventType: 'CARD_BATCH_ACTIVATED',
+      batchId: (mode === 'BY_BATCH' ? resolvedBatchId : pdfBatchId) || undefined,
+      mode: mode as 'BY_BATCH' | 'BY_RANGE' | 'BY_SERIALS',
+      activatedCount: result.activatedCount,
+      timestamp: new Date().toISOString(),
     });
 
     return NextResponse.json({

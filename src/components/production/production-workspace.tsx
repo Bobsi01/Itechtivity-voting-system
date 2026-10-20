@@ -5,7 +5,7 @@ import { BatchGeneratorCard } from "@/components/production/batch-generator-card
 import { PdfFileExplorer } from "@/components/production/pdf-file-explorer";
 import { PdfPreviewModal } from "@/components/production/pdf-preview-modal";
 import { type PdfFileItem } from "@/lib/utils/format";
-import { subscribeToBatchEvents } from "@/lib/appwrite/client";
+import { subscribeToBatchEvents, createResilientPoller } from "@/lib/appwrite/client";
 import { toast } from "sonner";
 
 export function ProductionWorkspace() {
@@ -36,15 +36,35 @@ export function ProductionWorkspace() {
 
     fetchFiles();
 
+    const poller = createResilientPoller(() => fetchFiles(), {
+      initialIntervalMs: 5000,
+      maxIntervalMs: 30000,
+      backoffFactor: 1.5,
+    });
+
     const unsubscribe = subscribeToBatchEvents((batchEvent) => {
-      if (batchEvent.status === "COMPLETED") {
-        toast.info(`Appwrite Cloud Sync: Batch #${batchEvent.batchNumber} archived to Storage`);
+      if (batchEvent.status === "PENDING") {
+        toast.info(`PDF Generation Queued: Batch #${batchEvent.batchNumber} pending`);
+        poller.reset();
+      } else if (batchEvent.status === "PROCESSING") {
+        toast.info(`PDF Generation Processing: Batch #${batchEvent.batchNumber} in progress`);
+        poller.reset();
+      } else if (batchEvent.status === "COMPLETED") {
+        toast.success(`Appwrite Cloud Sync: Batch #${batchEvent.batchNumber} archived to Storage`);
         fetchFiles();
+        poller.reset();
+      } else if (batchEvent.status === "FAILED") {
+        toast.error(`PDF Generation Failed: Batch #${batchEvent.batchNumber} encountered an error`);
+        fetchFiles();
+        poller.reset();
       }
     });
 
+    poller.start();
+
     return () => {
       unsubscribe();
+      poller.stop();
     };
   }, []);
 

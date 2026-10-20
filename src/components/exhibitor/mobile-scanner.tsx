@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { CheckCircle2, AlertCircle, RefreshCw, ArrowRight, History, Search, Keyboard, Award } from "lucide-react";
+import { CheckCircle2, AlertCircle, AlertTriangle, RefreshCw, ArrowRight, History, Search, Keyboard, Award } from "lucide-react";
 import { QrScanner } from "@/components/ui/qr-scanner";
 import { toast } from "sonner";
-import { subscribeToVoteEvents } from "@/lib/appwrite/client";
+import {
+  subscribeToVoteEvents,
+  subscribeToSystemConfigEvents,
+  createResilientPoller,
+} from "@/lib/appwrite/client";
 import { SimpleSelect, type SimpleSelectOption } from "@/components/ui/simple-select";
 
 interface ScopedBoothTally {
@@ -28,6 +32,7 @@ export function MobileScanner() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showManualInput, setShowManualInput] = useState<boolean>(false);
   const [manualInputText, setManualInputText] = useState<string>("");
+  const [isVotingOpen, setIsVotingOpen] = useState<boolean>(true);
 
   const [lastScanResult, setLastScanResult] = useState<{
     success: boolean;
@@ -129,28 +134,51 @@ export function MobileScanner() {
 
   useEffect(() => {
 
-    if (!boothData?.id) return;
-
-    const unsubscribe = subscribeToVoteEvents((payload) => {
-      if (payload.boothId === boothData.id) {
-        fetchBoothTally(boothData.id);
+    const unsubscribeConfig = subscribeToSystemConfigEvents((payload) => {
+      setIsVotingOpen(payload.isVotingOpen);
+      if (!payload.isVotingOpen) {
+        toast.error("Emergency Freeze: Voting paused by administrator");
+      } else {
+        toast.info("Voting Resumed: Scanner active");
       }
     });
 
-    // Polling fallback every 10 seconds for multi-device sync when Appwrite Realtime is dormant
-    const pollInterval = setInterval(() => {
-      fetchBoothTally(boothData.id);
-    }, 10000);
+    if (!boothData?.id) {
+      return () => {
+        unsubscribeConfig();
+      };
+    }
+
+    const poller = createResilientPoller(() => fetchBoothTally(boothData.id), {
+      initialIntervalMs: 10000,
+      maxIntervalMs: 30000,
+      backoffFactor: 1.5,
+    });
+
+    const unsubscribeVotes = subscribeToVoteEvents((payload) => {
+      if (payload.boothId === boothData.id) {
+        fetchBoothTally(boothData.id);
+        poller.reset();
+      }
+    });
+
+    poller.start();
 
     return () => {
-      unsubscribe();
-      clearInterval(pollInterval);
+      unsubscribeConfig();
+      unsubscribeVotes();
+      poller.stop();
     };
   }, [boothData?.id, fetchBoothTally]);
 
   const handleProcessScan = async (qrPayload: string) => {
 
-    if (isProcessingScanRef.current || !boothData) return;
+    if (!isVotingOpen || isProcessingScanRef.current || !boothData) {
+      if (!isVotingOpen) {
+        toast.error("Voting is currently frozen. Cannot submit votes.");
+      }
+      return;
+    }
     isProcessingScanRef.current = true;
     setIsSubmitting(true);
 
@@ -255,6 +283,25 @@ export function MobileScanner() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Column 1: Viewfinder & Input Controls */}
         <div className="space-y-4">
+          {/* Emergency Voting Freeze Alert Banner */}
+          {!isVotingOpen && (
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="border-2 border-neutral-900 rounded-lg p-4 bg-white text-neutral-900 space-y-1.5"
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-neutral-900 flex-shrink-0" />
+                <span className="font-bold text-sm uppercase tracking-wider">
+                  Emergency Voting Freeze Active
+                </span>
+              </div>
+              <p className="text-xs font-mono text-neutral-700">
+                Administrator has temporarily frozen all voting across the venue. Camera scanning and stub redemption are paused until voting is reopened.
+              </p>
+            </div>
+          )}
+
           {/* Booth Header & Scoped Identity (Fixed layout with min-w-0 and flex-shrink-0 to prevent button overlap) */}
           <div className="border border-neutral-300 p-4 rounded-lg space-y-3 bg-white">
         <div className="flex items-center justify-between gap-3">
@@ -273,7 +320,7 @@ export function MobileScanner() {
           <button
             type="button"
             onClick={() => fetchBoothTally()}
-            className="flex-shrink-0 p-2.5 border border-neutral-300 hover:border-neutral-900 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors touch-manipulation"
+            className="flex-shrink-0 p-2.5 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors touch-manipulation select-none"
             aria-label="Refresh tally"
           >
             <RefreshCw className="w-4 h-4 text-neutral-800" />
@@ -299,12 +346,22 @@ export function MobileScanner() {
         )}
       </div>
 
-      <QrScanner onDecode={handleProcessScan} />
+      {isVotingOpen ? (
+        <QrScanner onDecode={handleProcessScan} />
+      ) : (
+        <div className="border border-neutral-300 rounded-lg p-8 text-center bg-white space-y-2 min-h-[220px] flex flex-col items-center justify-center">
+          <AlertTriangle className="w-8 h-8 text-neutral-700" />
+          <p className="text-sm font-bold text-neutral-900 uppercase">Scanner Viewfinder Paused</p>
+          <p className="text-xs font-mono text-neutral-600">
+            Viewfinder will automatically resume when voting is reopened.
+          </p>
+        </div>
+      )}
       <button
         type="button"
         aria-expanded={showManualInput}
         onClick={() => setShowManualInput(!showManualInput)}
-        className="min-h-11 w-full border border-neutral-300 hover:border-neutral-900 rounded px-3 py-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-neutral-800 transition-colors"
+        className="min-h-11 w-full border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded px-3 py-2 flex items-center justify-center gap-1.5 text-xs font-semibold transition-colors touch-manipulation select-none"
       >
         <Keyboard className="w-4 h-4 text-neutral-700" />
         <span>{showManualInput ? "Hide Manual Entry" : "Manual Stub Entry"}</span>
@@ -315,7 +372,7 @@ export function MobileScanner() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (manualInputText.trim()) {
+            if (isVotingOpen && manualInputText.trim()) {
               handleProcessScan(manualInputText.trim());
             }
           }}
@@ -333,17 +390,18 @@ export function MobileScanner() {
               aria-label="QR code text"
               value={manualInputText}
               onChange={(e) => setManualInputText(e.target.value)}
-              placeholder="e.g. B27-B01-0001-S1.9F4A2C8E or QR token"
-              className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+              disabled={!isVotingOpen}
+              placeholder={isVotingOpen ? "e.g. B27-B01-0001-S1.9F4A2C8E or QR token" : "Voting is paused"}
+              className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
             />
           </div>
 
           <button
             type="submit"
-            disabled={isSubmitting || !manualInputText.trim()}
-            className="w-full py-2.5 px-4 border border-neutral-900  text-neutral-900 rounded font-semibold text-xs  transition-colors disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-1.5 touch-manipulation select-none"
+            disabled={!isVotingOpen || isSubmitting || !manualInputText.trim()}
+            className="w-full py-2.5 px-4 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded font-semibold text-xs transition-colors disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-1.5 touch-manipulation select-none active:bg-neutral-800"
           >
-            {isSubmitting ? "Submitting Vote..." : "Process Manual Stub Vote"}
+            {!isVotingOpen ? "Voting Temporarily Frozen" : isSubmitting ? "Submitting Vote..." : "Process Manual Stub Vote"}
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </form>

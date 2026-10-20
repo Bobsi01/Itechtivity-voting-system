@@ -2,7 +2,7 @@
 
 ## Project Overview
 * **Name:** Itechtivity 2027 Voting System
-* **Tech Stack:** Next.js 15 (TypeScript) + Heroku Postgres (Prisma) + Appwrite Cloud
+* **Tech Stack:** Next.js 15 (TypeScript) + Supabase PostgreSQL (Prisma) + Appwrite Cloud
 * **Status:** System Architecture, Governance Rules, Skills & Runbooks Established
 
 ## Workspace Structure
@@ -29,7 +29,7 @@ c:\Workspace\Itech 2027\
 ├── README.md                                # Root repository guide, user roles & CSD contribution guide
 ├── AGENTS.md                                # Root repository development directives
 ├── CONCEPT.md                               # Comprehensive concept, workflow, security & data model
-├── TECHSTACK.md                             # Exhaustive tech stack, packages, Heroku & Appwrite spec
+├── TECHSTACK.md                             # Exhaustive tech stack, packages, Supabase & Appwrite spec
 ├── QA_REPORT.md                             # Senior QA Architect & DevOps report, runbook, load test
 ├── LESSONS_LEARNED.md                       # Historical defects, failure modes & prevention log
 └── repository_map.md                        # Repository layout and spatial map

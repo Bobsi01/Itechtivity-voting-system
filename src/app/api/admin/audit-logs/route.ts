@@ -65,7 +65,8 @@ export async function GET(request: Request) {
       if (log.details) {
         try {
           parsedDetails = JSON.parse(log.details);
-        } catch {
+        } catch (parseError) {
+          // Details string was not JSON formatted, retain raw string representation
           parsedDetails = log.details;
         }
       }

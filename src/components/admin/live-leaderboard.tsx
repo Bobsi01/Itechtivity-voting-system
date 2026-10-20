@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Shield, Lock, Unlock, RefreshCw, Trophy, Users, History, Edit2, Check, X, Pause, Play, Search, ChevronLeft, ChevronRight } from "lucide-react";
-import { subscribeToVoteEvents } from "@/lib/appwrite/client";
+import {
+  subscribeToVoteEvents,
+  subscribeToCardActivationEvents,
+  subscribeToSystemConfigEvents,
+  createResilientPoller,
+} from "@/lib/appwrite/client";
 import { toast } from "sonner";
 import { formatBuyerType } from "@/lib/utils/format";
 
@@ -78,24 +83,62 @@ export function LiveLeaderboard() {
     }
   };
 
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const debouncedFetchStats = useCallback(() => {
+
+    if (debounceTimerRef.current !== null) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      debounceTimerRef.current = null;
+      fetchStats();
+    }, 250);
+  }, []);
+
   useEffect(() => {
 
     fetchStats();
 
-    // Subscribe to real-time vote broadcasts via Appwrite Realtime
-    const unsubscribe = subscribeToVoteEvents((payload) => {
-      toast.info(`Live Vote: ${payload.boothCode} received vote for ${payload.awardTitle}`);
-      fetchStats();
+    const poller = createResilientPoller(fetchStats, {
+      initialIntervalMs: 5000,
+      maxIntervalMs: 30000,
+      backoffFactor: 1.5,
     });
 
-    // Fallback polling every 5 seconds for resilience
-    const interval = setInterval(fetchStats, 5000);
+    // Subscribe to real-time vote broadcasts via Appwrite Realtime
+    const unsubscribeVotes = subscribeToVoteEvents((payload) => {
+      toast.info(`Live Vote: ${payload.boothCode} received vote for ${payload.awardTitle}`);
+      debouncedFetchStats();
+      poller.reset();
+    });
+
+    // Subscribe to card batch activation broadcasts
+    const unsubscribeCards = subscribeToCardActivationEvents((payload) => {
+      toast.info(`Card Sync: ${payload.activatedCount} card(s) activated`);
+      debouncedFetchStats();
+      poller.reset();
+    });
+
+    // Subscribe to system config and voting freeze broadcasts
+    const unsubscribeConfig = subscribeToSystemConfigEvents((payload) => {
+      toast.info(`Config Update: Voting ${payload.isVotingOpen ? "opened" : "frozen"}`);
+      debouncedFetchStats();
+      poller.reset();
+    });
+
+    poller.start();
 
     return () => {
-      unsubscribe();
-      clearInterval(interval);
+      unsubscribeVotes();
+      unsubscribeCards();
+      unsubscribeConfig();
+      poller.stop();
+      if (debounceTimerRef.current !== null) {
+        clearTimeout(debounceTimerRef.current);
+      }
     };
-  }, []);
+  }, [debouncedFetchStats]);
 
   const handleStartEditAwards = () => {
 
@@ -254,7 +297,7 @@ export function LiveLeaderboard() {
             type="button"
             onClick={handleToggleLock}
             disabled={isUpdatingConfig}
-            className="flex items-center gap-1.5 px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 transition-colors min-h-[44px]"
+            className="flex items-center gap-1.5 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none"
           >
             {stats.config.isAwardsLocked ? (
               <>
@@ -273,7 +316,11 @@ export function LiveLeaderboard() {
             type="button"
             onClick={handleToggleVotingClick}
             disabled={isUpdatingConfig}
-            className="flex items-center gap-1.5 px-3 py-2 border border-neutral-900 text-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px]"
+            className={`flex items-center gap-1.5 px-3 py-2 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none ${
+              stats.config.isVotingOpen
+                ? "border border-amber-500 text-amber-600 bg-white hover:bg-amber-500 hover:text-neutral-950 active:bg-amber-600"
+                : "border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900"
+            }`}
           >
             {stats.config.isVotingOpen ? (
               <>
@@ -292,10 +339,10 @@ export function LiveLeaderboard() {
             type="button"
             onClick={fetchStats}
             disabled={isLoading}
-            className="p-2.5 border border-neutral-300 hover:border-neutral-900 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+            className="p-2.5 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors touch-manipulation select-none"
             aria-label="Refresh stats"
           >
-            <RefreshCw className={`w-4 h-4 text-neutral-800 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
@@ -592,7 +639,7 @@ export function LiveLeaderboard() {
               <button
                 type="button"
                 onClick={() => setShowFreezeConfirm(false)}
-                className="px-4 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 transition-colors min-h-[44px]"
+                className="px-4 py-2 border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none"
               >
                 Cancel
               </button>
@@ -603,7 +650,7 @@ export function LiveLeaderboard() {
                   executeToggleVoting();
                 }}
                 disabled={isUpdatingConfig}
-                className="px-4 py-2 border-2 border-neutral-900 hover:border-neutral-700 rounded text-xs font-bold text-neutral-900 transition-colors min-h-[44px]"
+                className="px-4 py-2 border-2 border-amber-600 bg-amber-500 text-neutral-950 hover:bg-amber-600 active:bg-amber-700 rounded text-xs font-bold uppercase tracking-wider transition-colors min-h-[44px] touch-manipulation select-none disabled:opacity-50"
               >
                 Confirm Emergency Freeze
               </button>

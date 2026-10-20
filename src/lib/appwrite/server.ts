@@ -1,27 +1,35 @@
 import { Client, Storage, Databases, Functions, ID } from 'node-appwrite';
 import { InputFile } from 'node-appwrite/file';
 
-export interface VoteBroadcastPayload {
-  boothId: string;
-  boothCode: string;
-  awardId: string;
-  awardTitle: string;
-  slotNumber: number;
-  totalVotesForAward: number;
-  timestamp: string;
-}
+export {
+  VoteBroadcastSchema,
+  type VoteBroadcastPayload,
+  BatchBroadcastSchema,
+  type BatchBroadcastPayload,
+  RegistrationBroadcastSchema,
+  type RegistrationBroadcastPayload,
+  CardBatchActivatedBroadcastSchema,
+  type CardBatchActivatedBroadcastPayload,
+  SystemConfigBroadcastSchema,
+  type SystemConfigBroadcastPayload,
+  AuditBroadcastSchema,
+  type AuditBroadcastPayload,
+} from './schemas';
 
-export interface BatchBroadcastPayload {
-  batchId: string;
-  batchNumber: number;
-  status: string;
-  fileId?: string;
-  fileName: string;
-  totalCards: number;
-  totalSheets: number;
-  fileSize?: number;
-  updatedAt: string;
-}
+import {
+  VoteBroadcastSchema,
+  type VoteBroadcastPayload,
+  BatchBroadcastSchema,
+  type BatchBroadcastPayload,
+  RegistrationBroadcastSchema,
+  type RegistrationBroadcastPayload,
+  CardBatchActivatedBroadcastSchema,
+  type CardBatchActivatedBroadcastPayload,
+  SystemConfigBroadcastSchema,
+  type SystemConfigBroadcastPayload,
+  AuditBroadcastSchema,
+  type AuditBroadcastPayload,
+} from './schemas';
 
 let serverClient: Client | null = null;
 let storageClient: Storage | null = null;
@@ -73,12 +81,13 @@ function getServerClient(): {
 }
 
 /**
- * Broadcasts a vote event via Appwrite Realtime WebSockets.
+ * Broadcasts a verified vote event via Appwrite Realtime WebSockets.
  * Offloads live WebSocket connections from the Next.js server to Appwrite Cloud.
  */
 export async function broadcastVoteEvent(payload: VoteBroadcastPayload): Promise<void> {
 
   try {
+    const validated = VoteBroadcastSchema.parse(payload);
     if (!isAppwriteServerConfigured()) {
       return;
     }
@@ -91,10 +100,145 @@ export async function broadcastVoteEvent(payload: VoteBroadcastPayload): Promise
       databaseId,
       collectionId,
       ID.unique(),
-      payload
+      validated
     );
   } catch (error) {
-    console.warn('[Appwrite Realtime Broadcast Fallback]:', payload.boothCode, payload.awardTitle, error);
+    console.warn('[Appwrite Realtime Broadcast Fallback]:', payload?.boothCode, payload?.awardTitle, error);
+  }
+}
+
+/**
+ * Broadcasts a PDF batch status event via Appwrite Realtime WebSockets.
+ * Notifies production operators of batch completion or failures.
+ */
+export async function broadcastBatchEvent(payload: BatchBroadcastPayload): Promise<void> {
+
+  try {
+    const validated = BatchBroadcastSchema.parse(payload);
+    if (!isAppwriteServerConfigured()) {
+      return;
+    }
+
+    const { databases } = getServerClient();
+    const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
+    const collectionId = process.env.APPWRITE_PDF_BATCHES_COLLECTION_ID || 'pdf_batches';
+
+    await databases.createDocument(
+      databaseId,
+      collectionId,
+      ID.unique(),
+      validated
+    );
+  } catch (error) {
+    console.warn('[Appwrite Batch Broadcast Fallback]:', payload?.batchNumber, error);
+  }
+}
+
+/**
+ * Broadcasts a sanitized registration event signal via Appwrite Realtime WebSockets.
+ * Omits all attendee PII to synchronize concurrent cashier counters safely.
+ */
+export async function broadcastRegistrationEvent(payload: RegistrationBroadcastPayload): Promise<void> {
+
+  try {
+    const validated = RegistrationBroadcastSchema.parse(payload);
+    if (!isAppwriteServerConfigured()) {
+      return;
+    }
+
+    const { databases } = getServerClient();
+    const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
+    const collectionId = process.env.APPWRITE_SYSTEM_EVENTS_COLLECTION_ID || 'system_events';
+
+    await databases.createDocument(
+      databaseId,
+      collectionId,
+      ID.unique(),
+      validated
+    );
+  } catch (error) {
+    console.warn('[Appwrite Registration Broadcast Fallback]:', error);
+  }
+}
+
+/**
+ * Broadcasts a sanitized card batch activation signal via Appwrite Realtime WebSockets.
+ * Synchronizes available inventory counts without exposing purchaser details.
+ */
+export async function broadcastCardActivationEvent(payload: CardBatchActivatedBroadcastPayload): Promise<void> {
+
+  try {
+    const validated = CardBatchActivatedBroadcastSchema.parse(payload);
+    if (!isAppwriteServerConfigured()) {
+      return;
+    }
+
+    const { databases } = getServerClient();
+    const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
+    const collectionId = process.env.APPWRITE_SYSTEM_EVENTS_COLLECTION_ID || 'system_events';
+
+    await databases.createDocument(
+      databaseId,
+      collectionId,
+      ID.unique(),
+      validated
+    );
+  } catch (error) {
+    console.warn('[Appwrite Card Activation Broadcast Fallback]:', error);
+  }
+}
+
+/**
+ * Broadcasts system configuration and emergency voting freeze alerts.
+ * Notifies exhibitor scanners and live displays of administrative lockdowns.
+ */
+export async function broadcastSystemConfigEvent(payload: SystemConfigBroadcastPayload): Promise<void> {
+
+  try {
+    const validated = SystemConfigBroadcastSchema.parse(payload);
+    if (!isAppwriteServerConfigured()) {
+      return;
+    }
+
+    const { databases } = getServerClient();
+    const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
+    const collectionId = process.env.APPWRITE_SYSTEM_EVENTS_COLLECTION_ID || 'system_events';
+
+    await databases.createDocument(
+      databaseId,
+      collectionId,
+      ID.unique(),
+      validated
+    );
+  } catch (error) {
+    console.warn('[Appwrite System Config Broadcast Fallback]:', error);
+  }
+}
+
+/**
+ * Broadcasts a sanitized security audit log notification signal.
+ * Alerts administrators to critical security actions without leaking sensitive parameters.
+ */
+export async function broadcastAuditEvent(payload: AuditBroadcastPayload): Promise<void> {
+
+  try {
+    const validated = AuditBroadcastSchema.parse(payload);
+    if (!isAppwriteServerConfigured()) {
+      return;
+    }
+
+    const { databases } = getServerClient();
+    const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
+    const collectionId = process.env.APPWRITE_SYSTEM_EVENTS_COLLECTION_ID || 'system_events';
+
+    await databases.createDocument(
+      databaseId,
+      collectionId,
+      ID.unique(),
+      validated
+    );
+  } catch (error) {
+    console.warn('[Appwrite Audit Broadcast Fallback]:', error);
   }
 }
 

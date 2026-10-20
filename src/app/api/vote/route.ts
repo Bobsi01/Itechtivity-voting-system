@@ -161,6 +161,18 @@ export async function POST(request: Request) {
         }
 
         if (existingStub.status === 'REDEEMED') {
+          // SEC-02: Check if a concurrent request with this idempotency key already completed successfully
+          const concurrentLog = await tx.idempotencyLog.findUnique({
+            where: { idempotencyKey: scopedIdempotencyKey },
+          });
+
+          if (concurrentLog) {
+            return {
+              cachedPayload: JSON.parse(concurrentLog.responseBody),
+              httpCode: concurrentLog.responseStatus,
+            };
+          }
+
           return { errorStatus: 'TICKET_ALREADY_REDEEMED', httpCode: 409 };
         }
 
@@ -234,6 +246,12 @@ export async function POST(request: Request) {
         responsePayload: payload,
       };
     });
+
+    if ('cachedPayload' in transactionResult) {
+      return NextResponse.json(transactionResult.cachedPayload, {
+        status: transactionResult.httpCode || 200,
+      });
+    }
 
     if ('errorStatus' in transactionResult) {
       return NextResponse.json(

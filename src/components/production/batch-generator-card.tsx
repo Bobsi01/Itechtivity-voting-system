@@ -139,7 +139,7 @@ export function BatchGeneratorCard({ onBatchGenerated }: BatchGeneratorCardProps
               href="/api/production/calibration"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2.5 border border-neutral-300 hover:border-neutral-900 text-neutral-800 rounded font-semibold text-sm transition-colors min-h-[44px] flex items-center justify-center gap-2 touch-manipulation whitespace-nowrap"
+              className="px-4 py-2.5 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded font-semibold text-sm transition-colors min-h-[44px] flex items-center justify-center gap-2 touch-manipulation select-none whitespace-nowrap"
             >
               <Crosshair className="w-4 h-4 text-neutral-700" />
               <span>Print Calibration Sheet</span>
@@ -148,7 +148,7 @@ export function BatchGeneratorCard({ onBatchGenerated }: BatchGeneratorCardProps
             <button
               type="submit"
               disabled={isGenerating}
-              className="px-5 py-2.5 border border-neutral-900 text-neutral-900 rounded font-semibold text-sm transition-colors disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2 touch-manipulation whitespace-nowrap"
+              className="px-5 py-2.5 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-white hover:text-neutral-900 hover:border-neutral-900 rounded font-semibold text-sm uppercase tracking-wider transition-colors disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2 touch-manipulation select-none active:bg-neutral-800 whitespace-nowrap"
             >
               {isGenerating ? "Rendering Vector PDF..." : "Generate Batch PDF"}
               <ArrowRight className="w-4 h-4" />

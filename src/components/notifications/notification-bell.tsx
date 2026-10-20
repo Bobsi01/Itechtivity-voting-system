@@ -32,8 +32,9 @@ export function NotificationBell({ autoOpenIfUnseen = false }: NotificationBellP
       if (isUnseen && autoOpenIfUnseen) {
         setModalOpen(true);
       }
-    } catch {
-      // Ignore localStorage access restrictions in private browsing modes
+    } catch (storageErr) {
+      // Gracefully handle localStorage access restrictions in private browsing modes
+      console.warn("Unable to read seen version from localStorage:", storageErr);
     }
   }, [latestRelease.version, autoOpenIfUnseen]);
 
@@ -67,8 +68,8 @@ export function NotificationBell({ autoOpenIfUnseen = false }: NotificationBellP
     try {
       localStorage.setItem(SEEN_VERSION_STORAGE_KEY, latestRelease.version);
       setHasUnseenUpdate(false);
-    } catch {
-      // Fallback
+    } catch (storageErr) {
+      console.warn('Unable to persist seen version to localStorage:', storageErr);
     }
   };
 
@@ -112,7 +113,7 @@ export function NotificationBell({ autoOpenIfUnseen = false }: NotificationBellP
           id="notification-dropdown-menu"
           role="menu"
           aria-label="System version notifications"
-          className="fixed inset-x-4 top-16 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-96 bg-white border-2 border-neutral-900 rounded-lg shadow-xl z-50 p-4 space-y-3 animate-in fade-in zoom-in-95 duration-100"
+          className="fixed inset-x-4 top-[calc(4rem+env(safe-area-inset-top,0px))] sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-96 bg-white border-2 border-neutral-900 rounded-lg shadow-xl z-50 p-4 space-y-3 animate-in fade-in zoom-in-95 duration-100"
         >
           {/* Dropdown Header */}
           <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
@@ -152,7 +153,7 @@ export function NotificationBell({ autoOpenIfUnseen = false }: NotificationBellP
               href="/notifications"
               role="menuitem"
               onClick={() => setIsOpen(false)}
-              className="w-full min-h-[44px] px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs font-semibold text-neutral-800 hover:text-neutral-900 transition-colors flex items-center justify-center gap-1.5 touch-manipulation select-none"
+              className="w-full min-h-[44px] px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 touch-manipulation select-none"
             >
               <span>All Releases & Changelog</span>
               <ArrowRight className="w-3.5 h-3.5" />

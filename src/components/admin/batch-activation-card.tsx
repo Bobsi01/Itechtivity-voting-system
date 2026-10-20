@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Layers, CheckCircle2, RefreshCw, ArrowRight, Hash, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { BuyerType } from "@prisma/client";
+import { subscribeToCardActivationEvents, createResilientPoller } from "@/lib/appwrite/client";
 
 interface BatchItem {
   id: string;
@@ -95,6 +96,25 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
   useEffect(() => {
 
     fetchBatchData();
+
+    const poller = createResilientPoller(() => fetchBatchData(), {
+      initialIntervalMs: 10000,
+      maxIntervalMs: 30000,
+      backoffFactor: 1.5,
+    });
+
+    const unsubscribe = subscribeToCardActivationEvents((payload) => {
+      toast.info(`Card Batch Activated: ${payload.activatedCount} card(s) synchronized`);
+      fetchBatchData();
+      poller.reset();
+    });
+
+    poller.start();
+
+    return () => {
+      unsubscribe();
+      poller.stop();
+    };
   }, [fetchBatchData]);
 
   const activeBatch = batches.find((b) => b.id === selectedBatchId);
@@ -284,7 +304,7 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
               <select
                 value={selectedBatchId}
                 onChange={(e) => setSelectedBatchId(e.target.value)}
-                className="w-full px-3 py-2 text-base sm:text-sm border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
+                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
               >
                 {batches.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -331,7 +351,7 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
                 value={limitCount}
                 onChange={(e) => setLimitCount(e.target.value)}
                 placeholder={`All ${activeBatch?.counts.generated ?? ""} unactivated cards`}
-                className="w-full px-3 py-2 text-base sm:text-sm font-mono border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
+                className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
               />
             </div>
           </div>
@@ -350,7 +370,7 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
                   value={startSerial}
                   onChange={(e) => setStartSerial(e.target.value.toUpperCase())}
                   placeholder="e.g. B27-B01-0001"
-                  className="w-full px-3 py-2 text-base sm:text-sm font-mono uppercase border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
+                  className="w-full px-3 py-2 text-base font-mono uppercase border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
                 />
               </div>
               <div>
@@ -360,7 +380,7 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
                   value={endSerial}
                   onChange={(e) => setEndSerial(e.target.value.toUpperCase())}
                   placeholder="e.g. B27-B01-0050"
-                  className="w-full px-3 py-2 text-base sm:text-sm font-mono uppercase border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
+                  className="w-full px-3 py-2 text-base font-mono uppercase border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
                 />
               </div>
             </div>
@@ -377,7 +397,7 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
               value={serialsText}
               onChange={(e) => setSerialsText(e.target.value.toUpperCase())}
               placeholder="B27-B01-0001&#10;B27-B01-0002&#10;B27-B01-0003"
-              className="w-full px-3 py-2 text-base sm:text-xs font-mono uppercase border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900"
+              className="w-full px-3 py-2 text-base font-mono uppercase border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900"
             />
           </div>
         )}
@@ -399,7 +419,7 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
                 value={buyerName}
                 onChange={(e) => setBuyerName(e.target.value)}
                 placeholder="e.g. Dean's Office, VIP Delegates, or Student Name"
-                className="w-full px-3 py-2 text-base sm:text-sm border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
+                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
               />
             </div>
 
@@ -410,7 +430,7 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
               <select
                 value={buyerType}
                 onChange={(e) => setBuyerType(e.target.value as BuyerType)}
-                className="w-full px-3 py-2 text-base sm:text-sm border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
+                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
               >
                 <option value="CSD_STUDENT">CSD Student</option>
                 <option value="NON_CSD_STUDENT">Non-CSD Student</option>
@@ -426,7 +446,7 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
               <select
                 value={program}
                 onChange={(e) => setProgram(e.target.value)}
-                className="w-full px-3 py-2 text-base sm:text-sm border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
+                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
               >
                 <option value="">None / Not Applicable</option>
                 {programs.map((p) => (
@@ -446,7 +466,7 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
                 value={yearAndSection}
                 onChange={(e) => setYearAndSection(e.target.value)}
                 placeholder="e.g. 4A"
-                className="w-full px-3 py-2 text-base sm:text-sm border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
+                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
               />
             </div>
 
@@ -459,7 +479,7 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
                 value={affiliation}
                 onChange={(e) => setAffiliation(e.target.value)}
                 placeholder="e.g. College of Computer Studies"
-                className="w-full px-3 py-2 text-base sm:text-sm border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
+                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
               />
             </div>
 
@@ -472,7 +492,7 @@ export function BatchActivationCard({ onCardSelect }: BatchActivationCardProps) 
                 value={contactInfo}
                 onChange={(e) => setContactInfo(e.target.value)}
                 placeholder="e.g. dean@ucc.edu.ph"
-                className="w-full px-3 py-2 text-base sm:text-sm border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
+                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
               />
             </div>
           </div>

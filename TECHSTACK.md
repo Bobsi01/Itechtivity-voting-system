@@ -4,7 +4,7 @@
 
 ## 1. Architecture Overview
 
-The system is architected as a **unified full-stack Web Application** built with **Next.js 15 (App Router)** and **TypeScript**, backed by **Heroku Postgres 16** via **Prisma ORM**, and deployed onto **Heroku Dynos**.
+The system is architected as a **unified full-stack Web Application** built with **Next.js 15 (App Router)** and **TypeScript**, backed by **Supabase PostgreSQL 17** via **Prisma ORM**, and deployed onto **Appwrite Cloud** (Sites / SSR Hosting & Functions). Purely Appwrite + Supabase infrastructure.
 
 ```
 +-----------------------------------------------------------------------------------+
@@ -17,22 +17,22 @@ The system is architected as a **unified full-stack Web Application** built with
                         HTTPS / API │                │ (Appwrite Realtime)
                                     ▼                │
 +----------------------------------------------------+------------------------------+
-|                        APPLICATION LAYER (HEROKU DYNOS)                           |
-|  1x Web Dyno: Next.js 15 App Router (Node.js 20 LTS Runtime)                      |
+|             APPLICATION & HOSTING LAYER (APPWRITE CLOUD SITES & SSR)              |
+|  Next.js 15 App Router (Node.js 20+ Runtime, SSR on Appwrite Cloud Sites)         |
 |  ├── Idempotency Engine (`Idempotency-Key` validation)                            |
 |  ├── Server Actions & Atomic Scan Routes (`/api/vote`)                            |
 |  ├── Crypto Engine (HMAC-SHA256 Token Signer / Verifier)                          |
 |  └── Appwrite Server SDK (`node-appwrite` event trigger)                          |
 |                                                                                   |
-|  1x Worker Dyno (Free/Basic Tier): Advance Card Batch Processor                   |
-|  ├── `pg-boss` Job Consumer (Advance ticket generation)                           |
-|  ├── Streaming PDFKit Engine (Vector QR generation)                               |
+|  Appwrite Serverless Functions: Background Batch PDF & Leaderboard Computation     |
+|  ├── `generate-bingo-pdf` (Vector A4 PDF ticket generator)                        |
+|  ├── `compute-leaderboard-snapshot` (Aggregated tally caching in Appwrite DB)      |
 |  └── Uploads completed print PDFs directly to Appwrite Storage                     |
 +-----------------------------------------------------------------------------------+
              │ Direct TLS Pool                               │ Storage & Events
              ▼                                               ▼
 +----------------------------------------+   +--------------------------------------+
-|       DATA LAYER (HEROKU POSTGRES)     |   |          APPWRITE CLOUD              |
+|      DATA LAYER (SUPABASE POSTGRES)    |   |          APPWRITE CLOUD              |
 |  PostgreSQL 16 (Essential/Standard)    |   |  - Storage: `bingo-cards-pdf` bucket |
 |  - PgBouncer in Transaction Mode       |   |  - Realtime: WebSocket Live Channels |
 |  - Atomic row locks (`FOR UPDATE`)     |   |    (Live Tally for Admin & Booths)   |
@@ -44,10 +44,10 @@ The system is architected as a **unified full-stack Web Application** built with
 
 ## 2. Core Runtime, Language & Framework
 
-* **Node.js (`v20.x LTS` / `v22.x LTS`):** Recommended LTS version for Heroku deployments with long-term stability and native crypto support.
+* **Node.js (`v20.x LTS` / `v22.x LTS`):** Recommended LTS version with long-term stability and native crypto support.
 * **TypeScript (`v5.x`):** End-to-end static typing across frontend forms, backend actions, and database entities to eliminate runtime casting errors.
 * **Next.js (`v15.x` App Router):** Full-stack server-rendered framework with React Server Components (RSC), fast Server Actions for low-latency scanning, and built-in edge/node route handlers.
-* **Package Manager (`npm` / `pnpm`):** Standard dependency manager, fully supported by the Heroku Node.js buildpack.
+* **Package Manager (`npm` / `pnpm`):** Standard dependency manager with deterministic lockfiles.
 
 ---
 
@@ -84,26 +84,26 @@ Printing 1,000+ high-resolution Bingo Cards with 7 vector QR codes each (1 Maste
 * **PDF Engine (`pdfkit ^0.15.0` + `qrcode ^1.5.4` — Recommended):**
   * Uses pure JavaScript without headless browser overhead.
   * Generates documents in under 25MB RAM.
-  * Streams binary PDF chunks directly to client HTTP response without writing to Heroku's ephemeral disk.
+  * Streams binary PDF chunks directly to client HTTP response or Appwrite Storage without reliance on local disk persistence.
 * **Alternative Considered (`@react-pdf/renderer`):** Great JSX syntax, but can consume higher memory when rendering large batches. Can be used for single-card / preview exports.
-* **Rejected Solution (`puppeteer` / headless Chrome):** Avoid on Heroku Standard-1X. Consumes 400MB+ RAM, requires bulky Chrome buildpacks, and causes `H13` / `R14` (Memory Exceeded) crashes.
-* **Batch Chunking:** Server-side chunking (e.g., 50 cards per PDF download) bypasses Heroku's 30-second request timeout (`H12`) by generating cards in manageable chunks (e.g., Cards 1–50, 51–100, etc.).
+* **Rejected Solution (`puppeteer` / headless Chrome):** Avoid in production serverless execution. Consumes 400MB+ RAM, requires bulky Chromium binaries, and causes out-of-memory container crashes.
+* **Batch Chunking:** Server-side chunking (e.g., 50 cards per PDF download) optimizes serverless execution windows by generating cards in manageable chunks (e.g., Cards 1–50, 51–100, etc.).
 
 ---
 
-## 6. Database & Persistence Layer (Heroku Postgres)
+## 6. Database & Persistence Layer (Supabase PostgreSQL)
 
 * **Database Engine (PostgreSQL 16):** Robust relational database supporting ACID transactions and row-level locks.
-* **Hosting Add-on (Heroku Postgres):** Essential or Standard-0 dyno tier with SSL encryption (`sslmode=require`).
+* **Database Hosting (Supabase PostgreSQL 17):** Managed PostgreSQL instance with SSL encryption (`sslmode=require`).
 * **ORM (Prisma ORM `@prisma/client`, `prisma`):** Auto-generated TypeScript types, schema migrations, and declarative relation handling.
-* **Connection Pooling (`pg-pool` / Heroku PgBouncer):** Heroku Postgres has strict connection limits (e.g., 20 connections on Essential tier). Prisma connection pooling or PgBouncer prevents `too many clients` connection errors during voting surges.
+* **Connection Pooling (Supabase PgBouncer):** Connect via Supabase PgBouncer transaction pooler (`&pgbouncer=true&connection_limit=5`) to prevent connection pool exhaustion during peak voting bursts.
 * **Atomic Concurrency (Prisma `$transaction` with raw SQL `FOR UPDATE`):** Ensures two exhibitors scanning the same stub within milliseconds cannot double-spend a vote.
 
 ---
 
 ## 7. Authentication, Security & Cryptography
 
-* **User Authentication (NextAuth.js v5 / Auth.js):** Email + Password credentials provider with stateless encrypted JWT cookies (resilient to Heroku dyno restarts).
+* **User Authentication (Custom Session / HMAC Cookies):** Email + Password credentials provider with stateless HMAC-signed session cookies (resilient across ephemeral container restarts).
 * **Password Hashing (`bcryptjs` / `@node-rs/bcrypt`):** Salted SHA-512 / bcrypt hashing with 12 salt rounds for administrative and exhibitor passwords.
 * **Role-Based Guards (Next.js Edge Middleware `middleware.ts`):** Strict URL isolation:
   * `/admin/*` -> Role: `ADMIN`
@@ -157,43 +157,39 @@ To guarantee that tickets are strictly **single-use** and resilient to network r
   * Storage bucket: `bingo-cards-pdf`.
   * Advance card batch exports are uploaded directly from the worker dyno.
   * Generates time-limited download URLs for the production team to print.
-  * Completely solves Heroku's ephemeral filesystem constraint with zero disk pollution.
+  * Completely solves ephemeral container filesystem constraints with zero disk pollution.
 * **Real-time WebSockets (Appwrite Realtime `appwrite` client SDK):**
   * Native WebSocket subscriptions on `databases.[id].collections.[votes].documents` or dedicated channel.
-  * Offloads hundreds of persistent mobile WebSocket connections from the Heroku dyno to Appwrite's global network.
+  * Offloads hundreds of persistent mobile WebSocket connections from the application server to Appwrite's global network.
   * Admin live leaderboard updates within <100ms when a vote is verified.
   * Exhibitors receive instant real-time increments on their own booth score.
 * **Server Event Dispatch (Server SDK `node-appwrite ^14.0.0`):** Dispatches real-time broadcast events when Next.js completes an atomic vote transaction.
 
 ---
 
-## 9. Heroku Deployment & 1-Worker Dyno Configuration
+## 9. Pure Appwrite Cloud & Supabase Deployment Configuration
 
 ```
-                               HEROKU CONFIGURATION
+                       PURE APPWRITE CLOUD & SUPABASE ARCHITECTURE
 ===================================================================================
-Web Dyno:              1x Standard-1X (or Eco) — Handles HTTP API & Next.js Server Actions
-Worker Dyno:           1x Worker Dyno — Consumes pg-boss queue for advance batch PDF generation
-Node Buildpack:        heroku/nodejs
-Postgres Add-on:       heroku-postgresql:essential-0 (with PgBouncer transaction pooling)
-SSL / HTTPS:           Heroku Automated Certificate Management (ACM) - Required for Camera
-Procfile:              web: npm run start
-                       worker: npm run worker
-                       release: npx prisma migrate deploy
+Web Application:       Appwrite Cloud Sites (Next.js 15 App Router SSR)
+Serverless Functions:  Appwrite Cloud Functions (Node.js 20+ runtime for PDF & stats)
+Database:              Supabase PostgreSQL 17 (PgBouncer transaction pooler)
+Storage:               Appwrite Cloud Storage (`bingo-cards-pdf` bucket)
+Realtime:              Appwrite Cloud Realtime WebSockets (`votes`, `registration`, etc.)
+SSL / HTTPS:           Enforced TLS / Let's Encrypt automated certificates (Required for Camera)
 ===================================================================================
 ```
 
-### Key Heroku Configuration Environment Variables
+### Key Environment Variables
 ```env
 # Application
 NODE_ENV=production
-NEXTAUTH_URL=https://itechtivity2027.herokuapp.com
-NEXTAUTH_SECRET=super_secret_jwt_key_min_32_chars
-EVENT_HMAC_SECRET=super_secret_cryptographic_signing_key
+EVENT_HMAC_SECRET=super_secret_cryptographic_signing_key_min_32_chars
 
-# Heroku Postgres
-DATABASE_URL=postgres://user:password@host:5432/dbname?pgbouncer=true&connection_limit=5&statement_cache_size=0
-DIRECT_URL=postgres://user:password@host:5432/dbname?sslmode=require
+# Supabase PostgreSQL (via PgBouncer transaction pooler)
+DATABASE_URL=postgres://postgres.project:password@aws-0-region.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=5
+DIRECT_URL=postgres://postgres.project:password@aws-0-region.pooler.supabase.com:5432/postgres?sslmode=require
 
 # Appwrite Cloud (Storage & WebSockets)
 APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1

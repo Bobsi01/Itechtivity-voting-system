@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { BuyerType, CardStatus, StubStatus } from '@prisma/client';
 import { rateLimiter, getClientIp } from '@/lib/security/rate-limiter';
 import { recordAuditLog, createHumanReadableSummary } from '@/lib/audit/log';
+import { broadcastRegistrationEvent } from '@/lib/appwrite/server';
 
 const IdempotencyKeySchema = z
   .string()
@@ -235,10 +236,37 @@ export async function POST(request: Request) {
       ipAddress: clientIp,
     });
 
+    // Broadcast sanitized registration event signal to sync concurrent cashier counters in real time
+    await broadcastRegistrationEvent({
+      eventType: 'REGISTRATION_EVENT',
+      transactionId: result.transactionId,
+      quantity: result.cardsActivatedCount,
+      timestamp: new Date().toISOString(),
+      processedByRole: session.role as 'REGISTRATION' | 'ADMIN',
+    });
+
     return NextResponse.json(responsePayload);
   } catch (error) {
     const rawMessage = error instanceof Error ? error.message : '';
     console.error('Registration bind transaction error:', error);
+
+    // Check if a concurrent request with the same idempotency key succeeded while this transaction was running
+    if (scopedIdempotencyKey) {
+      try {
+        const concurrentLog = await prisma.idempotencyLog.findUnique({
+          where: { idempotencyKey: scopedIdempotencyKey },
+        });
+
+        if (concurrentLog) {
+          return NextResponse.json(
+            JSON.parse(concurrentLog.responseBody),
+            { status: concurrentLog.responseStatus }
+          );
+        }
+      } catch (logLookupErr) {
+        console.error('Failed to check concurrent idempotency log:', logLookupErr);
+      }
+    }
 
     // SEC-11: Sanitize errors to prevent leaking internal database stack traces or SQL state
     if (
@@ -270,22 +298,23 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const q = searchParams.get('q')?.trim().slice(0, 100);
+  const searchQuery = searchParams.get('q')?.trim().slice(0, 100);
 
   try {
+    // SEC-01: Enforce strict role boundary scoping for REGISTRATION clerks regardless of query parameters
     const scopeFilter =
-      session.role === 'REGISTRATION' && (!q || q.length < 2)
+      session.role === 'REGISTRATION'
         ? { processedByUserId: session.userId }
         : {};
 
     const whereClause =
-      q && q.length >= 2
+      searchQuery && searchQuery.length >= 2
         ? {
             ...scopeFilter,
             OR: [
-              { buyerName: { contains: q, mode: 'insensitive' as const } },
-              { studentNumber: { contains: q, mode: 'insensitive' as const } },
-              { cards: { some: { cardSerial: { contains: q.toUpperCase() } } } },
+              { buyerName: { contains: searchQuery, mode: 'insensitive' as const } },
+              { studentNumber: { contains: searchQuery, mode: 'insensitive' as const } },
+              { cards: { some: { cardSerial: { contains: searchQuery.toUpperCase() } } } },
             ],
           }
         : scopeFilter;
@@ -315,6 +344,7 @@ export async function GET(request: Request) {
       transactions,
     });
   } catch (error) {
+    console.error('Failed to fetch transactions:', error);
     return NextResponse.json(
       { success: false, error: 'FAILED_TO_FETCH_TRANSACTIONS' },
       { status: 500 }

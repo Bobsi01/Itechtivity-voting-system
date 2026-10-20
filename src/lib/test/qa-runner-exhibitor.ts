@@ -36,7 +36,11 @@ async function ensureActivatedStub() {
       },
       include: { stubs: true },
     });
-    stub = card.stubs.find((s) => s.slotNumber === 1)! as any;
+    const foundStub = card.stubs.find((s) => s.slotNumber === 1);
+    if (!foundStub) {
+      throw new Error("Failed to initialize test stub for slot 1");
+    }
+    stub = { ...foundStub, bingoCard: card };
   }
 
   return stub!;
@@ -240,8 +244,8 @@ async function main() {
     await prisma.$disconnect();
     try {
       fs.rmSync(profileDir, { recursive: true, force: true });
-    } catch {
-      // Ignore
+    } catch (cleanupErr) {
+      console.warn("Temporary profile directory cleanup warning:", cleanupErr);
     }
   }
 }

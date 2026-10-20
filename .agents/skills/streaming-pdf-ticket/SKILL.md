@@ -3,7 +3,7 @@ name: streaming-pdf-ticket
 description: >-
   Procedures for low-memory, high-speed streaming PDF generation of Bingo Cards and perforated
   ticket stubs with vector QR codes using pdfkit. Use when implementing, debugging, or optimizing
-  ticket sheet generation, printing layouts, or memory usage on Heroku. Do not use for ticket
+  ticket sheet generation, printing layouts, or memory usage. Do not use for ticket
   redemption transactions, QR cryptographic signing, or real-time vote broadcasting.
 author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
 assisted_by:
@@ -19,7 +19,7 @@ assisted_by:
 ---
 
 ## 1. Core Principles
-* **Never Buffer 1,000 Cards in RAM:** Building a massive document tree in memory exceeds Heroku's 512MB dyno RAM.
+* **Never Buffer 1,000 Cards in RAM:** Building a massive document tree in memory exceeds container RAM limits.
 * **Chunked Batching:** Generate and stream in 50-card sub-batches.
 * **True Vector QRs (Zero Base64 PNG Overhead):** Draw vector rectangles directly onto the PDF canvas instead of generating raster Base64 PNG data URLs. This prevents V8 memory churn and guarantees 100% crisp printing at any resolution.
 
@@ -80,4 +80,4 @@ export function renderCardSheet(
 ## 3. Worker Execution Loop & Memory Discipline
 * Stream each 50-card sub-batch directly to Appwrite Cloud Storage via `node-appwrite`.
 * Close and dereference each `PDFDocument` instance after the upload finishes so V8 garbage collector reclaims heap memory prior to the next batch.
-* Enforce `--max-old-space-size=384` in the Heroku worker dyno launch script.
+* Enforce streaming directly to Appwrite Cloud Storage without accumulating large in-memory buffers.

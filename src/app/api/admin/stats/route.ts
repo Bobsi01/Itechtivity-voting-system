@@ -45,7 +45,7 @@ export async function GET() {
       awardTitleMap.set(award.id, award.title);
     }
 
-    // 5. Database-level aggregation to preserve memory ceiling on Heroku dynos (SEC-12)
+    // 5. Database-level aggregation to preserve memory ceiling on stateless containers (SEC-12)
     const [booths, voteTallies, recentTransactions] = await Promise.all([
       prisma.booth.findMany({
         select: {

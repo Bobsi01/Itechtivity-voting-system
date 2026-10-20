@@ -107,7 +107,7 @@ $$\text{Payload} = \text{base64url}\left(\text{StubUUID} \mathbin{\Vert} \text{S
   * Generated print-ready PDFs are streamed directly to **Appwrite Storage** (`bingo-cards-pdf` bucket). The production team downloads the vector PDFs from Appwrite for professional printing, perforating, and packaging.
 * **Real-time Live Streaming via Appwrite Realtime (WebSockets):**
   * Clients (Admin leaderboard, Exhibitor booth dashboards) connect to **Appwrite Realtime** WebSockets.
-  * When Next.js records a valid vote in PostgreSQL, it dispatches an event via the Appwrite Server SDK (`node-appwrite`). Appwrite handles WebSocket fan-out to hundreds of connected devices, freeing the Heroku web dyno from managing persistent socket connections.
+  * When Next.js records a valid vote in PostgreSQL, it dispatches an event via the Appwrite Server SDK (`node-appwrite`). Appwrite handles WebSocket fan-out to hundreds of connected devices, freeing the application server from managing persistent socket connections.
 * **Physical Backup:** Exhibitors keep the physical stubs in a sealed ballot box. If there is a dispute, the committee can match physical stubs against the database log.
 
 ---

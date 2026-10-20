@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import prisma from '@/lib/db/prisma';
 import { generateA4BingoPdfBuffer } from './a4-sheet-renderer';
 import { generateStubSignature } from '@/lib/crypto/stub-tokens';
-import { triggerAppwritePdfGeneration } from '@/lib/appwrite/server';
+import { triggerAppwritePdfGeneration, uploadBatchPdfToAppwrite } from '@/lib/appwrite/server';
 import { CardStatus, StubStatus } from '@prisma/client';
 
 export interface GenerateBatchParams {
@@ -82,6 +82,14 @@ export async function generateCardBatch(
     console.warn('Local PDF cache write skipped (read-only or ephemeral filesystem):', err);
   }
 
+  // Upload generated PDF to Appwrite Cloud Storage (bingo-cards-pdf bucket)
+  let appwriteFileId: string | null = null;
+  try {
+    appwriteFileId = await uploadBatchPdfToAppwrite(buffer, fileName);
+  } catch (err) {
+    console.warn('Appwrite Cloud storage upload fallback:', err);
+  }
+
   // Persist batch and card entities in Supabase PostgreSQL with bulk inserts
   const createdBatch = await prisma.$transaction(async (tx) => {
 
@@ -90,6 +98,7 @@ export async function generateCardBatch(
         batchNumber,
         fileName,
         fileSize: fileSizeBytes,
+        fileId: appwriteFileId,
         totalCards,
         totalSheets,
         status: 'COMPLETED',

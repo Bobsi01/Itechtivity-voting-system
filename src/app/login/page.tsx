@@ -141,7 +141,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full min-h-[44px] flex items-center justify-center gap-2 border border-neutral-900 text-neutral-900 font-medium text-sm rounded transition-colors disabled:opacity-50 touch-manipulation"
+            className="w-full min-h-[44px] flex items-center justify-center gap-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 font-medium text-sm rounded transition-colors disabled:opacity-50 touch-manipulation select-none active:bg-neutral-800"
           >
             {isLoading ? (
               <>

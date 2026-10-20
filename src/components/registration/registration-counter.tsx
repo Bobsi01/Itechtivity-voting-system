@@ -8,6 +8,11 @@ import { toast } from "sonner";
 import { SearchableProgramPicker, type ProgramOption } from "@/components/ui/searchable-program-picker";
 import { SimpleSelect, type SimpleSelectOption } from "@/components/ui/simple-select";
 import { formatProgramYearSection } from "@/lib/utils/format";
+import {
+  subscribeToRegistrationEvents,
+  createResilientPoller,
+  createEventDeduplicator,
+} from "@/lib/appwrite/client";
 
 const YEAR_LEVEL_OPTIONS: SimpleSelectOption[] = [
   { value: "1", label: "Year 1" },
@@ -69,7 +74,9 @@ export function RegistrationCounter() {
   const [cashTendered, setCashTendered] = useState<string>("");
   const [shiftCardsSold, setShiftCardsSold] = useState<number>(0);
   const [shiftCashCollected, setShiftCashCollected] = useState<number>(0);
+  const [venueCardsBound, setVenueCardsBound] = useState<number>(0);
   const CARD_PRICE = 50;
+  const deduplicatorRef = useRef(createEventDeduplicator(500, 60000));
 
   // Sequential Batch Range Queueing State
   const [showRangeQueue, setShowRangeQueue] = useState<boolean>(false);
@@ -106,7 +113,18 @@ export function RegistrationCounter() {
       const res = await fetch(url);
       const data = await res.json();
       if (res.ok && data.success && Array.isArray(data.transactions)) {
-        setRecentTransactions(data.transactions);
+        setRecentTransactions((prev) => {
+          const txMap = new Map<string, RecentTxItem>();
+          for (const tx of prev) {
+            txMap.set(tx.id, tx);
+          }
+          for (const tx of data.transactions) {
+            txMap.set(tx.id, tx);
+          }
+          return Array.from(txMap.values()).sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
       }
     } catch (err) {
       console.warn("Failed to load recent registration history:", err);
@@ -132,6 +150,33 @@ export function RegistrationCounter() {
     }
     loadPrograms();
     fetchRecentHistory();
+  }, [fetchRecentHistory]);
+
+  useEffect(() => {
+
+    const poller = createResilientPoller(() => fetchRecentHistory(), {
+      initialIntervalMs: 10000,
+      maxIntervalMs: 30000,
+      backoffFactor: 1.5,
+    });
+
+    const unsubscribe = subscribeToRegistrationEvents((payload) => {
+      if (!deduplicatorRef.current.shouldProcess(payload.transactionId)) {
+        return;
+      }
+
+      setVenueCardsBound((prev) => prev + payload.quantity);
+      toast.info(`Registration Sync: ${payload.quantity} card(s) bound by ${payload.processedByRole}`);
+      fetchRecentHistory();
+      poller.reset();
+    });
+
+    poller.start();
+
+    return () => {
+      unsubscribe();
+      poller.stop();
+    };
   }, [fetchRecentHistory]);
 
   const normalizeAndQueueSerial = (rawValue: string): boolean => {
@@ -319,9 +364,13 @@ export function RegistrationCounter() {
         { id: toastId }
       );
 
+      if (data.transactionId) {
+        deduplicatorRef.current.add(data.transactionId);
+      }
       const cost = paymentMethod === "COMPLIMENTARY" ? 0 : cardSerials.length * CARD_PRICE;
       setShiftCardsSold((prev) => prev + cardSerials.length);
       setShiftCashCollected((prev) => prev + cost);
+      setVenueCardsBound((prev) => prev + data.cardsActivatedCount);
 
       setLastReceipt({
         buyerName,
@@ -356,8 +405,9 @@ export function RegistrationCounter() {
       <div className="border border-neutral-300 p-3.5 rounded-lg bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
         <div className="flex flex-wrap items-center gap-4">
           <span className="font-bold text-neutral-900 uppercase">Cashier Shift Summary:</span>
-          <span>Cards Bound: <strong className="text-neutral-900 font-bold select-text">{shiftCardsSold}</strong></span>
+          <span>Shift Cards: <strong className="text-neutral-900 font-bold select-text">{shiftCardsSold}</strong></span>
           <span>Session Cash: <strong className="text-neutral-900 font-bold select-text">₱{shiftCashCollected.toLocaleString()}</strong></span>
+          <span>Venue Bound: <strong className="text-neutral-900 font-bold select-text">{venueCardsBound}</strong></span>
         </div>
         <div className="text-neutral-600">
           Standard Card Price: <strong className="text-neutral-900 font-bold">₱{CARD_PRICE}</strong>
@@ -641,7 +691,7 @@ export function RegistrationCounter() {
                   value={rangeStart}
                   onChange={(e) => setRangeStart(e.target.value)}
                   placeholder="e.g. B27-B01-0001"
-                  className="w-full px-3 py-2 text-base sm:text-sm font-mono border border-neutral-300 rounded min-h-[44px]"
+                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded min-h-[44px]"
                 />
               </div>
               <div>
@@ -651,7 +701,7 @@ export function RegistrationCounter() {
                   value={rangeEnd}
                   onChange={(e) => setRangeEnd(e.target.value)}
                   placeholder="e.g. B27-B01-0020"
-                  className="w-full px-3 py-2 text-base sm:text-sm font-mono border border-neutral-300 rounded min-h-[44px]"
+                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded min-h-[44px]"
                 />
               </div>
             </div>
@@ -736,7 +786,7 @@ export function RegistrationCounter() {
                   value={cashTendered}
                   onChange={(e) => setCashTendered(e.target.value)}
                   placeholder="e.g. 500"
-                  className="w-full px-3 py-2 font-mono text-base sm:text-sm border border-neutral-300 rounded min-h-[44px] focus:outline-none focus:border-neutral-900"
+                  className="w-full px-3 py-2 font-mono text-base border border-neutral-300 rounded min-h-[44px] focus:outline-none focus:border-neutral-900"
                 />
               </div>
             </div>
@@ -758,7 +808,7 @@ export function RegistrationCounter() {
           type="button"
           onClick={handleBindCards}
           disabled={isSubmitting || cardSerials.length === 0}
-          className="w-full py-3 px-4 border border-neutral-900 text-neutral-900 font-semibold text-sm rounded transition-colors disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2 touch-manipulation"
+          className="w-full py-3 px-4 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 font-semibold text-sm rounded transition-colors disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2 touch-manipulation select-none active:bg-neutral-800"
         >
           {isSubmitting ? "Activating Cards in Database..." : `Bind & Activate ${cardSerials.length} Card(s)`}
           <ArrowRight className="w-4 h-4" />
@@ -822,7 +872,7 @@ export function RegistrationCounter() {
               }
             }}
             placeholder="Search by buyer name, student #, or card serial..."
-            className="min-w-0 flex-1 px-3 py-2 text-base sm:text-xs font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+            className="min-w-0 flex-1 px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
           />
           <button
             type="button"
@@ -839,7 +889,7 @@ export function RegistrationCounter() {
                 setHistorySearchQuery("");
                 fetchRecentHistory("");
               }}
-              className="px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded text-xs min-h-[44px] flex items-center gap-1 touch-manipulation"
+              className="px-3 py-2 border border-amber-500 text-amber-600 bg-white hover:bg-amber-500 hover:text-neutral-950 active:bg-amber-600 rounded text-xs min-h-[44px] flex items-center gap-1 touch-manipulation select-none transition-colors"
             >
               <X className="w-3.5 h-3.5" />
               <span>Clear</span>
@@ -992,7 +1042,7 @@ export function RegistrationCounter() {
             <button
               type="button"
               onClick={() => setSelectedTxDetails(null)}
-              className="px-4 py-2 border border-neutral-900 hover:border-neutral-700 rounded text-xs font-bold text-neutral-900 min-h-[44px]"
+              className="px-4 py-2 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 active:bg-black rounded text-xs font-bold uppercase tracking-wider transition-colors min-h-[44px] touch-manipulation select-none"
             >
               Close Receipt
             </button>

@@ -1,4 +1,5 @@
 import prisma from '@/lib/db/prisma';
+import { broadcastAuditEvent } from '@/lib/appwrite/server';
 
 export interface AuditLogParams {
   userId?: string | null;
@@ -36,6 +37,14 @@ export async function recordAuditLog(params: AuditLogParams): Promise<void> {
         details: serializedDetails,
         ipAddress: params.ipAddress || null,
       },
+    });
+
+    // Broadcast sanitized audit event signal without PII to synchronize administrative dashboards
+    void broadcastAuditEvent({
+      eventType: 'AUDIT_EVENT',
+      action: params.action,
+      resource: params.resource,
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('Failed to record audit log entry:', error);

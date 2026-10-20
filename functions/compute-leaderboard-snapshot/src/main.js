@@ -57,11 +57,19 @@ export default async ({ res, log, error }) => {
 
     const databases = new Databases(client);
 
-    await databases.createDocument(databaseId, collectionId, ID.unique(), {
+    const documentId = 'latest-tally';
+    const docData = {
       cacheKey: 'latest-tally',
       payloadJson: JSON.stringify(snapshotPayload),
       updatedAt: snapshotPayload.generatedAt,
-    });
+    };
+
+    // SEC-07: Upsert single document ID 'latest-tally' to prevent unbounded document creation
+    try {
+      await databases.updateDocument(databaseId, collectionId, documentId, docData);
+    } catch (docErr) {
+      await databases.createDocument(databaseId, collectionId, documentId, docData);
+    }
 
     log(`Cached leaderboard snapshot with ${tallyResult.rows.length} booth-award entries.`);
 

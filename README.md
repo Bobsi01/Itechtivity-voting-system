@@ -119,7 +119,7 @@ Every physical card moves through three strict states:
 ### Prerequisites
 
 - Node.js 20 or higher
-- PostgreSQL instance (local or hosted, e.g. Heroku Postgres)
+- PostgreSQL instance (local or hosted, e.g. Supabase PostgreSQL)
 - Appwrite Cloud project (for Realtime and Storage)
 
 ### Installation

@@ -20,6 +20,7 @@
     "test:e2e:flow": "tsx src/lib/pdf/test-e2e-flow.ts",
     "test:e2e:browser": "tsx src/lib/test/multi-agent-qa-suite.ts",
     "test:audit": "tsx src/lib/test/audit-regressions.ts",
+    "test:ws": "tsx src/lib/test/test-websocket-integration.ts",
     "deploy:functions": "node scripts/deploy-appwrite-functions.mjs",
     "deploy:site": "node scripts/deploy-appwrite-site.mjs",
     "test:smoke": "node scripts/test-deployed-site.mjs",

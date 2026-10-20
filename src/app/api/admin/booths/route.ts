@@ -129,6 +129,10 @@ export async function POST(request: Request) {
         });
 
         if (existingUser) {
+          if (existingUser.role !== 'EXHIBITOR') {
+            throw new Error(`CANNOT_REASSIGN_PRIVILEGED_USER: User with email ${normalizedEmail} holds role ${existingUser.role}`);
+          }
+
           const passwordHash =
             exhibitorPassword && exhibitorPassword.length >= 6
               ? await bcrypt.hash(exhibitorPassword, 10)
@@ -194,7 +198,16 @@ export async function POST(request: Request) {
       booth: result,
     });
   } catch (error) {
+    const rawMessage = error instanceof Error ? error.message : '';
     console.error('Failed to upsert capstone booth:', error);
+
+    if (rawMessage.startsWith('CANNOT_REASSIGN_PRIVILEGED_USER:')) {
+      return NextResponse.json(
+        { success: false, error: 'CANNOT_REASSIGN_PRIVILEGED_USER', message: rawMessage },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json(
       { success: false, error: 'FAILED_TO_SAVE_BOOTH' },
       { status: 500 }

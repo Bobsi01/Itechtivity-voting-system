@@ -20,6 +20,7 @@ class SlidingWindowRateLimiter {
     maxRequests: number,
     windowMs: number
   ): RateLimitResult {
+
     const now = Date.now();
     this.maybeCleanup(windowMs);
 
@@ -54,6 +55,7 @@ class SlidingWindowRateLimiter {
    * Resets rate limit records for a given key (e.g. after successful login).
    */
   public reset(key: string): void {
+
     this.records.delete(key);
   }
 
@@ -61,8 +63,8 @@ class SlidingWindowRateLimiter {
    * Prunes stale records periodically to prevent unbounded memory growth.
    */
   private maybeCleanup(windowMs: number): void {
+
     const now = Date.now();
-    // Prune at most once every 60 seconds
     if (now - this.lastCleanup < 60000) return;
     this.lastCleanup = now;
 
@@ -79,23 +81,37 @@ class SlidingWindowRateLimiter {
 export const rateLimiter = new SlidingWindowRateLimiter();
 
 export function getClientIp(request: Request): string {
-  const cfConnectingIp = request.headers.get('cf-connecting-ip');
-  if (cfConnectingIp) {
-    return cfConnectingIp.trim();
+
+  const IPV4_PATTERN = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+  const IPV6_PATTERN = /^[0-9a-fA-F:]+$/;
+
+  function isValidIp(ip: string): boolean {
+    return (IPV4_PATTERN.test(ip) || IPV6_PATTERN.test(ip)) && !ip.includes(' ');
   }
-  const realIp = request.headers.get('x-real-ip');
-  if (realIp) {
-    return realIp.trim();
-  }
+
+  // 1. Standard reverse-proxy forwarded chain: the leftmost hop is the client IP
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) {
     const hops = forwarded
       .split(',')
       .map((s) => s.trim())
-      .filter(Boolean);
+      .filter((s) => s.length > 0 && isValidIp(s));
     if (hops.length > 0) {
-      return hops[hops.length - 1];
+      return hops[0];
     }
   }
+
+  // 2. Cloudflare connecting IP (if validated format)
+  const cfConnectingIp = request.headers.get('cf-connecting-ip');
+  if (cfConnectingIp && isValidIp(cfConnectingIp.trim())) {
+    return cfConnectingIp.trim();
+  }
+
+  // 3. Real IP header fallback (if validated format)
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp && isValidIp(realIp.trim())) {
+    return realIp.trim();
+  }
+
   return '127.0.0.1';
 }

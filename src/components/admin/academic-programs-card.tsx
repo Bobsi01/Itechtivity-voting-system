@@ -17,6 +17,7 @@ export function AcademicProgramsCard() {
   const [programs, setPrograms] = useState<AcademicProgramItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [programToDelete, setProgramToDelete] = useState<{ id: string; code: string } | null>(null);
 
   // New program form state
   const [newCode, setNewCode] = useState<string>("");
@@ -143,10 +144,10 @@ export function AcademicProgramsCard() {
           type="button"
           onClick={fetchPrograms}
           disabled={isLoading}
-          className="p-2.5 border border-neutral-300 hover:border-neutral-900 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+          className="p-2.5 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors touch-manipulation select-none"
           aria-label="Refresh programs"
         >
-          <RefreshCw className={`w-4 h-4 text-neutral-800 ${isLoading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
@@ -196,7 +197,7 @@ export function AcademicProgramsCard() {
             <button
               type="submit"
               disabled={isSubmitting || !newCode.trim() || !newName.trim()}
-              className="px-4 py-2 border border-neutral-900  text-neutral-900 rounded font-semibold text-xs  transition-colors disabled:opacity-50 min-h-[44px] flex items-center gap-1.5 touch-manipulation select-none"
+              className="px-4 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded font-semibold text-xs transition-colors disabled:opacity-50 min-h-[44px] flex items-center gap-1.5 touch-manipulation select-none"
             >
               <Plus className="w-4 h-4" />
               <span>{isSubmitting ? "Adding..." : "Add Program"}</span>
@@ -252,8 +253,8 @@ export function AcademicProgramsCard() {
 
                   <button
                     type="button"
-                    onClick={() => handleDeleteProgram(prog.id, prog.code)}
-                    className="p-2 border border-transparent hover:border-neutral-300 hover:text-red-700 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                    onClick={() => setProgramToDelete({ id: prog.id, code: prog.code })}
+                    className="p-2 border border-red-500 text-red-600 bg-white hover:bg-red-600 hover:text-white active:bg-red-700 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors touch-manipulation select-none"
                     aria-label={`Delete ${prog.code}`}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -265,6 +266,45 @@ export function AcademicProgramsCard() {
         )}
       </div>
     </div>
+
+    {/* Delete Program Confirmation Modal */}
+    {programToDelete && (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-program-dialog-title"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      >
+        <div className="bg-white border border-neutral-300 rounded-lg max-w-md w-full p-6 space-y-4 shadow-lg">
+          <h3 id="delete-program-dialog-title" className="text-base font-bold text-neutral-900 uppercase">
+            Delete Academic Program?
+          </h3>
+          <p className="text-xs text-neutral-600 leading-relaxed font-mono">
+            Are you sure you want to delete program <strong className="text-neutral-900 font-bold">{programToDelete.code}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setProgramToDelete(null)}
+              className="px-4 py-2 border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const target = programToDelete;
+                setProgramToDelete(null);
+                handleDeleteProgram(target.id, target.code);
+              }}
+              className="px-4 py-2 border-2 border-red-600 bg-red-600 text-white hover:bg-red-700 active:bg-red-800 rounded text-xs font-bold uppercase tracking-wider transition-colors min-h-[44px] touch-manipulation select-none"
+            >
+              Confirm Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
   </div>
 );
 }

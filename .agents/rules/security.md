@@ -34,7 +34,7 @@
 * **Trust Boundary Schema Validation:** Validate all external inputs (JSON bodies, `FormData`, URL parameters, query strings, headers, and scanned QR strings) at the entrypoint using strict Zod schemas before executing business logic.
 * **Mass Assignment Prevention:** Never pass raw `req.json()` objects directly into Prisma `create` or `update` queries. Explicitly map only validated, allowed fields.
 * **SQL Injection & Taint Sink Isolation:** Never use `prisma.$queryRawUnsafe` or `prisma.$executeRawUnsafe` with string concatenation or unparameterized template interpolation. Always use parameterized Prisma methods or tagged template literals (`prisma.$queryRaw` / `prisma.$executeRaw`).
-* **Unrestricted Resource Consumption (Rate Limiting):** Enforce rate limiting and payload size bounds on authentication endpoints (`/api/auth/login`), batch card generation, and high-frequency scan routes to prevent brute-force and resource exhaustion under the 512MB Heroku dyno ceiling.
+* **Unrestricted Resource Consumption (Rate Limiting):** Enforce rate limiting and payload size bounds on authentication endpoints (`/api/auth/login`), batch card generation, and high-frequency scan routes to prevent brute-force and resource exhaustion under cloud and container memory ceilings.
 
 ## 6. Session Hardening, Transport Security & Secret Isolation
 * **Cookie & Session Security:** Session cookies must be signed with HMAC-SHA256, verify expiration (`exp`) on every request, and enforce `HttpOnly`, `SameSite=Lax` (or `Strict`), `Path=/`, and `Secure` (in production).
