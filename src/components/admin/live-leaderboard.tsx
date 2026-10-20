@@ -17,6 +17,7 @@ interface AdminStatsData {
     isAwardsLocked: boolean;
     isVotingOpen: boolean;
     maxAwards: number;
+    isRegistrationOpen: boolean;
   };
   counts: {
     totalCards: number;
@@ -66,15 +67,36 @@ export function LiveLeaderboard() {
   const [isEditingAwards, setIsEditingAwards] = useState<boolean>(false);
   const [awardDrafts, setAwardDrafts] = useState<Record<number, string>>({});
   const [showFreezeConfirm, setShowFreezeConfirm] = useState<boolean>(false);
+  const [showPauseRegistrationConfirm, setShowPauseRegistrationConfirm] = useState<boolean>(false);
 
   const fetchStats = async () => {
 
     setIsLoading(true);
     try {
-      const res = await fetch("/api/admin/stats");
+      const [res, configRes] = await Promise.all([
+        fetch("/api/admin/stats"),
+        fetch("/api/admin/config"),
+      ]);
       const data = await res.json();
+      let isRegOpen = true;
+
+      if (configRes.ok) {
+        const configData = await configRes.json();
+        if (configData.success && typeof configData.config?.isRegistrationOpen === "boolean") {
+          isRegOpen = configData.config.isRegistrationOpen;
+        }
+      } else if (typeof data?.config?.isRegistrationOpen === "boolean") {
+        isRegOpen = data.config.isRegistrationOpen;
+      }
+
       if (res.ok && data.success) {
-        setStats(data);
+        setStats({
+          ...data,
+          config: {
+            ...data.config,
+            isRegistrationOpen: isRegOpen,
+          },
+        });
       }
     } catch (err) {
       console.warn("Failed to fetch administrative telemetry stats:", err);
@@ -120,9 +142,26 @@ export function LiveLeaderboard() {
       poller.reset();
     });
 
-    // Subscribe to system config and voting freeze broadcasts
+    // Subscribe to system config, voting freeze, and registration lifecycle broadcasts
     const unsubscribeConfig = subscribeToSystemConfigEvents((payload) => {
-      toast.info(`Config Update: Voting ${payload.isVotingOpen ? "opened" : "frozen"}`);
+      setStats((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          config: {
+            ...prev.config,
+            isVotingOpen: payload.isVotingOpen,
+            isAwardsLocked: payload.isAwardsLocked,
+            isRegistrationOpen:
+              typeof payload.isRegistrationOpen === "boolean"
+                ? payload.isRegistrationOpen
+                : prev.config.isRegistrationOpen,
+          },
+        };
+      });
+      const regStatus = payload.isRegistrationOpen ? "opened" : "paused";
+      const voteStatus = payload.isVotingOpen ? "opened" : "frozen";
+      toast.info(`Config Update: Voting ${voteStatus}, Registration ${regStatus}`);
       debouncedFetchStats();
       poller.reset();
     });
@@ -258,6 +297,44 @@ export function LiveLeaderboard() {
     }
   };
 
+  const executeToggleRegistration = async () => {
+
+    if (!stats) return;
+    setIsUpdatingConfig(true);
+
+    try {
+      const res = await fetch("/api/admin/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isRegistrationOpen: !stats.config.isRegistrationOpen }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(
+          data.config.isRegistrationOpen ? "Registration is now ACTIVE" : "Registration is now PAUSED"
+        );
+        fetchStats();
+      } else {
+        toast.error("Failed to update registration status");
+      }
+    } catch (err) {
+      console.warn("Failed to toggle registration status:", err);
+      toast.error("Network error while updating registration status");
+    } finally {
+      setIsUpdatingConfig(false);
+    }
+  };
+
+  const handleToggleRegistrationClick = () => {
+
+    if (!stats) return;
+    if (stats.config.isRegistrationOpen) {
+      setShowPauseRegistrationConfirm(true);
+    } else {
+      executeToggleRegistration();
+    }
+  };
+
   if (!stats) {
     return (
       <div className="p-12 text-center text-xs font-mono text-neutral-500">
@@ -277,12 +354,15 @@ export function LiveLeaderboard() {
         <div className="flex items-center gap-3">
           <Shield className="w-5 h-5 text-neutral-900" strokeWidth={1.75} />
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="font-bold text-sm text-neutral-900 uppercase">
                 {stats.config.eventName} System Controls
               </span>
               <span className="text-xs font-mono border border-neutral-300 px-2 py-0.5 rounded text-neutral-700 select-text">
                 {stats.config.isVotingOpen ? "Voting ACTIVE" : "Voting FROZEN"}
+              </span>
+              <span className="text-xs font-mono border border-neutral-300 px-2 py-0.5 rounded text-neutral-700 select-text">
+                {stats.config.isRegistrationOpen ? "Registration ACTIVE" : "Registration PAUSED"}
               </span>
             </div>
             <p className="text-xs text-neutral-600 font-mono">
@@ -292,7 +372,30 @@ export function LiveLeaderboard() {
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleToggleRegistrationClick}
+            disabled={isUpdatingConfig}
+            className={`flex items-center px-3 py-2 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none disabled:opacity-50 ${
+              stats.config.isRegistrationOpen
+                ? "border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900"
+                : "border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800"
+            }`}
+          >
+            {stats.config.isRegistrationOpen ? (
+              <>
+                <Pause className="w-4 h-4 mr-2" />
+                <span>Pause Registration</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                <span>Start Registration</span>
+              </>
+            )}
+          </button>
+
           <button
             type="button"
             onClick={handleToggleLock}
@@ -653,6 +756,45 @@ export function LiveLeaderboard() {
                 className="px-4 py-2 border-2 border-amber-600 bg-amber-500 text-neutral-950 hover:bg-amber-600 active:bg-amber-700 rounded text-xs font-bold uppercase tracking-wider transition-colors min-h-[44px] touch-manipulation select-none disabled:opacity-50"
               >
                 Confirm Emergency Freeze
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pause Registration Confirmation Modal */}
+      {showPauseRegistrationConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="pause-registration-dialog-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+        >
+          <div className="bg-white border border-neutral-300 rounded-lg max-w-md w-full p-6 space-y-4 shadow-lg">
+            <h3 id="pause-registration-dialog-title" className="text-base font-bold text-neutral-900 uppercase">
+              Pause Event Registration?
+            </h3>
+            <p className="text-xs text-neutral-600 leading-relaxed font-mono">
+              Pausing event registration prevents all cashiers from binding or activating bingo cards and award ticket stubs. Existing activated cards remain valid for voting.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowPauseRegistrationConfirm(false)}
+                className="px-4 py-2 border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPauseRegistrationConfirm(false);
+                  executeToggleRegistration();
+                }}
+                disabled={isUpdatingConfig}
+                className="px-4 py-2 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 rounded text-xs font-bold uppercase tracking-wider transition-colors min-h-[44px] touch-manipulation select-none disabled:opacity-50"
+              >
+                Confirm Pause
               </button>
             </div>
           </div>

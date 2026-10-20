@@ -347,6 +347,7 @@ function challenge4EmergencyFreezeBehavior(): void {
     eventType: 'SYSTEM_CONFIG_EVENT',
     isVotingOpen: false,
     isAwardsLocked: false,
+    isRegistrationOpen: true,
     timestamp: new Date().toISOString(),
   });
 
@@ -379,6 +380,7 @@ function challenge4EmergencyFreezeBehavior(): void {
     eventType: 'SYSTEM_CONFIG_EVENT',
     isVotingOpen: true,
     isAwardsLocked: false,
+    isRegistrationOpen: true,
     timestamp: new Date().toISOString(),
   });
 

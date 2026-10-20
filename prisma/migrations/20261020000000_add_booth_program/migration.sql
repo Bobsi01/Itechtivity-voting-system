@@ -1,0 +1,1 @@
+ALTER TABLE "Booth" ADD COLUMN IF NOT EXISTS "programCode" TEXT;

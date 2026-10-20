@@ -192,10 +192,17 @@ export async function broadcastCardActivationEvent(payload: CardBatchActivatedBr
  * Broadcasts system configuration and emergency voting freeze alerts.
  * Notifies exhibitor scanners and live displays of administrative lockdowns.
  */
-export async function broadcastSystemConfigEvent(payload: SystemConfigBroadcastPayload): Promise<void> {
+export async function broadcastSystemConfigEvent(
+  payload: Omit<SystemConfigBroadcastPayload, 'isRegistrationOpen'> & {
+    isRegistrationOpen?: boolean;
+  }
+): Promise<void> {
 
   try {
-    const validated = SystemConfigBroadcastSchema.parse(payload);
+    const validated = SystemConfigBroadcastSchema.parse({
+      ...payload,
+      isRegistrationOpen: payload.isRegistrationOpen ?? true,
+    });
     if (!isAppwriteServerConfigured()) {
       return;
     }
@@ -347,3 +354,57 @@ export async function triggerAppwritePdfGeneration(batchPayload: {
     return { success: false, error: message };
   }
 }
+
+/**
+ * Uploads a booth logo/icon image buffer to Appwrite Cloud Storage (booth-logos bucket).
+ * Returns the public view URL and file ID, or null if Appwrite is not configured.
+ */
+export async function uploadBoothLogoToAppwrite(
+  fileBuffer: Buffer,
+  fileName: string
+): Promise<{ fileId: string; viewUrl: string } | null> {
+
+  if (!isAppwriteServerConfigured()) {
+    return null;
+  }
+
+  try {
+    const { storage } = getServerClient();
+    const bucketId = process.env.APPWRITE_BOOTH_LOGOS_BUCKET_ID || 'booth-logos';
+    const inputFile = InputFile.fromBuffer(fileBuffer, fileName);
+
+    const uploadedFile = await storage.createFile(bucketId, ID.unique(), inputFile);
+    const endpoint = process.env.APPWRITE_ENDPOINT || 'https://sgp.cloud.appwrite.io/v1';
+    const projectId = process.env.APPWRITE_PROJECT_ID || 'itechtivity-2027';
+    const viewUrl = `${endpoint}/storage/buckets/${bucketId}/files/${uploadedFile.$id}/view?project=${projectId}`;
+
+    return {
+      fileId: uploadedFile.$id,
+      viewUrl,
+    };
+  } catch (error) {
+    console.warn('[Appwrite Booth Logo Upload Fallback]:', error);
+    return null;
+  }
+}
+
+/**
+ * Downloads a booth logo buffer from Appwrite Cloud Storage by fileId.
+ */
+export async function downloadBoothLogoFromAppwrite(fileId: string): Promise<Buffer | null> {
+
+  if (!isAppwriteServerConfigured() || !fileId) {
+    return null;
+  }
+
+  try {
+    const { storage } = getServerClient();
+    const bucketId = process.env.APPWRITE_BOOTH_LOGOS_BUCKET_ID || 'booth-logos';
+    const arrayBuffer = await storage.getFileView(bucketId, fileId);
+    return Buffer.from(arrayBuffer);
+  } catch (error) {
+    console.warn('[Appwrite Booth Logo Download Fallback]:', error);
+    return null;
+  }
+}
+

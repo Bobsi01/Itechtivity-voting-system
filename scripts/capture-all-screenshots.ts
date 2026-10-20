@@ -59,8 +59,19 @@ const PAGES_TO_CAPTURE: PageTarget[] = [
     email: 'admin@itech2027.edu',
     waitForSelector: 'main',
     action: async (page) => {
+      const menuTrigger = await page.$('button[aria-label="Open side menu drawer"]');
+      if (menuTrigger) {
+        const isTriggerVisible = await page.evaluate((el: Element) => (el as HTMLElement).offsetParent !== null, menuTrigger);
+        if (isTriggerVisible) {
+          await menuTrigger.click();
+          await new Promise((resolve) => setTimeout(resolve, 400));
+        }
+      }
+
       const buttons = await page.$$('button');
       for (const btn of buttons) {
+        const isVisible = await page.evaluate((el: Element) => (el as HTMLElement).offsetParent !== null, btn);
+        if (!isVisible) continue;
         const text = await page.evaluate((el: Element) => el.textContent, btn);
         if (text && text.includes('Audit Trail')) {
           await btn.click();

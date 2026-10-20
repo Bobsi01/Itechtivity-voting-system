@@ -3,12 +3,13 @@ import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
 import { recordAuditLog, createHumanReadableSummary } from '@/lib/audit/log';
-import { broadcastSystemConfigEvent } from '@/lib/appwrite/server';
+import { broadcastSystemConfigEvent, broadcastAuditEvent } from '@/lib/appwrite/server';
 import { getClientIp } from '@/lib/security/rate-limiter';
 
 const UpdateConfigSchema = z.object({
   isAwardsLocked: z.boolean().optional(),
   isVotingOpen: z.boolean().optional(),
+  isRegistrationOpen: z.boolean().optional(),
   awardUpdates: z
     .array(
       z.object({
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'CONFIG_NOT_FOUND' }, { status: 404 });
     }
 
-    const { isAwardsLocked, isVotingOpen, awardUpdates } = parsed.data;
+    const { isAwardsLocked, isVotingOpen, isRegistrationOpen, awardUpdates } = parsed.data;
 
     // Prevent modifying award titles if awards configuration is locked to physical print
     if (awardUpdates && awardUpdates.length > 0 && firstConfig.isAwardsLocked && isAwardsLocked !== false) {
@@ -48,6 +49,8 @@ export async function POST(request: Request) {
         { status: 403 }
       );
     }
+
+    const clientIp = getClientIp(request);
 
     const updated = await prisma.$transaction(async (tx) => {
 
@@ -60,16 +63,51 @@ export async function POST(request: Request) {
         }
       }
 
-      return tx.eventConfig.update({
+      const updatedConfig = await tx.eventConfig.update({
         where: { id: firstConfig.id },
         data: {
           ...(isAwardsLocked !== undefined ? { isAwardsLocked } : {}),
           ...(isVotingOpen !== undefined ? { isVotingOpen } : {}),
+          ...(isRegistrationOpen !== undefined ? { isRegistrationOpen } : {}),
         },
       });
+
+      if (isRegistrationOpen !== undefined && isRegistrationOpen !== firstConfig.isRegistrationOpen) {
+        const actionName = isRegistrationOpen ? 'ADMIN_OPEN_REGISTRATION' : 'ADMIN_PAUSE_REGISTRATION';
+        const summary = isRegistrationOpen
+          ? `${session.fullName} (${session.role}) opened event registration: cashier card sales and attendee activations are active.`
+          : `${session.fullName} (${session.role}) paused event registration: all cashier card sales and activations paused.`;
+
+        await tx.auditLog.create({
+          data: {
+            userId: session.userId,
+            actorName: session.fullName,
+            actorEmail: session.email,
+            actorRole: session.role,
+            action: actionName,
+            resource: 'SYSTEM_CONFIG',
+            summary,
+            details: JSON.stringify({
+              previous: firstConfig.isRegistrationOpen,
+              current: isRegistrationOpen,
+            }),
+            ipAddress: clientIp,
+          },
+        });
+      }
+
+      return updatedConfig;
     });
 
-    const clientIp = getClientIp(request);
+    if (isRegistrationOpen !== undefined && isRegistrationOpen !== firstConfig.isRegistrationOpen) {
+      const actionName = isRegistrationOpen ? 'ADMIN_OPEN_REGISTRATION' : 'ADMIN_PAUSE_REGISTRATION';
+      void broadcastAuditEvent({
+        eventType: 'AUDIT_EVENT',
+        action: actionName,
+        resource: 'SYSTEM_CONFIG',
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     if (isVotingOpen !== undefined && isVotingOpen !== firstConfig.isVotingOpen) {
       const actionName = isVotingOpen ? 'ADMIN_UNFREEZE_VOTING' : 'ADMIN_FREEZE_VOTING';
@@ -131,6 +169,7 @@ export async function POST(request: Request) {
       eventType: 'SYSTEM_CONFIG_EVENT',
       isVotingOpen: updated.isVotingOpen,
       isAwardsLocked: updated.isAwardsLocked,
+      isRegistrationOpen: updated.isRegistrationOpen,
       timestamp: new Date().toISOString(),
     });
 
@@ -141,6 +180,29 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Update config error:', error);
     return NextResponse.json({ success: false, error: 'UPDATE_CONFIG_FAILED' }, { status: 500 });
+  }
+}
+
+export async function GET() {
+
+  const session = await getCurrentUser();
+  if (!session || session.role !== 'ADMIN') {
+    return NextResponse.json({ success: false, error: 'UNAUTHORIZED' }, { status: 403 });
+  }
+
+  try {
+    const config = await prisma.eventConfig.findFirst();
+    if (!config) {
+      return NextResponse.json({ success: false, error: 'CONFIG_NOT_FOUND' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      config,
+    });
+  } catch (error) {
+    console.error('Fetch config error:', error);
+    return NextResponse.json({ success: false, error: 'FETCH_CONFIG_FAILED' }, { status: 500 });
   }
 }
 

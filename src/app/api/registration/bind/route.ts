@@ -66,6 +66,22 @@ export async function POST(request: Request) {
     );
   }
 
+  // Gate: verify that registration is currently open in event configuration before processing
+  const eventConfig = await prisma.eventConfig.findFirst({
+    select: { isRegistrationOpen: true },
+  });
+
+  if (!eventConfig || !eventConfig.isRegistrationOpen) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'REGISTRATION_CLOSED',
+        message: 'Registration is currently paused by the event administrator.',
+      },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await request.json();
     const parsed = RegistrationBindSchema.safeParse(body);
@@ -171,6 +187,11 @@ export async function POST(request: Request) {
           status: StubStatus.ACTIVATED,
         },
       });
+
+      const expectedStubsCount = existingCards.reduce((acc, c) => acc + c.stubs.length, 0);
+      if (stubsUpdate.count !== expectedStubsCount) {
+        throw new Error('CONCURRENCY_CONFLICT: Incomplete stub activation count.');
+      }
 
       const txPayload = {
         success: true,
@@ -319,28 +340,36 @@ export async function GET(request: Request) {
           }
         : scopeFilter;
 
-    const transactions = await prisma.registrationTransaction.findMany({
-      where: whereClause,
-      take: 20,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        buyerName: true,
-        buyerType: true,
-        studentNumber: true,
-        program: true,
-        yearAndSection: true,
-        affiliation: true,
-        quantityBought: true,
-        createdAt: true,
-        cards: {
-          select: { cardSerial: true },
+    const [eventConfig, transactions] = await Promise.all([
+      prisma.eventConfig.findFirst({
+        select: { isRegistrationOpen: true },
+      }),
+      prisma.registrationTransaction.findMany({
+        where: whereClause,
+        take: 20,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          buyerName: true,
+          buyerType: true,
+          studentNumber: true,
+          program: true,
+          yearAndSection: true,
+          affiliation: true,
+          quantityBought: true,
+          createdAt: true,
+          cards: {
+            select: { cardSerial: true },
+          },
         },
-      },
-    });
+      }),
+    ]);
+
+    const isRegistrationOpen = eventConfig?.isRegistrationOpen ?? true;
 
     return NextResponse.json({
       success: true,
+      isRegistrationOpen,
       transactions,
     });
   } catch (error) {

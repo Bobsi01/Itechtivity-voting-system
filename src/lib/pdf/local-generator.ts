@@ -59,12 +59,44 @@ export async function generateCardBatch(
     title: a.title,
   }));
 
+  const boothsWithLogos = await prisma.booth.findMany({
+    where: { logoUrl: { not: null } },
+    select: { code: true, logoUrl: true },
+  });
+
+  const boothLogos: Record<string, Buffer> = {};
+  for (const b of boothsWithLogos) {
+    if (!b.logoUrl) continue;
+    try {
+      if (b.logoUrl.startsWith('data:image/')) {
+        const base64Data = b.logoUrl.split(',')[1];
+        if (base64Data) {
+          boothLogos[b.code] = Buffer.from(base64Data, 'base64');
+        }
+      } else if (b.logoUrl.startsWith('/uploads/')) {
+        const localPath = path.join(process.cwd(), 'public', b.logoUrl);
+        if (fs.existsSync(localPath)) {
+          boothLogos[b.code] = fs.readFileSync(localPath);
+        }
+      } else if (b.logoUrl.startsWith('http://') || b.logoUrl.startsWith('https://')) {
+        const res = await fetch(b.logoUrl);
+        if (res.ok) {
+          const ab = await res.arrayBuffer();
+          boothLogos[b.code] = Buffer.from(ab);
+        }
+      }
+    } catch (logoErr) {
+      console.warn(`Failed to preload logo for booth ${b.code}:`, logoErr);
+    }
+  }
+
   const { buffer, totalSheets } = await generateA4BingoPdfBuffer({
     batchNumber,
     startCardNumber: 1,
     totalCards,
     awardsList,
     secretKey,
+    boothLogos,
   });
 
   const fileName = `bingo-batch-${batchNumber.toString().padStart(3, '0')}-cards-1-${totalCards}.pdf`;

@@ -1,10 +1,11 @@
 import assert from 'node:assert';
 import prisma from '../../lib/db/prisma';
 import { CardStatus, StubStatus } from '@prisma/client';
+import { POST as postBatchCards } from '../../app/api/admin/cards/batch/route';
 
 async function runCardsAdminVerification() {
 
-  console.log('--- Starting Cards Admin Batch Activation & Inspection Verification ---');
+  console.log('--- Starting Cards Admin Batch Deprecation & Inspection Verification ---');
 
   // 1. Find or verify an admin user
   const adminUser = await prisma.user.findFirst({
@@ -82,7 +83,15 @@ async function runCardsAdminVerification() {
   const targetSerials = targetCards.map((c) => c.cardSerial);
   console.log(`[PASS] Selected ${targetSerials.length} unactivated cards for batch activation:`, targetSerials);
 
-  // 3. Perform batch activation transaction mimicking POST /api/admin/cards/batch
+  // 3a. Assert that batch activation endpoint returns HTTP 404 Not Found (permanently deprecated)
+  const batchRes = await postBatchCards();
+  assert.strictEqual(batchRes.status, 404, 'Batch activation endpoint must return HTTP 404 Not Found');
+  const batchBody = (await batchRes.json()) as { success: boolean; error: string; message: string };
+  assert.strictEqual(batchBody.success, false, 'Batch activation response success must be false');
+  assert.strictEqual(batchBody.error, 'NOT_FOUND', 'Batch activation response error must be NOT_FOUND');
+  console.log('[PASS] Batch activation deprecation verified: POST /api/admin/cards/batch returns 404 Not Found.');
+
+  // 3b. Perform POS registration binding transaction to activate target cards exclusively via point-of-sale
   const transaction = await prisma.registrationTransaction.create({
     data: {
       processedByUserId: adminUser.id,
@@ -114,7 +123,7 @@ async function runCardsAdminVerification() {
     data: { status: StubStatus.ACTIVATED },
   });
 
-  console.log('[PASS] Batch activation committed successfully.');
+  console.log('[PASS] Exclusive POS registration activation committed successfully.');
 
   // 4. Test Card Inspection on the first activated card mimicking GET /api/admin/cards?serial=...
   const inspectedSerial = targetSerials[0];
@@ -262,7 +271,7 @@ async function runCardsAdminVerification() {
   assert.strictEqual(unvotedStub.vote, null);
   console.log('[PASS] Unvoted Stub verified: Stub Slot', unvotedStub.slotNumber, 'remains ACTIVATED (not voted yet).');
 
-  console.log('--- All Cards Admin Batch Activation & Inspection tests PASSED! ---');
+  console.log('--- All Cards Admin Batch Deprecation & Inspection tests PASSED! ---');
 }
 
 runCardsAdminVerification()

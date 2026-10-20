@@ -141,19 +141,27 @@ export async function POST(request: Request) {
     // Step 3: Execute stub redemption, award lookup, vote recording, and idempotency log atomically
     const transactionResult = await prisma.$transaction(async (tx) => {
 
-      // 1. Atomic conditional update: only succeeds if currently ACTIVATED
+      // 1. Atomic conditional update: only succeeds if currently ACTIVATED and parent BingoCard is ACTIVATED
       const updatedRows = await tx.$queryRaw<UpdatedStubRow[]>`
         UPDATE "TicketStub"
         SET "status" = 'REDEEMED', "updatedAt" = NOW()
         WHERE "stubSerial" = ${stubSerial}
           AND "status" = 'ACTIVATED'
+          AND "bingoCardId" IN (
+            SELECT "id" FROM "BingoCard" WHERE "status" = 'ACTIVATED'
+          )
         RETURNING "id", "awardId", "bingoCardId", "slotNumber";
       `;
 
       if (!updatedRows || updatedRows.length === 0) {
         const existingStub = await tx.ticketStub.findUnique({
           where: { stubSerial },
-          select: { status: true },
+          select: {
+            status: true,
+            bingoCard: {
+              select: { status: true },
+            },
+          },
         });
 
         if (!existingStub) {
@@ -176,7 +184,11 @@ export async function POST(request: Request) {
           return { errorStatus: 'TICKET_ALREADY_REDEEMED', httpCode: 409 };
         }
 
-        return { errorStatus: 'TICKET_NOT_ACTIVATED', httpCode: 400 };
+        return {
+          errorStatus: 'TICKET_NOT_ACTIVATED',
+          message: 'Ticket stub has not been activated at the registration desk.',
+          httpCode: 400,
+        };
       }
 
       const stub = updatedRows[0];
@@ -254,10 +266,16 @@ export async function POST(request: Request) {
     }
 
     if ('errorStatus' in transactionResult) {
-      return NextResponse.json(
-        { success: false, error: transactionResult.errorStatus },
-        { status: transactionResult.httpCode }
-      );
+      const errorPayload: { success: boolean; error: string; message?: string } = {
+        success: false,
+        error: transactionResult.errorStatus || "TRANSACTION_FAILED",
+      };
+
+      if ('message' in transactionResult && typeof transactionResult.message === 'string') {
+        errorPayload.message = transactionResult.message;
+      }
+
+      return NextResponse.json(errorPayload, { status: transactionResult.httpCode });
     }
 
     const { vote, totalVotesForAward, responsePayload } = transactionResult;

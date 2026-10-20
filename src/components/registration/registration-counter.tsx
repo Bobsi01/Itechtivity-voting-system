@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { UserCheck, QrCode, Plus, Trash2, CheckCircle2, ArrowRight, History, RefreshCw, Camera, ImageUp, X, Eye, FileText, Layers, Search } from "lucide-react";
+import { UserCheck, QrCode, Plus, Trash2, CheckCircle2, ArrowRight, History, RefreshCw, Camera, ImageUp, X, Eye, FileText, Layers, Search, AlertTriangle } from "lucide-react";
 import { QrScanner } from "@/components/ui/qr-scanner";
 import { decodeQrImage } from "@/lib/scanner/decode-image";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { SimpleSelect, type SimpleSelectOption } from "@/components/ui/simple-se
 import { formatProgramYearSection } from "@/lib/utils/format";
 import {
   subscribeToRegistrationEvents,
+  subscribeToSystemConfigEvents,
   createResilientPoller,
   createEventDeduplicator,
 } from "@/lib/appwrite/client";
@@ -45,6 +46,7 @@ interface RecentTxItem {
 
 export function RegistrationCounter() {
 
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState<boolean>(true);
   const [selectedTxDetails, setSelectedTxDetails] = useState<RecentTxItem | null>(null);
   const [buyerType, setBuyerType] = useState<"CSD_STUDENT" | "NON_CSD_STUDENT" | "VISITOR" | "ALUMNI">("CSD_STUDENT");
   const [buyerName, setBuyerName] = useState<string>("");
@@ -112,19 +114,24 @@ export function RegistrationCounter() {
       const url = q ? `/api/registration/bind?q=${encodeURIComponent(q)}` : "/api/registration/bind";
       const res = await fetch(url);
       const data = await res.json();
-      if (res.ok && data.success && Array.isArray(data.transactions)) {
-        setRecentTransactions((prev) => {
-          const txMap = new Map<string, RecentTxItem>();
-          for (const tx of prev) {
-            txMap.set(tx.id, tx);
-          }
-          for (const tx of data.transactions) {
-            txMap.set(tx.id, tx);
-          }
-          return Array.from(txMap.values()).sort(
-            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        });
+      if (res.ok && data.success) {
+        if (typeof data.isRegistrationOpen === "boolean") {
+          setIsRegistrationOpen(data.isRegistrationOpen);
+        }
+        if (Array.isArray(data.transactions)) {
+          setRecentTransactions((prev) => {
+            const txMap = new Map<string, RecentTxItem>();
+            for (const tx of prev) {
+              txMap.set(tx.id, tx);
+            }
+            for (const tx of data.transactions) {
+              txMap.set(tx.id, tx);
+            }
+            return Array.from(txMap.values()).sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+          });
+        }
       }
     } catch (err) {
       console.warn("Failed to load recent registration history:", err);
@@ -132,6 +139,8 @@ export function RegistrationCounter() {
       setIsLoadingHistory(false);
     }
   }, [historySearchQuery]);
+
+  const loadRecentTransactions = fetchRecentHistory;
 
   useEffect(() => {
     async function loadPrograms() {
@@ -171,10 +180,23 @@ export function RegistrationCounter() {
       poller.reset();
     });
 
+    const unsubscribeConfig = subscribeToSystemConfigEvents((event) => {
+      if (typeof event.isRegistrationOpen === "boolean") {
+        setIsRegistrationOpen(event.isRegistrationOpen);
+        if (!event.isRegistrationOpen) {
+          setIsCameraOpen(false);
+          toast.error("Registration Paused: Sales temporarily closed by administrator");
+        } else {
+          toast.info("Registration Resumed: Sales active");
+        }
+      }
+    });
+
     poller.start();
 
     return () => {
       unsubscribe();
+      unsubscribeConfig();
       poller.stop();
     };
   }, [fetchRecentHistory]);
@@ -309,6 +331,11 @@ export function RegistrationCounter() {
     setFormError(null);
     setLastReceipt(null);
 
+    if (!isRegistrationOpen) {
+      toast.error("Registration is currently paused by administrators.");
+      return;
+    }
+
     if (buyerName.trim().length < 2) {
       setFormError("Enter the purchaser’s full name (at least two characters).");
       return;
@@ -399,12 +426,36 @@ export function RegistrationCounter() {
     }
   };
 
+  const queuedCards = cardSerials;
+
   return (
     <div className="space-y-6">
+      {/* Registration Paused Alert Banner */}
+      {!isRegistrationOpen && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="border-2 border-neutral-900 bg-white p-4 mb-4 text-center rounded-lg space-y-1"
+        >
+          <div className="flex items-center justify-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-neutral-900 flex-shrink-0" />
+            <h2 className="font-bold text-sm uppercase tracking-wider text-neutral-900">
+              Registration Paused
+            </h2>
+          </div>
+          <p className="text-xs font-mono text-neutral-700">
+            Point-of-sale card binding is currently paused by event administration. Cashier checkout is disabled.
+          </p>
+        </div>
+      )}
+
       {/* Cashier Shift Ledger & Pricing Bar */}
       <div className="border border-neutral-300 p-3.5 rounded-lg bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
         <div className="flex flex-wrap items-center gap-4">
           <span className="font-bold text-neutral-900 uppercase">Cashier Shift Summary:</span>
+          <span className="border border-neutral-300 px-2 py-0.5 rounded text-neutral-900 font-bold select-text">
+            {isRegistrationOpen ? "REGISTRATION ACTIVE" : "REGISTRATION PAUSED"}
+          </span>
           <span>Shift Cards: <strong className="text-neutral-900 font-bold select-text">{shiftCardsSold}</strong></span>
           <span>Session Cash: <strong className="text-neutral-900 font-bold select-text">₱{shiftCashCollected.toLocaleString()}</strong></span>
           <span>Venue Bound: <strong className="text-neutral-900 font-bold select-text">{venueCardsBound}</strong></span>
@@ -447,9 +498,10 @@ export function RegistrationCounter() {
               <button
                 key={tab.type}
                 type="button"
+                disabled={!isRegistrationOpen || isSubmitting}
                 aria-pressed={buyerType === tab.type}
                 onClick={() => { setBuyerType(tab.type as typeof buyerType); setAffiliation(""); setStudentNumber(""); setFormError(null); setLastReceipt(null); }}
-                className={`p-2.5 border rounded text-xs transition-colors min-h-[44px] flex items-center justify-center font-medium ${
+                className={`p-2.5 border rounded text-xs transition-colors min-h-[44px] flex items-center justify-center font-medium disabled:opacity-50 ${
                   buyerType === tab.type
                     ? "border-neutral-900 font-bold"
                     : "border-neutral-300 hover:border-neutral-600 text-neutral-700"
@@ -470,11 +522,12 @@ export function RegistrationCounter() {
             <input id="registration-counter-field-1"
               type="text"
               aria-label="Full name"
+              disabled={!isRegistrationOpen || isSubmitting}
               value={buyerName}
               onChange={(e) => setBuyerName(e.target.value)}
               placeholder="e.g. Juan Dela Cruz"
               required
-              className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+              className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
             />
           </div>
 
@@ -485,10 +538,11 @@ export function RegistrationCounter() {
             <input id="registration-counter-field-2"
               type="text"
               aria-label="Contact or email"
+              disabled={!isRegistrationOpen || isSubmitting}
               value={contactInfo}
               onChange={(e) => setContactInfo(e.target.value)}
               placeholder="e.g. 0917-000-0000 or email"
-              className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+              className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
             />
           </div>
 
@@ -501,15 +555,16 @@ export function RegistrationCounter() {
                 <input id="registration-counter-field-3"
                   type="text"
                   aria-label="Student number"
-              value={studentNumber}
+                  disabled={!isRegistrationOpen || isSubmitting}
+                  value={studentNumber}
                   onChange={(e) => setStudentNumber(e.target.value)}
                   placeholder="e.g. 2023-12345"
-                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
                 />
               </div>
 
               {/* Customized Searchable Program Picker Dropdown */}
-              <div className="space-y-1 sm:col-span-2">
+              <div className={`space-y-1 sm:col-span-2 ${!isRegistrationOpen || isSubmitting ? "pointer-events-none opacity-50" : ""}`}>
                 <label className="text-xs font-semibold text-neutral-700 uppercase tracking-wider">
                   Program / Degree (Searchable)
                 </label>
@@ -522,7 +577,7 @@ export function RegistrationCounter() {
               </div>
 
               {/* Year Level Dropdown (1 to 5, without search bar) */}
-              <div className="space-y-1">
+              <div className={`space-y-1 ${!isRegistrationOpen || isSubmitting ? "pointer-events-none opacity-50" : ""}`}>
                 <label className="text-xs font-semibold text-neutral-700 uppercase tracking-wider">
                   Year Level
                 </label>
@@ -536,7 +591,7 @@ export function RegistrationCounter() {
               </div>
 
               {/* Section Dropdown (A to E, without search bar) */}
-              <div className="space-y-1">
+              <div className={`space-y-1 ${!isRegistrationOpen || isSubmitting ? "pointer-events-none opacity-50" : ""}`}>
                 <label className="text-xs font-semibold text-neutral-700 uppercase tracking-wider">
                   Section
                 </label>
@@ -567,10 +622,11 @@ export function RegistrationCounter() {
               <input id="registration-counter-field-4"
                 type="text"
                 aria-label="Affiliation or organization"
-              value={affiliation}
+                disabled={!isRegistrationOpen || isSubmitting}
+                value={affiliation}
                 onChange={(e) => setAffiliation(e.target.value)}
                 placeholder="e.g. Industry Partner / High School Guest / Family"
-                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
               />
             </div>
           )}
@@ -594,6 +650,7 @@ export function RegistrationCounter() {
           <div className="flex items-center gap-2">
             <button
               type="button"
+              disabled={!isRegistrationOpen || isSubmitting}
               onClick={() => {
                 if (isCameraOpen) {
                   stopRegistrationCamera();
@@ -602,7 +659,7 @@ export function RegistrationCounter() {
                   startRegistrationCamera();
                 }
               }}
-              className="px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded font-semibold text-xs flex items-center gap-1.5 transition-colors min-h-[44px]"
+              className="px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded font-semibold text-xs flex items-center gap-1.5 transition-colors min-h-[44px] disabled:opacity-50"
             >
               {isCameraOpen ? (
                 <>
@@ -619,8 +676,9 @@ export function RegistrationCounter() {
 
             <button
               type="button"
+              disabled={!isRegistrationOpen || isSubmitting}
               onClick={() => regFileInputRef.current?.click()}
-              className="px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded font-semibold text-xs flex items-center gap-1.5 transition-colors min-h-[44px]"
+              className="px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded font-semibold text-xs flex items-center gap-1.5 transition-colors min-h-[44px] disabled:opacity-50"
             >
               <ImageUp className="w-4 h-4" />
               <span>Scan QR Image</span>
@@ -650,6 +708,7 @@ export function RegistrationCounter() {
           <input
             type="text"
             aria-label="Card serial"
+            disabled={!isRegistrationOpen || isSubmitting}
             value={serialInput}
             onChange={(e) => setSerialInput(e.target.value)}
             onKeyDown={(e) => {
@@ -659,20 +718,22 @@ export function RegistrationCounter() {
               }
             }}
             placeholder="e.g. B27-B01-0001"
-            className="min-w-0 flex-1 px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+            className="min-w-0 flex-1 px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
           />
           <button
             type="button"
+            disabled={!isRegistrationOpen || isSubmitting || !serialInput.trim()}
             onClick={() => handleAddSerial()}
-            className="px-4 py-2 border border-neutral-300 hover:border-neutral-900 rounded font-semibold text-xs flex items-center gap-1.5 transition-colors min-h-[44px]"
+            className="px-4 py-2 border border-neutral-300 hover:border-neutral-900 rounded font-semibold text-xs flex items-center gap-1.5 transition-colors min-h-[44px] disabled:opacity-50"
           >
             <Plus className="w-4 h-4" />
             <span>Add Card</span>
           </button>
           <button
             type="button"
+            disabled={!isRegistrationOpen || isSubmitting}
             onClick={() => setShowRangeQueue(!showRangeQueue)}
-            className="px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded font-semibold text-xs flex items-center gap-1.5 transition-colors min-h-[44px]"
+            className="px-3 py-2 border border-neutral-300 hover:border-neutral-900 rounded font-semibold text-xs flex items-center gap-1.5 transition-colors min-h-[44px] disabled:opacity-50"
           >
             <Layers className="w-4 h-4 text-neutral-700" />
             <span>{showRangeQueue ? "Cancel Range" : "Batch Range"}</span>
@@ -688,27 +749,30 @@ export function RegistrationCounter() {
                 <label className="block text-neutral-600 font-mono mb-1">Start Serial</label>
                 <input
                   type="text"
+                  disabled={!isRegistrationOpen || isSubmitting}
                   value={rangeStart}
                   onChange={(e) => setRangeStart(e.target.value)}
                   placeholder="e.g. B27-B01-0001"
-                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded min-h-[44px]"
+                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded min-h-[44px] disabled:opacity-50"
                 />
               </div>
               <div>
                 <label className="block text-neutral-600 font-mono mb-1">End Serial</label>
                 <input
                   type="text"
+                  disabled={!isRegistrationOpen || isSubmitting}
                   value={rangeEnd}
                   onChange={(e) => setRangeEnd(e.target.value)}
                   placeholder="e.g. B27-B01-0020"
-                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded min-h-[44px]"
+                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded min-h-[44px] disabled:opacity-50"
                 />
               </div>
             </div>
             <button
               type="button"
+              disabled={!isRegistrationOpen || isSubmitting}
               onClick={handleQueueRange}
-              className="w-full py-2 border border-neutral-900 hover:border-neutral-700 rounded text-xs font-bold text-neutral-900 transition-colors min-h-[44px] flex items-center justify-center gap-1.5"
+              className="w-full py-2 border border-neutral-900 hover:border-neutral-700 rounded text-xs font-bold text-neutral-900 transition-colors min-h-[44px] flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Queue Cards in Range</span>
@@ -726,8 +790,9 @@ export function RegistrationCounter() {
                 </span>
                 <button
                   type="button"
+                  disabled={!isRegistrationOpen || isSubmitting}
                   onClick={() => handleRemoveSerial(index)}
-                  className="min-h-[44px] min-w-[44px] p-2 flex items-center justify-center border border-transparent hover:border-neutral-300 hover:text-red-700 rounded transition-colors"
+                  className="min-h-[44px] min-w-[44px] p-2 flex items-center justify-center border border-transparent hover:border-neutral-300 hover:text-red-700 rounded transition-colors disabled:opacity-50"
                   aria-label={`Remove card ${serial}`}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -757,8 +822,9 @@ export function RegistrationCounter() {
                     <button
                       key={method}
                       type="button"
+                      disabled={!isRegistrationOpen || isSubmitting}
                       onClick={() => setPaymentMethod(method)}
-                      className={`py-2 px-2 border rounded font-mono text-[11px] min-h-[44px] flex items-center justify-center ${
+                      className={`py-2 px-2 border rounded font-mono text-[11px] min-h-[44px] flex items-center justify-center disabled:opacity-50 ${
                         paymentMethod === method
                           ? "border-neutral-900 font-bold text-neutral-900"
                           : "border-neutral-300 text-neutral-600"
@@ -783,10 +849,11 @@ export function RegistrationCounter() {
                   id="cash-tendered-input"
                   type="number"
                   min="0"
+                  disabled={!isRegistrationOpen || isSubmitting}
                   value={cashTendered}
                   onChange={(e) => setCashTendered(e.target.value)}
                   placeholder="e.g. 500"
-                  className="w-full px-3 py-2 font-mono text-base border border-neutral-300 rounded min-h-[44px] focus:outline-none focus:border-neutral-900"
+                  className="w-full px-3 py-2 font-mono text-base border border-neutral-300 rounded min-h-[44px] focus:outline-none focus:border-neutral-900 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -807,10 +874,12 @@ export function RegistrationCounter() {
         <button
           type="button"
           onClick={handleBindCards}
-          disabled={isSubmitting || cardSerials.length === 0}
+          disabled={!isRegistrationOpen || isSubmitting || queuedCards.length === 0}
           className="w-full py-3 px-4 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 font-semibold text-sm rounded transition-colors disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2 touch-manipulation select-none active:bg-neutral-800"
         >
-          {isSubmitting ? "Activating Cards in Database..." : `Bind & Activate ${cardSerials.length} Card(s)`}
+          {isRegistrationOpen
+            ? (isSubmitting ? "Activating Cards in Database..." : `Bind & Activate ${cardSerials.length} Card(s)`)
+            : "Registration Paused by Admin"}
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

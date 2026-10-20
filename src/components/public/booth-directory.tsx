@@ -1,16 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Search, MapPin, Users, Award, BookOpen, ArrowLeft, LayoutGrid } from "lucide-react";
+import Image from "next/image";
+import { ArrowLeft, ArrowRight, MapPin, Search, Users, X } from "lucide-react";
+import styles from "./booth-directory.module.css";
+import { BOOTH_PROGRAM_CODES } from "@/lib/booths/programs";
 
 export interface PublicBoothItem {
   id: string;
   code: string;
   projectTitle: string;
   capstoneCategory: string;
+  programCode: string | null;
   teamMembers: string | null;
   tableNumber: string | null;
+  logoUrl?: string | null;
 }
 
 export interface PublicAwardItem {
@@ -25,243 +29,210 @@ interface BoothDirectoryProps {
   awards: PublicAwardItem[];
 }
 
+const PAGE_SIZE = 12;
+const DIRECTORY_VIEWS = [
+  { id: "directory", label: "Projects" },
+  { id: "rules", label: "Voting guide" },
+  { id: "awards", label: "Awards" },
+] as const;
+
+const VOTING_GUIDE = [
+  { title: "Register your card", description: "Purchase your physical bingo card at registration. The event team records your attendee details and activates your voting stubs." },
+  { title: "Visit the projects", description: "Find booths in the directory, try the demonstrations, and talk to the student teams. Collect booth stamps on your printed bingo grid as you visit." },
+  { title: "Choose an award", description: "Each detachable stub corresponds to an award slot. Check the awards guide and the label on your stub before choosing a project." },
+  { title: "Hand over your stub", description: "Give the matching award stub to your chosen booth. The exhibitor scans its QR code to record your vote and keeps the physical stub." },
+  { title: "Make each choice count", description: "Each activated stub can be redeemed once. You may support the same project in different award categories using the matching stubs." },
+];
+
 export function BoothDirectory({ booths, awards }: BoothDirectoryProps) {
 
-  const [activeTab, setActiveTab] = useState<"directory" | "rules" | "awards">("directory");
+  const [activeView, setActiveView] = useState<"directory" | "rules" | "awards">("directory");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedProgram, setSelectedProgram] = useState("");
+  const [page, setPage] = useState(1);
+  const categories = Array.from(new Set(booths.map((booth) => booth.capstoneCategory))).filter(Boolean).sort();
+  const normalizedQuery = searchQuery.trim().toLowerCase();
 
-  const categories = ["ALL", ...Array.from(new Set(booths.map((b) => b.capstoneCategory)))];
+  const filteredBooths = booths.filter((booth) => {
 
-  const filteredBooths = booths.filter((b) => {
-    const matchesSearch =
-      b.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.projectTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (b.teamMembers && b.teamMembers.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (b.tableNumber && b.tableNumber.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesCategory = selectedCategory === "ALL" || b.capstoneCategory === selectedCategory;
-
-    return matchesSearch && matchesCategory;
+    const searchableText = [booth.code, booth.projectTitle, booth.teamMembers, booth.tableNumber, booth.capstoneCategory, booth.programCode].filter(Boolean).join(" ").toLowerCase();
+    const matchesProgram = !selectedProgram || (selectedProgram === "unassigned" ? !booth.programCode : booth.programCode === selectedProgram);
+    return searchableText.includes(normalizedQuery) && (!selectedCategory || booth.capstoneCategory === selectedCategory) && matchesProgram;
   });
 
-  return (
-    <div className="space-y-6">
-      {/* Navigation and View Selector */}
-      <div className="flex items-center justify-between border-b border-neutral-300 pb-3 gap-2">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-800 hover:text-neutral-950 border border-neutral-300 px-3 py-2 rounded min-h-[44px]"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 text-neutral-700" />
-          <span>Home</span>
-        </Link>
+  const pageCount = Math.max(1, Math.ceil(filteredBooths.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const firstIndex = (currentPage - 1) * PAGE_SIZE;
+  const visibleBooths = filteredBooths.slice(firstIndex, firstIndex + PAGE_SIZE);
+  const hasFilters = Boolean(searchQuery || selectedCategory || selectedProgram);
+  const unassignedCount = booths.filter((booth) => !booth.programCode).length;
+  const resultsSummary = filteredBooths.length
+    ? `${firstIndex + 1}–${Math.min(firstIndex + PAGE_SIZE, filteredBooths.length)} of ${filteredBooths.length} ${filteredBooths.length === 1 ? "project" : "projects"}`
+    : "0 projects";
 
-        <div className="flex items-center gap-1.5 overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setActiveTab("directory")}
-            className={`px-3 py-2 text-xs font-semibold rounded border min-h-[44px] transition-colors flex items-center gap-1.5 ${
-              activeTab === "directory"
-                ? "border-neutral-900 text-neutral-900 font-bold"
-                : "border-neutral-300 text-neutral-700 hover:border-neutral-700"
-            }`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>Booth Directory</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("rules")}
-            className={`px-3 py-2 text-xs font-semibold rounded border min-h-[44px] transition-colors flex items-center gap-1.5 ${
-              activeTab === "rules"
-                ? "border-neutral-900 text-neutral-900 font-bold"
-                : "border-neutral-300 text-neutral-700 hover:border-neutral-700"
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>Voting Rules</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("awards")}
-            className={`px-3 py-2 text-xs font-semibold rounded border min-h-[44px] transition-colors flex items-center gap-1.5 ${
-              activeTab === "awards"
-                ? "border-neutral-900 text-neutral-900 font-bold"
-                : "border-neutral-300 text-neutral-700 hover:border-neutral-700"
-            }`}
-          >
-            <Award className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>Awards Guide</span>
-          </button>
+  function resetFilters() {
+
+    setSearchQuery("");
+    setSelectedCategory("");
+    setSelectedProgram("");
+    setPage(1);
+  }
+
+  function changePage(nextPage: number) {
+
+    setPage(nextPage);
+    document.getElementById("project-results")?.focus({ preventScroll: true });
+    document.getElementById("project-results")?.scrollIntoView({ block: "start" });
+  }
+
+  return (
+    <div className={styles.directory}>
+      <div className={styles.viewBar}>
+        <div className={styles.views} role="group" aria-label="Directory views">
+          {DIRECTORY_VIEWS.map((view) => (
+            <button key={view.id} type="button" aria-pressed={activeView === view.id} aria-controls="directory-content" onClick={() => setActiveView(view.id)}>{view.label}</button>
+          ))}
         </div>
+        <p className={styles.visitorHint}>Open to every visitor. No account needed.</p>
       </div>
 
-      {/* Directory Tab View */}
-      {activeTab === "directory" && (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="relative">
-              <label htmlFor="booth-search-input" className="sr-only">
-                Search projects, teams, or booth codes
-              </label>
-              <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                id="booth-search-input"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by project name, team, or CS-XX code..."
-                className="w-full border border-neutral-300 pl-9 pr-3 py-2.5 text-base sm:text-sm rounded font-mono placeholder:text-neutral-500 min-h-[44px]"
-              />
+      <div id="directory-content">
+        {activeView === "directory" && (
+          <section aria-label="Capstone project directory">
+            <div className={styles.filters}>
+              <div className={styles.searchField}>
+                <label htmlFor="booth-search-input" className="sr-only">Search projects, teams, or booth codes</label>
+                <Search size={19} strokeWidth={1.5} aria-hidden="true" />
+                <input id="booth-search-input" type="search" autoComplete="off" value={searchQuery} placeholder="Search projects, teams, or booths" onChange={(event) => {
+
+                  setSearchQuery(event.target.value);
+                  setPage(1);
+                }} />
+                {searchQuery && (
+                  <button type="button" aria-label="Clear search" onClick={() => {
+
+                    setSearchQuery("");
+                    setPage(1);
+                  }}>
+                    <X size={18} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+              <div className={styles.categoryField}>
+                <label htmlFor="project-category">Category</label>
+                <select id="project-category" value={selectedCategory} onChange={(event) => {
+
+                  setSelectedCategory(event.target.value);
+                  setPage(1);
+                }}>
+                  <option value="">All categories</option>
+                  {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+                </select>
+              </div>
+              <div className={styles.categoryField}>
+                <label htmlFor="project-program">Program</label>
+                <select id="project-program" value={selectedProgram} onChange={(event) => {
+
+                  setSelectedProgram(event.target.value);
+                  setPage(1);
+                }}>
+                  <option value="">All programs</option>
+                  {BOOTH_PROGRAM_CODES.map((program) => <option key={program} value={program}>{program}</option>)}
+                  <option value="unassigned">Not assigned</option>
+                </select>
+              </div>
             </div>
 
-            {/* Category Filter Chips */}
-            {categories.length > 2 && (
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1">
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`text-[11px] font-mono px-3 py-2 rounded border whitespace-nowrap min-h-[44px] transition-colors ${
-                      selectedCategory === cat
-                        ? "border-neutral-900 text-neutral-900 font-bold"
-                        : "border-neutral-300 text-neutral-600 hover:border-neutral-800"
-                    }`}
-                  >
-                    {cat}
-                  </button>
+            {unassignedCount > 0 && <p className={styles.programNote}>{unassignedCount} {unassignedCount === 1 ? "group has" : "groups have"} no program assigned yet. They appear under All programs and Not assigned.</p>}
+
+            <div className={styles.resultsHeader} id="project-results" tabIndex={-1}>
+              <p role="status">{resultsSummary}{hasFilters && ` · ${booths.length} in the collection`}</p>
+              {hasFilters ? <button type="button" onClick={resetFilters}>Reset filters <X size={14} aria-hidden="true" /></button> : <span>Find a project. Start a conversation.</span>}
+            </div>
+
+            {visibleBooths.length ? (
+              <div className={styles.projectGrid}>
+                {visibleBooths.map((booth) => (
+                  <article key={booth.id} className={styles.projectCard}>
+                    <div className={styles.cardTop}>
+                      <span className={styles.boothCode}>{booth.code}</span>
+                      {booth.programCode && <span className={styles.programLabel}>{booth.programCode}</span>}
+                      {booth.logoUrl && <Image src={booth.logoUrl} alt={`${booth.code} project logo`} width={40} height={40} unoptimized className={styles.projectLogo} />}
+                    </div>
+                    <p className={styles.category}>{booth.capstoneCategory || "Capstone project"}</p>
+                    <h2>{booth.projectTitle}</h2>
+                    <div className={styles.projectMeta}>
+                      <p><MapPin size={16} strokeWidth={1.5} aria-hidden="true" /><span>{booth.tableNumber ? `Table ${booth.tableNumber}` : "Table to be announced"}</span></p>
+                      {booth.teamMembers && <p><Users size={16} strokeWidth={1.5} aria-hidden="true" /><span>{booth.teamMembers}</span></p>}
+                    </div>
+                  </article>
                 ))}
               </div>
+            ) : (
+              <div className={styles.emptyState}>
+                <Search size={28} strokeWidth={1.3} aria-hidden="true" />
+                <h2>{booths.length ? "No projects match just yet." : "The collection is on its way."}</h2>
+                <p>{booths.length ? "Try a different project name, booth code, program, or category." : "Projects will appear here once the event team adds them."}</p>
+                {hasFilters && <button type="button" onClick={resetFilters}>Show all projects <ArrowRight size={17} aria-hidden="true" /></button>}
+              </div>
             )}
-          </div>
 
-          <div className="flex items-center justify-between text-xs font-mono text-neutral-600">
-            <span>Showing {filteredBooths.length} of {booths.length} Capstone Booths</span>
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-neutral-500" />
-              <span>Gymnasium Main Floor</span>
-            </span>
-          </div>
+            {pageCount > 1 && (
+              <nav className={styles.pagination} aria-label="Project pages">
+                <button type="button" disabled={currentPage === 1} onClick={() => changePage(currentPage - 1)}><ArrowLeft size={17} aria-hidden="true" /> Previous</button>
+                <p>Page <strong>{currentPage}</strong> of {pageCount}</p>
+                <button type="button" disabled={currentPage === pageCount} onClick={() => changePage(currentPage + 1)}>Next <ArrowRight size={17} aria-hidden="true" /></button>
+              </nav>
+            )}
+          </section>
+        )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-1">
-            {filteredBooths.length === 0 ? (
-              <div className="col-span-full border border-neutral-300 p-8 text-center rounded-lg space-y-1">
-                <p className="text-sm font-semibold text-neutral-800">No matching booths found</p>
-                <p className="text-xs text-neutral-600 font-mono">Try adjusting your search query or category filter.</p>
+        {activeView === "rules" && (
+          <section className={styles.guide} aria-labelledby="guide-title">
+            <div className={styles.guideIntro}>
+              <h2 id="guide-title">A card in hand.<br />A choice to make.</h2>
+              <p>Voting takes place at the booths using your activated physical award stubs.</p>
+            </div>
+            <ol className={styles.guideSteps}>
+              {VOTING_GUIDE.map((step, index) => (
+                <li key={step.title}>
+                  <span>0{index + 1}</span>
+                  <div><h3>{step.title}</h3><p>{step.description}</p></div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+
+        {activeView === "awards" && (
+          <section className={styles.awards} aria-labelledby="awards-title">
+            <div className={styles.guideIntro}>
+              <h2 id="awards-title">Different strengths.<br />Their moment to shine.</h2>
+              <p>Match the award slot on your physical stub to the category you want to support. The event supports up to six awards.</p>
+            </div>
+            {awards.length ? (
+              <div className={styles.awardList}>
+                {awards.map((award) => (
+                  <article key={award.id}>
+                    <span className={styles.awardNumber}>{String(award.slotNumber).padStart(2, "0")}</span>
+                    <div>
+                      <h3>{award.title}</h3>
+                      <p>{award.description || "Award criteria will be announced by the event team."}</p>
+                    </div>
+                    <span className={styles.stubLabel}>Stub {award.slotNumber}</span>
+                  </article>
+                ))}
               </div>
             ) : (
-              filteredBooths.map((booth) => (
-                <div
-                  key={booth.id}
-                  className="border border-neutral-300 p-4 rounded-lg bg-white space-y-3 flex flex-col justify-between"
-                >
-                  <div className="space-y-1.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="font-mono text-xs font-bold border border-neutral-900 px-2 py-0.5 rounded text-neutral-900 select-text">
-                        {booth.code}
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-mono border border-neutral-300 px-2 py-0.5 rounded text-neutral-700">
-                        <MapPin className="w-3 h-3 text-neutral-600" />
-                        <span>Table {booth.tableNumber || "TBD"}</span>
-                      </span>
-                    </div>
-
-                    <h3 className="text-sm font-bold text-neutral-900 leading-snug">
-                      {booth.projectTitle}
-                    </h3>
-
-                    <p className="text-xs text-neutral-600 font-mono">
-                      Category: {booth.capstoneCategory}
-                    </p>
-                  </div>
-
-                  {booth.teamMembers && (
-                    <div className="pt-2 border-t border-neutral-200 flex items-center gap-2 text-xs text-neutral-700">
-                      <Users className="w-3.5 h-3.5 text-neutral-500 flex-shrink-0" />
-                      <span className="truncate">{booth.teamMembers}</span>
-                    </div>
-                  )}
-                </div>
-              ))
+              <div className={styles.emptyState}>
+                <h3>Awards are being prepared.</h3>
+                <p>Check back for the event’s active award categories.</p>
+              </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* Rules Tab View */}
-      {activeTab === "rules" && (
-        <div className="space-y-4">
-          <div className="border border-neutral-300 p-5 rounded-lg bg-white space-y-4">
-            <div className="flex items-center gap-2 border-b border-neutral-300 pb-2">
-              <BookOpen className="w-4 h-4 text-neutral-900" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-900">
-                Official Voting & Bingo Card Guidelines
-              </h2>
-            </div>
-
-            <ol className="space-y-3 text-xs text-neutral-700 leading-relaxed font-mono list-decimal pl-4">
-              <li>
-                <strong className="text-neutral-900">Card Registration:</strong> Purchase your official physical Bingo Card at the registration counter near the entrance. The counter clerk will register your attendee details and activate your 6 voting stubs.
-              </li>
-              <li>
-                <strong className="text-neutral-900">Booth Exploration:</strong> Visit capstone exhibition booths across the gymnasium. Interact with graduating student teams, test their project demonstrations, and ask questions.
-              </li>
-              <li>
-                <strong className="text-neutral-900">Bingo Activity Grid:</strong> Have exhibitors stamp or sign their corresponding cell on your physical 7x6 card grid to complete lines and qualify for event raffle draws.
-              </li>
-              <li>
-                <strong className="text-neutral-900">Detachable Award Stubs:</strong> Your card contains 6 detachable voting stubs at the bottom, one for each Capstone Award slot. Carefully tear along the perforation for the award you wish to cast.
-              </li>
-              <li>
-                <strong className="text-neutral-900">Vote Cast via Mobile Scan:</strong> Hand your chosen stub to the booth team. The exhibitor will scan your stub QR code with their mobile device to record your vote in real time.
-              </li>
-              <li>
-                <strong className="text-neutral-900">Single Redemption & Anti-Fraud:</strong> Each physical stub can only be redeemed once. Once scanned, the stub is voided digitally and placed in the booth ballot box.
-              </li>
-            </ol>
-          </div>
-        </div>
-      )}
-
-      {/* Awards Tab View */}
-      {activeTab === "awards" && (
-        <div className="space-y-4">
-          <div className="border border-neutral-300 p-5 rounded-lg bg-white space-y-3">
-            <div className="flex items-center gap-2 border-b border-neutral-300 pb-2">
-              <Award className="w-4 h-4 text-neutral-900" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-900">
-                Capstone Award Categories
-              </h2>
-            </div>
-            <p className="text-xs text-neutral-600 font-mono">
-              The showcase features up to 6 distinct awards. Cast your physical stubs at the booths that excel in each category.
-            </p>
-
-            <div className="grid grid-cols-1 gap-3 pt-2">
-              {awards.map((award) => (
-                <div
-                  key={award.id}
-                  className="border border-neutral-300 p-4 rounded space-y-1.5"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-900">
-                      Slot {award.slotNumber}: {award.title}
-                    </span>
-                    <span className="font-mono text-[11px] border border-neutral-300 px-2 py-0.5 rounded text-neutral-600">
-                      Stub #{award.slotNumber}
-                    </span>
-                  </div>
-                  <p className="text-xs text-neutral-600 leading-relaxed font-mono">
-                    {award.description || "Award criteria determined by the University Capstone Evaluation Committee."}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+          </section>
+        )}
+      </div>
     </div>
   );
 }

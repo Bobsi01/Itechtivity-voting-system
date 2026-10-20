@@ -25,10 +25,57 @@ export interface VersionRelease {
 
 export const SYSTEM_RELEASES: VersionRelease[] = [
   {
+    version: "V1.0.19",
+    releaseDate: "October 20, 2026",
+    title: "Registration Lifecycle Gate, Admin Workspace Ergonomics & Booth Programs",
+    isLatest: true,
+    majorHighlights: [
+      "Dynamic Event Registration Gate with administrative pause/resume toggle and immediate POS blocking.",
+      "Admin Workspace ergonomics overhaul with persistent collapsible sidebar, mobile slide-out drawer, and unified h-16 headers.",
+      "Academic Program filtering and Booth management enhancements supporting BSIT, BSCS, ACT, and BSEMC curricula.",
+      "Card Inspector directory explorer with live status telemetry, buyer attribution, and card lifecycle timeline.",
+      "Permanent deprecation of batch activation endpoint in favor of exclusive sequential cashier desk POS binding.",
+    ],
+    minorChanges: [
+      {
+        description: "Enforced isRegistrationOpen gating across registration bind API and cashier POS UI with real-time WebSocket broadcasting",
+        points: 5,
+        type: "security",
+      },
+      {
+        description: "Implemented persistent collapsible desktop sidebar and mobile slide-out drawer navigation with scroll locking",
+        points: 4,
+        type: "feature",
+      },
+      {
+        description: "Permanently deprecated batch card activation endpoint and enforced exclusive atomic cashier desk POS binding",
+        points: 4,
+        type: "security",
+      },
+      {
+        description: "Added programCode schema field, database migration, and bulk booth upload route handler with academic filtering",
+        points: 3,
+        type: "feature",
+      },
+      {
+        description: "Engineered comprehensive adversarial stress test suites for registration flapping and voting concurrency",
+        points: 3,
+        type: "fix",
+      },
+    ],
+    contributors: [
+      {
+        name: "Daniel",
+        githubUsername: "ItsMeYourNightmare",
+        role: "Repository Owner & Lead Systems Architect",
+      },
+    ],
+  },
+  {
     version: "V1.0.0",
     releaseDate: "October 19, 2026",
     title: "Initial Public Production Release & Security Hardening",
-    isLatest: true,
+    isLatest: false,
     majorHighlights: [
       "Production Deployment on Appwrite Sites with automated CI/CD pipeline and multi-dyno scaling.",
       "Comprehensive Security Hardening across 16 audited AppSec/OWASP vectors including in-memory HMAC verification.",

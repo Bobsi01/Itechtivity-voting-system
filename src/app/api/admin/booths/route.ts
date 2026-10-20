@@ -6,6 +6,7 @@ import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
 import { recordAuditLog, createHumanReadableSummary } from '@/lib/audit/log';
 import { getClientIp } from '@/lib/security/rate-limiter';
+import { BoothProgramCodeSchema } from '@/lib/booths/programs';
 
 const UpsertBoothSchema = z.object({
   code: z
@@ -19,8 +20,10 @@ const UpsertBoothSchema = z.object({
     }),
   projectTitle: z.string().trim().min(2).max(160),
   capstoneCategory: z.string().trim().min(2).max(100),
+  programCode: BoothProgramCodeSchema.nullable().optional(),
   teamMembers: z.string().trim().max(300).optional(),
   tableNumber: z.string().trim().max(40).optional(),
+  logoUrl: z.string().trim().max(2000000).optional().nullable().or(z.literal('')),
   exhibitorEmail: z.string().trim().email().optional().or(z.literal('')),
   exhibitorName: z.string().trim().max(100).optional(),
   exhibitorPassword: z.string().min(6).max(100).optional().or(z.literal('')),
@@ -58,8 +61,10 @@ export async function GET() {
         code: booth.code,
         projectTitle: booth.projectTitle,
         capstoneCategory: booth.capstoneCategory,
+        programCode: booth.programCode,
         teamMembers: booth.teamMembers,
         tableNumber: booth.tableNumber,
+        logoUrl: booth.logoUrl,
         voteCount: booth._count.votes,
         exhibitors: booth.users,
       })),
@@ -95,8 +100,10 @@ export async function POST(request: Request) {
       code,
       projectTitle,
       capstoneCategory,
+      programCode,
       teamMembers,
       tableNumber,
+      logoUrl,
       exhibitorEmail,
       exhibitorName,
       exhibitorPassword,
@@ -110,15 +117,19 @@ export async function POST(request: Request) {
         update: {
           projectTitle,
           capstoneCategory,
+          programCode,
           teamMembers: teamMembers || null,
           tableNumber: tableNumber || null,
+          logoUrl: logoUrl !== undefined ? (logoUrl || null) : undefined,
         },
         create: {
           code,
           projectTitle,
           capstoneCategory,
+          programCode: programCode ?? null,
           teamMembers: teamMembers || null,
           tableNumber: tableNumber || `Booth-${code}`,
+          logoUrl: logoUrl || null,
         },
       });
 
@@ -188,7 +199,9 @@ export async function POST(request: Request) {
         code: result.code,
         projectTitle: result.projectTitle,
         exhibitorEmail: exhibitorEmail || null,
+        programCode: result.programCode,
         passwordUpdated: Boolean(exhibitorPassword && exhibitorPassword.length >= 6),
+        logoUpdated: Boolean(logoUrl),
       },
       ipAddress: clientIp,
     });

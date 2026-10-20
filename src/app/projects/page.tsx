@@ -1,6 +1,14 @@
 import prisma from "@/lib/db/prisma";
+import Link from "next/link";
+import type { Metadata } from "next";
+import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { BoothDirectory, type PublicBoothItem, type PublicAwardItem } from "@/components/public/booth-directory";
-import { NotificationBell } from "@/components/notifications/notification-bell";
+import styles from "./projects.module.css";
+
+export const metadata: Metadata = {
+  title: "Capstone Projects | Itechtivity 2027",
+  description: "Browse the Itechtivity capstone exhibition. Find projects, teams, booth locations, and award categories.",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +22,10 @@ export default async function ProjectsPage() {
         code: true,
         projectTitle: true,
         capstoneCategory: true,
+        programCode: true,
         teamMembers: true,
         tableNumber: true,
+        logoUrl: true,
       },
     }),
     prisma.award.findMany({
@@ -35,8 +45,10 @@ export default async function ProjectsPage() {
     code: b.code,
     projectTitle: b.projectTitle,
     capstoneCategory: b.capstoneCategory,
+    programCode: b.programCode,
     teamMembers: b.teamMembers,
     tableNumber: b.tableNumber,
+    logoUrl: b.logoUrl,
   }));
 
   const publicAwards: PublicAwardItem[] = awards.map((a) => ({
@@ -47,22 +59,31 @@ export default async function ProjectsPage() {
   }));
 
   return (
-    <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
-      <header className="border-b border-neutral-300 pb-4 mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 uppercase">
-            ITECHTIVITY 2027 SHOWCASE
-          </h1>
-          <p className="text-sm text-neutral-600 mt-1">
-            Capstone Project Exhibition, Booth Guide & Voting Directory
-          </p>
-        </div>
-        <div className="flex-shrink-0">
-          <NotificationBell autoOpenIfUnseen={false} />
-        </div>
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <Link href="/" className={styles.homeLink}><ArrowLeft size={16} aria-hidden="true" /> Back to home</Link>
+        <Link href="/" className={styles.wordmark} aria-label="Itechtivity 2027 home">ITECHTIVITY <span>2027</span></Link>
       </header>
 
+      <section className={styles.intro} aria-labelledby="projects-title">
+        <div>
+          <h1 id="projects-title">Capstone projects</h1>
+          <p className={styles.introDescription}>Find a group, visit their booth, and meet the people behind the project.</p>
+        </div>
+        <div className={styles.introAside}>
+          <div className={styles.stats}>
+            <p><strong>{publicBooths.length}</strong><span>groups</span></p>
+            <p><strong>{publicAwards.length}</strong><span>awards</span></p>
+          </div>
+        </div>
+      </section>
+
       <BoothDirectory booths={publicBooths} awards={publicAwards} />
+
+      <footer className={styles.footer}>
+        <p>University of Caloocan City <span>Computer Studies Department</span></p>
+        <Link href="/#how-to-vote">New to the showcase? Read the voting guide <ArrowUpRight size={16} aria-hidden="true" /></Link>
+      </footer>
     </main>
   );
 }

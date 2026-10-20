@@ -70,10 +70,11 @@ export const SystemConfigBroadcastSchema = z.object({
   eventType: z.literal('SYSTEM_CONFIG_EVENT'),
   isVotingOpen: z.boolean(),
   isAwardsLocked: z.boolean(),
+  isRegistrationOpen: z.boolean().default(true),
   timestamp: z.string().datetime(),
 }).strict();
 
-export type SystemConfigBroadcastPayload = z.infer<typeof SystemConfigBroadcastSchema>;
+export type SystemConfigBroadcastPayload = z.input<typeof SystemConfigBroadcastSchema>;
 
 /**
  * Sanitized Audit Trail Broadcast Signal Schema

@@ -259,6 +259,7 @@ function testVector3SystemConfigBroadcast(): void {
       eventType: 'SYSTEM_CONFIG_EVENT',
       isVotingOpen: state.isVotingOpen,
       isAwardsLocked: state.isAwardsLocked,
+      isRegistrationOpen: true,
       timestamp: now,
     };
     const result = SystemConfigBroadcastSchema.safeParse(payload);
@@ -461,6 +462,7 @@ async function testVector4MockServerDispatch(): Promise<void> {
       eventType: 'SYSTEM_CONFIG_EVENT',
       isVotingOpen: false,
       isAwardsLocked: true,
+      isRegistrationOpen: true,
       timestamp: new Date().toISOString(),
     };
     await broadcastSystemConfigEvent(configPayload);
@@ -622,6 +624,7 @@ function testVector5MockClientSubscriptionIngestion(): void {
       eventType: 'SYSTEM_CONFIG_EVENT',
       isVotingOpen: false,
       isAwardsLocked: false,
+      isRegistrationOpen: true,
       timestamp: new Date().toISOString(),
     };
 

@@ -6,7 +6,7 @@ const cspHeader = `
   default-src 'self';
   script-src 'self' ${isDev ? "'unsafe-eval' " : ""}'unsafe-inline';
   style-src 'self' 'unsafe-inline';
-  img-src 'self' blob: data:;
+  img-src 'self' blob: data: https://*.cloud.appwrite.io https://*.appwrite.io;
   font-src 'self' data:;
   connect-src 'self' ws: wss: https:;
   media-src 'self' blob: mediastream:;

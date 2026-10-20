@@ -101,6 +101,7 @@ const VALID_SYSTEM_CONFIG_PAYLOAD: SystemConfigBroadcastPayload = {
   eventType: 'SYSTEM_CONFIG_EVENT',
   isVotingOpen: true,
   isAwardsLocked: false,
+  isRegistrationOpen: true,
   timestamp: '2026-10-19T18:30:00.000Z',
 };
 

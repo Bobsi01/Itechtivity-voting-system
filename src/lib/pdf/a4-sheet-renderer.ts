@@ -35,6 +35,7 @@ export interface SheetRenderOptions {
   totalCards: number;
   awardsList: Array<{ slotNumber: number; title: string }>;
   secretKey: string;
+  boothLogos?: Record<string, Buffer>;
 }
 
 /**
@@ -74,7 +75,8 @@ export function drawSheetGuidelines(doc: PDFKit.PDFDocument): void {
 export function renderSingleCardQuadrant(
   doc: PDFKit.PDFDocument,
   bounds: { x: number; y: number; width: number; height: number },
-  card: CardRenderData
+  card: CardRenderData,
+  boothLogos?: Record<string, Buffer>
 ): void {
   const { x, y, width, height } = bounds;
   const internal = getCardInternalLayout(y);
@@ -179,11 +181,28 @@ export function renderSingleCardQuadrant(
       doc.font('Helvetica-Bold').fontSize(6).fillColor('#000000');
       doc.text(boothCode, cx + 1, cy + 3, { width: cellW - 2, align: 'center' });
 
-      // Clean monogram square
-      doc.strokeColor('#aaaaaa').lineWidth(0.3);
-      doc.rect(cx + 4, cy + 12, cellW - 8, cellH - 18).stroke();
-      doc.font('Helvetica').fontSize(5).fillColor('#555555');
-      doc.text('STAMP', cx + 4, cy + 18, { width: cellW - 8, align: 'center' });
+      // Clean monogram square or Booth Logo
+      const logoBuffer = boothLogos?.[boothCode];
+      let logoRendered = false;
+      if (logoBuffer) {
+        try {
+          doc.image(logoBuffer, cx + 5, cy + 11, {
+            fit: [cellW - 10, cellH - 16],
+            align: 'center',
+            valign: 'center',
+          });
+          logoRendered = true;
+        } catch {
+          logoRendered = false;
+        }
+      }
+
+      if (!logoRendered) {
+        doc.strokeColor('#aaaaaa').lineWidth(0.3);
+        doc.rect(cx + 4, cy + 12, cellW - 8, cellH - 18).stroke();
+        doc.font('Helvetica').fontSize(5).fillColor('#555555');
+        doc.text('STAMP', cx + 4, cy + 18, { width: cellW - 8, align: 'center' });
+      }
     }
   }
 
@@ -269,7 +288,7 @@ export async function generateA4BingoPdfBuffer(
   options: SheetRenderOptions
 ): Promise<{ buffer: Buffer; totalSheets: number; totalCards: number }> {
 
-  const { batchNumber, totalCards, awardsList, secretKey } = options;
+  const { batchNumber, totalCards, awardsList, secretKey, boothLogos } = options;
   const totalSheets = Math.ceil(totalCards / CARDS_PER_SHEET);
 
   const doc = new PDFDocument({
@@ -312,7 +331,7 @@ export async function generateA4BingoPdfBuffer(
         };
       });
 
-      renderSingleCardQuadrant(doc, bounds, { cardSerial, stubs });
+      renderSingleCardQuadrant(doc, bounds, { cardSerial, stubs }, boothLogos);
       cardSequence++;
     }
   }

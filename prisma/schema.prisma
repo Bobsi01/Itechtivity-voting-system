@@ -43,13 +43,14 @@ enum BatchStatus {
 }
 
 model EventConfig {
-  id              String   @id @default(uuid())
-  eventName       String   @default("Itechtivity 2027")
-  isAwardsLocked  Boolean  @default(false)
-  maxAwards       Int      @default(6)
-  isVotingOpen    Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  eventName          String   @default("Itechtivity 2027")
+  isAwardsLocked     Boolean  @default(false)
+  maxAwards          Int      @default(6)
+  isVotingOpen       Boolean  @default(true)
+  isRegistrationOpen Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model AcademicProgram {
@@ -79,6 +80,7 @@ model Booth {
   code             String   @unique
   projectTitle     String
   capstoneCategory String
+  programCode      String?
   teamMembers      String?
   tableNumber      String?
   logoUrl          String?

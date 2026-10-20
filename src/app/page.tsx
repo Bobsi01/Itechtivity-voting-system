@@ -1,149 +1,140 @@
 import Link from "next/link";
-import { Shield, Printer, ClipboardCheck, Camera, LogIn, LayoutGrid, BookOpen, Presentation, ArrowRight } from "lucide-react";
-import { NotificationBell } from "@/components/notifications/notification-bell";
+import { ArrowDown, ArrowRight, ArrowUpRight, Camera, ClipboardCheck, Fingerprint, Presentation, Printer, RotateCcw, Shield, ShieldCheck } from "lucide-react";
+import styles from "./page.module.css";
+
+const STAFF_PORTALS = [
+  { title: "Exhibitor", description: "Scan award stubs and follow your booth’s votes.", href: "/exhibitor", icon: Camera },
+  { title: "Registration", description: "Welcome visitors and activate their bingo cards.", href: "/registration", icon: ClipboardCheck },
+  { title: "Production", description: "Prepare card batches and print exhibition materials.", href: "/production", icon: Printer },
+  { title: "Administration", description: "Manage awards, event settings, and the live tally.", href: "/admin", icon: Shield },
+];
+
+const VOTING_STEPS = [
+  { title: "Pick up your card.", description: "Visit the registration counter to purchase and activate your physical bingo card." },
+  { title: "Meet the makers.", description: "Visit the capstone booths, try the projects, and hear the ideas behind them." },
+  { title: "Give your vote.", description: "Hand the matching award stub to your chosen booth. The exhibitor scans it to record your vote." },
+];
 
 export default function HomePage() {
 
-  const staffPortals = [
-    {
-      title: "Exhibitor Booth Scanner",
-      description: "Mobile handheld scanner for exhibitors to validate and redeem visitor voting stubs.",
-      href: "/exhibitor",
-      icon: Camera,
-      tag: "Mobile Booth App",
-    },
-    {
-      title: "Registration Counter",
-      description: "Fast attendee demographic collection, cash logging, and sequential card binding.",
-      href: "/registration",
-      icon: ClipboardCheck,
-      tag: "Sales Desk",
-    },
-    {
-      title: "Production Printing Portal",
-      description: "Batch PDF generator and File Explorer with built-in A4 PDF previewer modal.",
-      href: "/production",
-      icon: Printer,
-      tag: "Print & Prep",
-    },
-    {
-      title: "Admin Live Dashboard",
-      description: "Global live tally, award configuration lock, and turnout demographics.",
-      href: "/admin",
-      icon: Shield,
-      tag: "Administration",
-    },
-  ];
-
   return (
-    <main className="flex-1 max-w-xl lg:max-w-5xl mx-auto w-full px-4 py-8 flex flex-col justify-between">
-      <div className="space-y-6">
-        <header className="border-b border-neutral-300 pb-4 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-neutral-500 font-mono">
-              University of Caloocan City
-            </p>
-            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 uppercase mt-1">CSD ITECHTIVITY 2027</h1>
-            <p className="text-sm text-neutral-600 mt-1">Capstone Awards & Bingo Voting System</p>
+    <main className={styles.landing} id="top">
+      <a className={styles.skipLink} href="#showcase">Skip to content</a>
+
+      <header className={styles.header}>
+        <a href="#top" className={styles.wordmark} aria-label="Itechtivity 2027 home">
+          ITECHTIVITY<span>2027</span>
+        </a>
+        <nav className={styles.navigation} aria-label="Main navigation">
+          <a href="#how-to-vote" className={styles.desktopLink}>How to vote</a>
+          <a href="#event-team" className={styles.desktopLink}>Event team</a>
+          <Link href="/login" className={styles.loginLink}>Staff login <ArrowUpRight aria-hidden="true" size={16} /></Link>
+        </nav>
+      </header>
+
+      <section className={styles.hero} id="showcase" aria-labelledby="showcase-title">
+        <div className={styles.heroCopy}>
+          <p className={styles.eventLabel}>The CSD capstone exhibition</p>
+          <h1 id="showcase-title">Big ideas.<br />Real projects.<br /><span>Your vote.</span></h1>
+          <p className={styles.heroDescription}>Meet the minds behind the projects. Find your favorite, take a closer look, and help recognize the work that stands out.</p>
+          <div className={styles.heroActions}>
+            <Link href="/projects" className={styles.primaryLink}>Explore Capstone Projects <ArrowUpRight aria-hidden="true" size={22} /></Link>
+            <a href="#how-to-vote" className={styles.guideLink}>How voting works <ArrowDown aria-hidden="true" size={17} /></a>
           </div>
-          <div className="flex-shrink-0">
-            <NotificationBell autoOpenIfUnseen={false} />
-          </div>
-        </header>
-
-        {/* 2-Column Responsive Layout for Desktop */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
-          {/* Column 1: Public Visitor Hub */}
-          <section className="space-y-3">
-            <p className="text-xs font-mono uppercase tracking-wider text-neutral-500">Attendee & Visitor Guide</p>
-            <div className="space-y-2">
-              <Link
-                href="/projects"
-                className="flex items-start gap-4 p-4 border-2 border-neutral-900 hover:border-neutral-700 transition-colors rounded select-none touch-manipulation min-h-[72px] bg-white"
-              >
-                <LayoutGrid className="w-5 h-5 text-neutral-900 flex-shrink-0 mt-0.5" strokeWidth={2} />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-neutral-900 text-sm">Explore Capstone Projects</span>
-                    <span className="text-[11px] font-mono border border-neutral-900 px-2 py-0.5 rounded text-neutral-900 font-semibold">
-                      Public Directory
-                    </span>
-                  </div>
-                  <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-                    Browse all 40 capstone booths, project abstracts, table locations, and voting guidelines.
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                href="/projects"
-                className="flex items-center justify-between p-3 border border-neutral-300 hover:border-neutral-900 transition-colors rounded select-none touch-manipulation min-h-[44px] bg-white text-xs font-medium text-neutral-800"
-              >
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-neutral-700" />
-                  <span>How Voting Works (Bingo Cards & Award Stubs)</span>
-                </div>
-                <span className="flex items-center gap-1 font-mono text-neutral-500 text-[11px]">
-                  <span>View Rules</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              </Link>
-
-              <Link
-                href="/presentation"
-                className="flex items-center justify-between p-3 border border-neutral-300 hover:border-neutral-900 transition-colors rounded select-none touch-manipulation min-h-[44px] bg-white text-xs font-medium text-neutral-800"
-              >
-                <div className="flex items-center gap-2">
-                  <Presentation className="w-4 h-4 text-neutral-700" />
-                  <span>Auditorium Stage Presentation Display</span>
-                </div>
-                <span className="flex items-center gap-1 font-mono text-neutral-500 text-[11px]">
-                  <span>Open Stage</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              </Link>
-            </div>
-          </section>
-
-          {/* Column 2: Staff & Event Operations Portals */}
-          <section className="space-y-3">
-            <p className="text-xs font-mono uppercase tracking-wider text-neutral-500">Event Operations Portals</p>
-            <div className="grid grid-cols-1 gap-2.5">
-              {staffPortals.map((portal) => {
-                const Icon = portal.icon;
-                return (
-                  <Link
-                    key={portal.href}
-                    href={portal.href}
-                    className="flex items-start gap-3.5 p-3.5 border border-neutral-300 hover:border-neutral-900 transition-colors rounded select-none touch-manipulation min-h-[64px] bg-white"
-                  >
-                    <Icon className="w-4 h-4 text-neutral-800 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-neutral-900 text-xs">{portal.title}</span>
-                        <span className="text-[10px] font-mono border border-neutral-300 px-1.5 py-0.5 rounded text-neutral-600">
-                          {portal.tag}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-neutral-600 mt-0.5 leading-relaxed truncate">{portal.description}</p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
+          <p className={styles.visitorNote}>No visitor account needed. Voting happens at the booths.</p>
         </div>
+
+        <figure className={styles.cardFigure}>
+          <div className={styles.cardOrbit} aria-hidden="true" />
+          <div className={styles.ticket} aria-hidden="true">
+            <div className={styles.ticketHeading}><span>ITECHTIVITY</span><span>2027 / CSD</span></div>
+            <div className={styles.ticketTitle}>MAKE<br />IT COUNT<ArrowUpRight size={68} strokeWidth={1.3} /></div>
+            <div className={styles.ticketDivider}><span>Visit. Connect. Vote.</span><span>01–40</span></div>
+            <div className={styles.bingoGrid}>
+              {Array.from({ length: 40 }, (_, index) => (
+                <span className={index === 9 || index === 18 || index === 26 ? styles.markedCell : undefined} key={index}>{String(index + 1).padStart(2, "0")}</span>
+              ))}
+            </div>
+            <div className={styles.stubHeading}><span>Your choice makes a difference.</span><span>6 award stubs</span></div>
+            <div className={styles.stubs}>
+              {Array.from({ length: 6 }, (_, index) => (
+                <div className={styles.stub} key={index}><span>VOTE</span><strong>{String(index + 1).padStart(2, "0")}</strong><ArrowUpRight size={18} /></div>
+              ))}
+            </div>
+            <p className={styles.sampleLabel}>Illustration only · Collect your voting card at registration</p>
+          </div>
+          <figcaption><span className={styles.captionLine} />A physical card. A vote that counts.</figcaption>
+        </figure>
+      </section>
+
+      <div className={styles.eventStrip}>
+        <p>University of Caloocan City<span>Computer Studies Department</span></p>
+        <p>Student-built.<br className={styles.mobileBreak} /> Community-chosen.</p>
+        <a href="#how-to-vote" aria-label="Read the voting guide"><ArrowDown size={22} aria-hidden="true" /></a>
       </div>
 
-      <footer className="border-t border-neutral-300 pt-4 mt-8 flex items-center justify-between">
-        <span className="text-xs font-mono text-neutral-500">System Status: Local Online</span>
-        <Link
-          href="/login"
-          className="flex items-center gap-2 text-xs font-medium text-neutral-900 border border-neutral-300 px-3 py-2 rounded hover:border-neutral-900 min-h-[44px]"
-        >
-          <LogIn className="w-4 h-4 text-neutral-700" />
-          <span>Account Login</span>
-        </Link>
+      <section className={styles.assurance} aria-labelledby="assurance-title">
+        <div className={styles.assuranceIntro}>
+          <ShieldCheck size={22} strokeWidth={1.5} aria-hidden="true" />
+          <h2 id="assurance-title">Your choice.<br />Carefully counted.</h2>
+          <p>Security and reliability, built into the way you vote.</p>
+        </div>
+        <div className={styles.assuranceItem}>
+          <Fingerprint size={22} strokeWidth={1.5} aria-hidden="true" />
+          <h3>Verified QR stubs</h3>
+          <p>Digital signatures are checked before a voting stub is accepted.</p>
+        </div>
+        <div className={styles.assuranceItem}>
+          <Shield size={22} strokeWidth={1.5} aria-hidden="true" />
+          <h3>One vote per stub</h3>
+          <p>Only activated stubs can be used. Already redeemed stubs are rejected.</p>
+        </div>
+        <div className={styles.assuranceItem}>
+          <RotateCcw size={22} strokeWidth={1.5} aria-hidden="true" />
+          <h3>Safe to retry</h3>
+          <p>If a scan request is retried, the system reuses its result without adding another vote.</p>
+        </div>
+      </section>
+
+      <section className={styles.votingSection} id="how-to-vote" aria-labelledby="voting-title">
+        <div className={styles.sectionIntro}>
+          <h2 id="voting-title">Walk the booths.<br />Back a big idea.</h2>
+          <p>Your bingo card is part exhibition guide, part ballot. Here’s how to put it to use.</p>
+        </div>
+        <ol className={styles.steps}>
+          {VOTING_STEPS.map((step, index) => (
+            <li key={step.title}>
+              <span className={styles.stepNumber}>0{index + 1}</span>
+              <div><h3>{step.title}</h3><p>{step.description}</p></div>
+            </li>
+          ))}
+        </ol>
+        <div className={styles.votingNote}>
+          <span>One stub. One award. One choice.</span>
+          <p>Each award stub can be used once. You can support the same project in different award categories.</p>
+        </div>
+      </section>
+
+      <section className={styles.teamSection} id="event-team" aria-labelledby="team-title">
+        <div className={styles.teamIntro}>
+          <h2 id="team-title">Behind the<br />showcase.</h2>
+          <p>Running a booth or working the event? Open your workspace to keep things moving.</p>
+          <Link href="/presentation" className={styles.stageLink}><Presentation size={19} aria-hidden="true" /> Open stage display <ArrowUpRight size={17} aria-hidden="true" /></Link>
+        </div>
+        <div className={styles.portalList}>
+          {STAFF_PORTALS.map((portal) => (
+            <Link href={portal.href} key={portal.href} className={styles.portal}>
+              <portal.icon size={22} strokeWidth={1.5} aria-hidden="true" />
+              <div><h3>{portal.title}</h3><p>{portal.description}</p></div>
+              <ArrowRight size={20} aria-hidden="true" className={styles.portalArrow} />
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <footer className={styles.footer}>
+        <p>ITECHTIVITY 2027<span>Capstone Awards & Bingo Voting</span></p>
+        <div><Link href="/notifications">System updates</Link><a href="#top">Back to top <ArrowUpRight size={15} aria-hidden="true" /></a></div>
       </footer>
     </main>
   );

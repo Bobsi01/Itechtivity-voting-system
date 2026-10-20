@@ -41,6 +41,7 @@ async function buildDetailedBoothTally(boothId: string) {
     projectTitle: booth.projectTitle,
     capstoneCategory: booth.capstoneCategory,
     tableNumber: booth.tableNumber,
+    logoUrl: booth.logoUrl,
     totalVotes: booth.votes.length,
     awardTallies: Object.values(awardTallies).sort((a, b) => a.slotNumber - b.slotNumber),
     recentScans: booth.votes.map((v) => ({
@@ -108,6 +109,7 @@ export async function GET(request: Request) {
       projectTitle: b.projectTitle,
       capstoneCategory: b.capstoneCategory,
       tableNumber: b.tableNumber,
+      logoUrl: b.logoUrl,
       totalVotes: b._count.votes,
     })),
   });

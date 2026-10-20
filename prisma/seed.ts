@@ -16,6 +16,7 @@ async function main() {
       isAwardsLocked: false,
       maxAwards: 6,
       isVotingOpen: true,
+      isRegistrationOpen: true,
     },
   });
   console.log('Event configuration initialized:', eventConfig.eventName);

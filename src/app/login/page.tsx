@@ -9,6 +9,15 @@ import { AccountRoleSchema, getLoginDestination } from "@/lib/auth/redirect";
 
 const LoginResponseSchema = z.object({ success: z.literal(true), user: z.object({ fullName: z.string(), role: AccountRoleSchema }) });
 
+// Seeded account shortcuts are local development tools, excluded from production.
+const DEVELOPMENT_PRESETS = process.env.NODE_ENV === "development" ? [
+  { label: "Admin", email: "admin@itech2027.edu", password: "AdminPass2027!" },
+  { label: "Production", email: "prod@itech2027.edu", password: "ProdPass2027!" },
+  { label: "Registration", email: "reg.desk1@itech2027.edu", password: "RegPass2027!" },
+  { label: "Booth CS-01", email: "booth.cs01@itech2027.edu", password: "BoothPass2027!" },
+  { label: "Booth CS-02", email: "booth.cs02@itech2027.edu", password: "BoothPass2027!" },
+] : [];
+
 function LoginForm() {
 
   const searchParams = useSearchParams();
@@ -65,28 +74,24 @@ function LoginForm() {
       role: "ADMIN",
       title: "System Administrator",
       portal: "/admin",
-      account: "admin@itech2027.edu",
       description: "Oversees event configuration, controls voting status, monitors card batches, and inspects audit logs and telemetry.",
     },
     {
       role: "PRODUCTION",
       title: "Production Printing Officer",
       portal: "/production",
-      account: "prod@itech2027.edu",
       description: "Generates vector PDF card sheets, runs printer alignment calibration, and manages cloud storage archives.",
     },
     {
       role: "REGISTRATION",
       title: "Registration Desk Officer",
       portal: "/registration",
-      account: "reg.desk1@itech2027.edu",
       description: "Scans and activates newly purchased cards, binds card serials to attendees at admissions, and tracks receipts.",
     },
     {
       role: "EXHIBITOR",
       title: "Exhibition Booth Lead",
       portal: "/exhibitor",
-      account: "booth.cs01 / booth.cs02",
       description: "Operates booth mobile camera scanner to validate ticket stubs, redeem votes in assigned awards, and check booth tallies.",
     },
   ];
@@ -111,6 +116,30 @@ function LoginForm() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Column 1: Credentials Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+
+          {DEVELOPMENT_PRESETS.length > 0 && (
+            <fieldset className="space-y-2 border-b border-neutral-300 pb-4" disabled={isLoading}>
+              <legend className="text-sm font-semibold text-neutral-900">Temporary local presets</legend>
+              <p className="text-xs leading-relaxed text-neutral-600">Fill a test account, then select Authenticate to sign in.</p>
+              <div className="flex flex-wrap gap-2">
+                {DEVELOPMENT_PRESETS.map((preset) => (
+                  <button
+                    key={preset.email}
+                    type="button"
+                    onClick={() => {
+
+                      setEmail(preset.email);
+                      setPassword(preset.password);
+                      setError(null);
+                    }}
+                    className="min-h-11 min-w-11 rounded border border-neutral-300 px-3 py-2 text-xs font-medium text-neutral-900 transition-colors hover:border-neutral-900 disabled:opacity-50"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
 
           <div className="space-y-1.5">
             <label htmlFor="login-email" className="text-xs font-semibold text-neutral-800 uppercase tracking-wider">Email Address</label>
@@ -182,9 +211,6 @@ function LoginForm() {
                 </div>
                 <p className="text-xs text-neutral-600 leading-relaxed">
                   {item.description}
-                </p>
-                <p className="text-[11px] font-mono text-neutral-500 pt-0.5">
-                  Assigned user: <span className="text-neutral-800 font-medium">{item.account}</span>
                 </p>
               </div>
             ))}
