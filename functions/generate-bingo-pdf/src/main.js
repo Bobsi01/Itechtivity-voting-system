@@ -21,14 +21,17 @@ const CUT_VERTICAL_X = A4_WIDTH_PT / 2;
 const CUT_HORIZONTAL_Y = A4_HEIGHT_PT / 2;
 
 function getBoothCode(row, column) {
-
-  const cell = row * 7 + column;
-  if (cell === 17 || cell === 24) {
+  // Center 2x2 Master QR Block occupies columns 3 & 4 and rows 2 & 3
+  if ((column === 3 || column === 4) && (row === 2 || row === 3)) {
     return null;
   }
 
-  const skippedCells = Number(cell > 17) + Number(cell > 24);
-  return `CS-${String(cell + 1 - skippedCells).padStart(2, '0')}`;
+  const cell = row * 8 + column;
+  let skipped = 0;
+  if (cell > 18) skipped += 2;
+  if (cell > 26) skipped += 2;
+
+  return `CS-${String(cell + 1 - skipped).padStart(2, '0')}`;
 }
 
 function generateStubSignature(stubSerial, slotNumber, secretKey) {
@@ -119,51 +122,64 @@ function renderSingleCardQuadrant(doc, bounds, card) {
   doc.font('Courier-Bold').fontSize(6.5).fillColor('#000000');
   doc.text(`CARD SERIAL: #${card.cardSerial}`, x + 4, y + 34, { width: width - 8, align: 'center' });
 
-  // 7x6 Booth Grid with central Master QR block
+  // 8x7 Booth Grid with central Master QR block (52 booths + 4-cell Master QR)
   const gridX = x + 3;
   const gridY = y + headerHeight;
   const gridW = width - 6;
-  const cellW = gridW / 7;
-  const cellH = gridHeight / 6;
+  const cols = 8;
+  const rows = 7;
+  const cellW = gridW / cols;
+  const cellH = gridHeight / rows;
 
-  for (let r = 0; r < 6; r++) {
-    for (let c = 0; c < 7; c++) {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
       const cx = gridX + c * cellW;
       const cy = gridY + r * cellH;
-      const isCenterBlock = c === 3 && (r === 2 || r === 3);
+      const isCenterBlock = (c === 3 || c === 4) && (r === 2 || r === 3);
 
       if (isCenterBlock) {
-        if (r === 2) {
-          const masterW = cellW;
+        if (r === 2 && c === 3) {
+          const masterW = cellW * 2;
           const masterH = cellH * 2;
-          doc.strokeColor('#000000').lineWidth(0.5);
+          doc.strokeColor('#000000').lineWidth(0.65);
           doc.rect(cx + 0.5, cy + 0.5, masterW - 1, masterH - 1).stroke();
 
-          const qrSize = Math.min(masterW - 4, 34);
-          renderVectorQr(doc, `MASTER:${card.cardSerial}`, cx + (masterW - qrSize) / 2, cy + 4, qrSize);
+          // 1. "CSD" label enlarged by 30% (7.8pt) prominently on top
+          const csdY = cy + 2.5;
+          doc.font('Helvetica-Bold').fontSize(7.8).fillColor('#000000');
+          doc.text('CSD', cx + 1, csdY, { width: masterW - 2, align: 'center' });
 
-          doc.font('Courier-Bold').fontSize(5).fillColor('#000000');
-          doc.text('MASTER QR', cx, cy + qrSize + 7, { width: masterW, align: 'center' });
-          doc.text(`#${card.cardSerial}`, cx, cy + qrSize + 15, { width: masterW, align: 'center' });
-          doc.font('Helvetica-Bold').fontSize(6).fillColor('#888888');
-          doc.text('CSD', cx, cy + qrSize + 25, { width: masterW, align: 'center' });
+          // 2. Vector QR Code sized for scannability (~44.5pt / 1.57cm)
+          const qrSize = 44.5;
+          const qrX = cx + (masterW - qrSize) / 2;
+          const qrY = csdY + 10.5;
+          renderVectorQr(doc, `MASTER:${card.cardSerial}`, qrX, qrY, qrSize);
+
+          // 3. Card serial code directly below the QR
+          const serialY = qrY + qrSize + 2.5;
+          doc.font('Courier-Bold').fontSize(4.8).fillColor('#000000');
+          doc.text(`#${card.cardSerial}`, cx + 1, serialY, {
+            width: masterW - 2,
+            align: 'center',
+            lineBreak: false,
+          });
         }
         continue;
       }
 
-      doc.strokeColor('#777777').lineWidth(0.4);
+      doc.strokeColor('#888888').lineWidth(0.35);
       doc.rect(cx + 0.5, cy + 0.5, cellW - 1, cellH - 1).stroke();
 
       const boothCode = getBoothCode(r, c);
       if (!boothCode) continue;
 
-      doc.font('Helvetica-Bold').fontSize(6).fillColor('#000000');
-      doc.text(boothCode, cx + 1, cy + 3, { width: cellW - 2, align: 'center' });
+      doc.font('Helvetica-Bold').fontSize(5.5).fillColor('#000000');
+      doc.text(boothCode, cx + 1, cy + 2.5, { width: cellW - 2, align: 'center' });
 
-      doc.strokeColor('#aaaaaa').lineWidth(0.3);
-      doc.rect(cx + 4, cy + 12, cellW - 8, cellH - 18).stroke();
-      doc.font('Helvetica').fontSize(5).fillColor('#555555');
-      doc.text('STAMP', cx + 4, cy + 18, { width: cellW - 8, align: 'center' });
+      doc.strokeColor('#bbbbbb').lineWidth(0.25);
+      doc.rect(cx + 3, cy + 9.5, cellW - 6, cellH - 12.5).stroke();
+      doc.font('Helvetica').fontSize(4.5).fillColor('#666666');
+      doc.text('STAMP', cx + 3, cy + 15, { width: cellW - 6, align: 'center' });
     }
   }
 

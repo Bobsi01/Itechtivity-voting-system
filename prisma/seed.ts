@@ -57,7 +57,7 @@ async function main() {
   }
   console.log('Seeded 4 Default Academic Programs.');
 
-  // 4. Initialize 40 Capstone Booths (CS-01 to CS-40)
+  // 4. Initialize 52 Capstone Booths (CS-01 to CS-52)
   const boothTemplates = [
     { code: 'CS-01', title: 'AgriSense IoT Smart Hydroponics', category: 'IoT & Smart Agriculture' },
     { code: 'CS-02', title: 'JuanCharge EV Charging Network', category: 'Green Tech & Energy' },
@@ -72,7 +72,7 @@ async function main() {
   ];
 
   const allBooths = [];
-  for (let i = 1; i <= 40; i++) {
+  for (let i = 1; i <= 52; i++) {
     const code = `CS-${i.toString().padStart(2, '0')}`;
     const template = boothTemplates[(i - 1) % boothTemplates.length];
     allBooths.push({
@@ -91,7 +91,7 @@ async function main() {
       create: booth,
     });
   }
-  console.log('Seeded 40 Capstone Booths.');
+  console.log('Seeded 52 Capstone Booths.');
 
   // 4. Initialize Test User Accounts with Bcrypt Hashed Passwords
   const passwordAdmin = await bcrypt.hash('AdminPass2027!', 10);

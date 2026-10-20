@@ -110,16 +110,16 @@ export function renderSingleCardQuadrant(
     align: 'center',
   });
 
-  // 3. Interactive Bingo Grid (7 cols x 6 rows = 42 cells)
+  // 3. Interactive Bingo Grid (8 cols x 7 rows = 56 cells, 52 booths + 4-cell Master QR)
   const gridX = x + 3;
   const gridY = y + internal.headerHeight;
-  const gridW = width - 6; // 270.04pt
+  const gridW = width - 6; // 277.24pt
   const gridH = internal.gridHeight; // 240pt
 
-  const cols = 7;
-  const rows = 6;
-  const cellW = gridW / cols; // ~38.57pt
-  const cellH = gridH / rows; // ~40.0pt
+  const cols = 8;
+  const rows = 7;
+  const cellW = gridW / cols; // ~34.655pt
+  const cellH = gridH / rows; // ~34.286pt
 
   // Draw cells
   for (let r = 0; r < rows; r++) {
@@ -127,67 +127,68 @@ export function renderSingleCardQuadrant(
       const cx = gridX + c * cellW;
       const cy = gridY + r * cellH;
 
-      // Center block (Column 3, Rows 2 and 3 -> 0-indexed: col 3 is middle of 7)
-      // Houses Master QR and Serial
-      const isCenterBlock = c === 3 && (r === 2 || r === 3);
+      // Center 2x2 Master QR Block (Cols 3 & 4, Rows 2 & 3)
+      const isCenterBlock = (c === 3 || c === 4) && (r === 2 || r === 3);
 
       if (isCenterBlock) {
-        // We render center Master QR when at r === 2
-        if (r === 2) {
+        // We render center Master QR when at r === 2 and c === 3 (top-left of 2x2 block)
+        if (r === 2 && c === 3) {
           const masterX = gridX + 3 * cellW;
           const masterY = gridY + 2 * cellH;
-          const masterW = cellW;
+          const masterW = cellW * 2;
           const masterH = cellH * 2;
 
-          doc.strokeColor('#000000').lineWidth(0.5);
+          // Outer frame matching the 2-cell boundary
+          doc.strokeColor('#000000').lineWidth(0.65);
           doc.rect(cx + 0.5, cy + 0.5, masterW - 1, masterH - 1).stroke();
 
-          // Render Master QR in center
-          const qrSize = Math.min(masterW - 4, 34);
+          // 1. "CSD" label enlarged by 30% (7.8pt) prominently on top
+          const csdY = masterY + 2.5;
+          doc.font('Helvetica-Bold').fontSize(7.8).fillColor('#000000');
+          doc.text('CSD', masterX + 1, csdY, { width: masterW - 2, align: 'center' });
+
+          // 2. Vector QR Code sized for scannability (~44.5pt / 1.57cm)
+          const qrSize = 44.5;
+          const qrX = masterX + (masterW - qrSize) / 2;
+          const qrY = csdY + 10.5;
+
           renderVectorQR(
             doc,
             `MASTER:${card.cardSerial}`,
-            masterX + (masterW - qrSize) / 2,
-            masterY + 4,
+            qrX,
+            qrY,
             qrSize
           );
 
-          // Serial label under Master QR
-          doc.font('Courier-Bold').fontSize(5).fillColor('#000000');
-          doc.text(`MASTER QR`, masterX, masterY + qrSize + 7, {
-            width: masterW,
+          // 3. Card serial code directly below the QR
+          const serialY = qrY + qrSize + 2.5;
+          doc.font('Courier-Bold').fontSize(4.8).fillColor('#000000');
+          doc.text(`#${card.cardSerial}`, masterX + 1, serialY, {
+            width: masterW - 2,
             align: 'center',
-          });
-          doc.text(`#${card.cardSerial}`, masterX, masterY + qrSize + 15, {
-            width: masterW,
-            align: 'center',
-          });
-          doc.font('Helvetica-Bold').fontSize(6).fillColor('#888888');
-          doc.text('CSD', masterX, masterY + qrSize + 25, {
-            width: masterW,
-            align: 'center',
+            lineBreak: false,
           });
         }
         continue;
       }
 
-      // Booth Project Cells
-      doc.strokeColor('#777777').lineWidth(0.4);
+      // Booth Project Cells (52 booths)
+      doc.strokeColor('#888888').lineWidth(0.35);
       doc.rect(cx + 0.5, cy + 0.5, cellW - 1, cellH - 1).stroke();
 
       const boothCode = getBoothCode(r, c);
       if (!boothCode) continue;
 
-      doc.font('Helvetica-Bold').fontSize(6).fillColor('#000000');
-      doc.text(boothCode, cx + 1, cy + 3, { width: cellW - 2, align: 'center' });
+      doc.font('Helvetica-Bold').fontSize(5.5).fillColor('#000000');
+      doc.text(boothCode, cx + 1, cy + 2.5, { width: cellW - 2, align: 'center' });
 
       // Clean monogram square or Booth Logo
       const logoBuffer = boothLogos?.[boothCode];
       let logoRendered = false;
       if (logoBuffer) {
         try {
-          doc.image(logoBuffer, cx + 5, cy + 11, {
-            fit: [cellW - 10, cellH - 16],
+          doc.image(logoBuffer, cx + 3, cy + 9.5, {
+            fit: [cellW - 6, cellH - 12.5],
             align: 'center',
             valign: 'center',
           });
@@ -198,10 +199,10 @@ export function renderSingleCardQuadrant(
       }
 
       if (!logoRendered) {
-        doc.strokeColor('#aaaaaa').lineWidth(0.3);
-        doc.rect(cx + 4, cy + 12, cellW - 8, cellH - 18).stroke();
-        doc.font('Helvetica').fontSize(5).fillColor('#555555');
-        doc.text('STAMP', cx + 4, cy + 18, { width: cellW - 8, align: 'center' });
+        doc.strokeColor('#bbbbbb').lineWidth(0.25);
+        doc.rect(cx + 3, cy + 9.5, cellW - 6, cellH - 12.5).stroke();
+        doc.font('Helvetica').fontSize(4.5).fillColor('#666666');
+        doc.text('STAMP', cx + 3, cy + 15, { width: cellW - 6, align: 'center' });
       }
     }
   }

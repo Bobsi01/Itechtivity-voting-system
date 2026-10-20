@@ -25,47 +25,9 @@ Code in this project must be clean, approachable, and educational for university
 Readable code requires intentional breathing room. Dense, compressed walls of code increase cognitive load and obscure security flaws.
 
 ### 2.1 The Function Breathing Mannerism
-Leave an intentional single empty line after function opening braces where it improves readability, and separate distinct execution phases with clean vertical whitespace:
+Leave an intentional single empty line after function opening braces, and separate distinct execution phases with single blank lines.
 
-```typescript
-export async function redeemTicketStub(
-  stubSerial: string,
-  boothId: string,
-  scannedByUserId: string
-): Promise<RedemptionResult> {
-
-  // Step 1: Pre-database validation and signature verification
-  const isValidFormat = validateSerialFormat(stubSerial);
-  if (!isValidFormat) {
-    return { success: false, error: 'MALFORMED_SERIAL_CODE' };
-  }
-
-  // Step 2: Atomic database state transition using Prisma ORM
-  const updatedStub = await prisma.$queryRaw<Array<{ id: string; award_id: string }>>`
-    UPDATE "TICKET_STUB"
-    SET "status" = 'REDEEMED', "updated_at" = NOW()
-    WHERE "stub_serial" = ${stubSerial}
-      AND "status" = 'ACTIVATED'
-    RETURNING "id", "award_id";
-  `;
-
-  if (!updatedStub || updatedStub.length === 0) {
-    return { success: false, error: 'STUB_ALREADY_USED_OR_INACTIVE' };
-  }
-
-  // Step 3: Insert vote record protected by UNIQUE constraint
-  const voteRecord = await prisma.vote.create({
-    data: {
-      ticketStubId: updatedStub[0].id,
-      boothId: boothId,
-      awardId: updatedStub[0].award_id,
-      scannedByUserId: scannedByUserId,
-    },
-  });
-
-  return { success: true, data: voteRecord };
-}
-```
+For procedural examples, use the [code-quality runbook](../skills/code-quality/SKILL.md). Examples illustrate formatting only: all production mutations must also satisfy the [security rules](security.md), including signature verification, server-derived identity, and a shared transaction for redemption and vote creation.
 
 ### 2.2 Logical Phase Separation Rules
 Always separate code into distinct visual paragraphs using single blank lines:

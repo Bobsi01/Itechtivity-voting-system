@@ -2,7 +2,7 @@
 
 ## Project Overview
 * **Name:** Itechtivity 2027 Voting System
-* **Tech Stack:** Next.js 15 (TypeScript) + Supabase PostgreSQL (Prisma) + Appwrite Cloud
+* **Tech Stack:** Next.js App Router (TypeScript) + Supabase PostgreSQL (Prisma) + Appwrite Cloud
 * **Status:** System Architecture, Governance Rules, Skills & Runbooks Established
 
 ## Workspace Structure
@@ -11,6 +11,7 @@ c:\Workspace\Itech 2027\
 ├── .git/                                    # Git repository metadata
 ├── .agents/
 │   ├── rules/                               # Modular governance & quality rules
+│   │   ├── architecture.md                  # App Router, infrastructure, streaming & persistence
 │   │   ├── security.md                      # Security, HMAC, timing attacks, atomic locks, RBAC
 │   │   ├── ui-ux.md                         # UI rules: NO emojis, NO background color on text/icons
 │   │   ├── code-craftsmanship.md            # Anti-slop, zero 'any', no trivial comments
@@ -35,9 +36,9 @@ c:\Workspace\Itech 2027\
 └── repository_map.md                        # Repository layout and spatial map
 ```
 
-## Upcoming Source Tree (Next.js 15)
+## Source Tree Reference
 * `src/app/` — App Router routes (`/admin`, `/registration`, `/exhibitor`, `/production`, `/api`)
 * `src/components/` — UI components (shadcn/ui, camera scanner, live tallies)
 * `src/lib/` — Cryptography utilities, Appwrite client/server SDK, Prisma database client
-* `src/workers/` — Asynchronous background PDF generator (`pg-boss` consumer)
+* `functions/generate-bingo-pdf/` — Appwrite background PDF generation function
 * `prisma/` — PostgreSQL schema, migrations, seeders

@@ -10,13 +10,13 @@ import { config as middlewareConfig } from '../../middleware';
 async function main() {
 
   const codes: string[] = [];
-  for (let row = 0; row < 6; row++) {
-    for (let column = 0; column < 7; column++) {
+  for (let row = 0; row < 7; row++) {
+    for (let column = 0; column < 8; column++) {
       const code = getBoothCode(row, column);
       if (code) codes.push(code);
     }
   }
-  assert.deepEqual(codes, Array.from({ length: 40 }, (_, index) => `CS-${String(index + 1).padStart(2, '0')}`));
+  assert.deepEqual(codes, Array.from({ length: 52 }, (_, index) => `CS-${String(index + 1).padStart(2, '0')}`));
   assert.equal(getLoginDestination('PRODUCTION', '/production'), '/production');
   assert.equal(getLoginDestination('REGISTRATION', '/exhibitor'), '/registration');
   for (const destination of ['https://example.com', '//example.com', '/\\example.com', '/production-other', '/login', '/%2fexample.com', '/production/../admin', '/production/%2e%2e/admin']) {

@@ -233,30 +233,32 @@ function SingleBingoCardTemplatePreview({
     }));
   }, [card, defaultAwards, displaySerial]);
 
-  // Grid geometry matching a4-sheet-renderer.ts lines 114-123
+  // Grid geometry matching a4-sheet-renderer.ts (8x7 Grid, 52 booths)
   const gridX = 3;
   const gridY = internal.headerHeight; // 42
   const gridW = width - 6; // 277.24
   const gridH = internal.gridHeight; // 240
-  const cols = 7;
-  const rows = 6;
+  const cols = 8;
+  const rows = 7;
   const cellW = gridW / cols;
   const cellH = gridH / rows;
 
   const masterX = gridX + 3 * cellW;
   const masterY = gridY + 2 * cellH;
-  const masterW = cellW;
+  const masterW = cellW * 2;
   const masterH = cellH * 2;
-  const masterQrSize = Math.min(masterW - 4, 34);
+  const masterQrSize = 44.5;
+  const masterQrX = masterX + (masterW - masterQrSize) / 2;
+  const masterQrY = masterY + 2.5 + 10.5;
   const masterQrPath = useMemo(
     () =>
       buildVectorQrSvgElements(
         `MASTER:${displaySerial}`,
-        masterX + (masterW - masterQrSize) / 2,
-        masterY + 4,
+        masterQrX,
+        masterQrY,
         masterQrSize
       ),
-    [displaySerial, masterX, masterW, masterY, masterQrSize]
+    [displaySerial, masterQrX, masterQrY, masterQrSize]
   );
 
   // Demographic & Stub geometry matching a4-sheet-renderer.ts lines 209-279
@@ -340,15 +342,15 @@ function SingleBingoCardTemplatePreview({
           {`CARD SERIAL: #${displaySerial}`}
         </text>
 
-        {/* 3. Interactive Bingo Grid (7 cols x 6 rows = 42 cells) */}
+        {/* 3. Interactive Bingo Grid (8 cols x 7 rows = 56 cells, 52 booths + 4-cell Master QR) */}
         {Array.from({ length: rows }).map((_, r) =>
           Array.from({ length: cols }).map((__, c) => {
             const cx = gridX + c * cellW;
             const cy = gridY + r * cellH;
-            const isCenterBlock = c === 3 && (r === 2 || r === 3);
+            const isCenterBlock = (c === 3 || c === 4) && (r === 2 || r === 3);
 
             if (isCenterBlock) {
-              if (r === 2) {
+              if (r === 2 && c === 3) {
                 return (
                   <g key={`master-${r}-${c}`}>
                     <rect
@@ -358,41 +360,30 @@ function SingleBingoCardTemplatePreview({
                       height={masterH - 1}
                       fill="#ffffff"
                       stroke="#000000"
-                      strokeWidth={0.5}
+                      strokeWidth={0.65}
                     />
-                    <path d={masterQrPath} fill="#000000" shapeRendering="crispEdges" />
                     <text
                       x={masterX + masterW / 2}
-                      y={masterY + masterQrSize + 11}
+                      y={masterY + 9}
                       textAnchor="middle"
                       fill="#000000"
-                      fontSize={5}
-                      fontWeight={700}
-                      fontFamily="Courier New, Courier, monospace"
-                    >
-                      MASTER QR
-                    </text>
-                    <text
-                      x={masterX + masterW / 2}
-                      y={masterY + masterQrSize + 19}
-                      textAnchor="middle"
-                      fill="#000000"
-                      fontSize={4.6}
-                      fontWeight={700}
-                      fontFamily="Courier New, Courier, monospace"
-                    >
-                      {`#${displaySerial}`}
-                    </text>
-                    <text
-                      x={masterX + masterW / 2}
-                      y={masterY + masterQrSize + 29}
-                      textAnchor="middle"
-                      fill="#888888"
-                      fontSize={6}
+                      fontSize={7.8}
                       fontWeight={700}
                       fontFamily="Helvetica, Arial, sans-serif"
                     >
                       CSD
+                    </text>
+                    <path d={masterQrPath} fill="#000000" shapeRendering="crispEdges" />
+                    <text
+                      x={masterX + masterW / 2}
+                      y={masterQrY + masterQrSize + 6.5}
+                      textAnchor="middle"
+                      fill="#000000"
+                      fontSize={4.8}
+                      fontWeight={700}
+                      fontFamily="Courier New, Courier, monospace"
+                    >
+                      {`#${displaySerial}`}
                     </text>
                   </g>
                 );
@@ -412,35 +403,35 @@ function SingleBingoCardTemplatePreview({
                   width={cellW - 1}
                   height={cellH - 1}
                   fill="#ffffff"
-                  stroke="#777777"
-                  strokeWidth={0.4}
+                  stroke="#888888"
+                  strokeWidth={0.35}
                 />
                 <text
                   x={cx + cellW / 2}
-                  y={cy + 8.5}
+                  y={cy + 7.5}
                   textAnchor="middle"
                   fill="#000000"
-                  fontSize={6}
+                  fontSize={5.5}
                   fontWeight={700}
                   fontFamily="Helvetica, Arial, sans-serif"
                 >
                   {boothCode}
                 </text>
                 <rect
-                  x={cx + 4}
-                  y={cy + 12}
-                  width={cellW - 8}
-                  height={cellH - 18}
+                  x={cx + 3}
+                  y={cy + 9.5}
+                  width={cellW - 6}
+                  height={cellH - 12.5}
                   fill="none"
-                  stroke={votedSlot ? "#000000" : "#aaaaaa"}
-                  strokeWidth={votedSlot ? 0.6 : 0.3}
+                  stroke={votedSlot ? "#000000" : "#bbbbbb"}
+                  strokeWidth={votedSlot ? 0.6 : 0.25}
                 />
                 <text
                   x={cx + cellW / 2}
-                  y={cy + 22.5}
+                  y={cy + 19.5}
                   textAnchor="middle"
-                  fill={votedSlot ? "#000000" : "#555555"}
-                  fontSize={votedSlot ? 4.8 : 5}
+                  fill={votedSlot ? "#000000" : "#666666"}
+                  fontSize={votedSlot ? 4.8 : 4.5}
                   fontWeight={votedSlot ? 700 : 400}
                   fontFamily="Helvetica, Arial, sans-serif"
                 >

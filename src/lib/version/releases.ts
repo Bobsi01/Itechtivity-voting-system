@@ -25,10 +25,57 @@ export interface VersionRelease {
 
 export const SYSTEM_RELEASES: VersionRelease[] = [
   {
+    version: "V1.0.33",
+    releaseDate: "October 20, 2026",
+    title: "52-Booth Production Grid Architecture & Master QR Centering",
+    isLatest: true,
+    majorHighlights: [
+      "Production-wide expansion to 52 capstone booths (CS-01 to CS-52) across an 8x7 matrix without unused cells.",
+      "Maximized 2x2 Master QR center block (44.5pt / 1.57cm) with bilateral alignment and enhanced camera acquisition.",
+      "Prominent 30% enlarged CSD department heading (7.8pt Helvetica-Bold) with clean monospaced card serial.",
+      "Removed legacy labels (MASTER QR, bottom gray CSD, prototype annotations) for a cleaner layout.",
+      "Full synchronization across Next.js PDF engine, Appwrite Cloud Functions, PostgreSQL seed, and Admin SVG preview.",
+    ],
+    minorChanges: [
+      {
+        description: "Re-engineered bingo grid layout to 8 columns x 7 rows for exact 52-booth capacity and 2x2 center clearing",
+        points: 4,
+        type: "feature",
+      },
+      {
+        description: "Enlarged Master QR to 44.5pt with 3-tier vertical stack featuring bold CSD title and clean serial code",
+        points: 3,
+        type: "feature",
+      },
+      {
+        description: "Synchronized Appwrite Cloud Function generator and Admin Workspace SVG preview to match production geometry",
+        points: 3,
+        type: "feature",
+      },
+      {
+        description: "Expanded database seed and schema mappings to initialize and track 52 capstone booths in PostgreSQL",
+        points: 2,
+        type: "feature",
+      },
+      {
+        description: "Updated regression test assertions to validate full 52-booth O(1) grid mapping and PDF rendering",
+        points: 2,
+        type: "fix",
+      },
+    ],
+    contributors: [
+      {
+        name: "Daniel",
+        githubUsername: "ItsMeYourNightmare",
+        role: "Repository Owner & Lead Systems Architect",
+      },
+    ],
+  },
+  {
     version: "V1.0.19",
     releaseDate: "October 20, 2026",
     title: "Registration Lifecycle Gate, Admin Workspace Ergonomics & Booth Programs",
-    isLatest: true,
+    isLatest: false,
     majorHighlights: [
       "Dynamic Event Registration Gate with administrative pause/resume toggle and immediate POS blocking.",
       "Admin Workspace ergonomics overhaul with persistent collapsible sidebar, mobile slide-out drawer, and unified h-16 headers.",

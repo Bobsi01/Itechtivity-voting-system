@@ -3,6 +3,7 @@
 ## 1. Absolute Styling Invariants (Strict User Directives)
 
 ### Rule 1: NEVER Use Emoji in the UI
+* **Scope:** This prohibition also applies to agent responses, code, and comments.
 * **Strict Prohibition:** Emojis (such as rocket, checkmark, cross mark, party popper, mobile phone, lock, or any Unicode pictograph) are strictly forbidden across all user interfaces, alerts, buttons, badges, headings, and toast messages.
 * **Alternative:** Use clean, professional monochrome vector icons from `lucide-react` (e.g., `<Check />`, `<AlertCircle />`, `<Camera />`, `<Lock />`) or concise, high-contrast typography.
 

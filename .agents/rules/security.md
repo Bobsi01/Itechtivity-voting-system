@@ -6,7 +6,7 @@
 * **High Entropy & Zero Sequential Predictability:** Never use sequential IDs (e.g. `1, 2, 3`) for cards, stubs, or security tokens. All serials and nonces must use cryptographically secure random identifiers (`crypto.randomBytes`, `crypto.randomUUID`, or `nanoid`).
 
 ## 2. Single-Redemption & Atomic Concurrency (Anti-Race Condition)
-* **Two-Phase Commit:** A ticket stub can only be redeemed if its status is strictly `ACTIVATED`. Unactivated (`INACTIVE`) or already used (`REDEEMED`) stubs must be rejected immediately.
+* **Ticket Lifecycle:** Tickets only transition `INACTIVE -> ACTIVATED -> REDEEMED`. A ticket stub can only be redeemed if its status is strictly `ACTIVATED`. Unactivated (`INACTIVE`) or already used (`REDEEMED`) stubs must be rejected immediately.
 * **Atomic State Transition:** Never use check-then-act (`SELECT` then `UPDATE`) patterns for ticket redemption. All vote mutations must execute via a single conditional update with row-level locking inside an interactive transaction:
   ```sql
   UPDATE "TICKET_STUB"
@@ -29,6 +29,7 @@
   - `/exhibitor/*` and `/api/scan/*` require `EXHIBITOR` (or `ADMIN`) role.
 * **Zero Trust on Client-Supplied Identifiers (BOLA Prevention):** Never trust `boothId`, `userId`, or `role` from client request bodies, query strings, or headers. Always derive identity and `boothId` strictly from the verified server-side session (`getCurrentSession()`).
 * **Tenant & Award Scope Binding:** An `EXHIBITOR` account can **only** record votes and view tallies for its assigned `boothId`, and only when the scanned stub's `awardId` matches a valid award category for that booth.
+* **Exhibitor Tally Isolation:** Never expose global standings or competitor counts through exhibitor-scoped routes or WebSocket payloads.
 
 ## 5. Input Validation, Mass Assignment & Sink Isolation (OWASP Top 10 / API Security)
 * **Trust Boundary Schema Validation:** Validate all external inputs (JSON bodies, `FormData`, URL parameters, query strings, headers, and scanned QR strings) at the entrypoint using strict Zod schemas before executing business logic.

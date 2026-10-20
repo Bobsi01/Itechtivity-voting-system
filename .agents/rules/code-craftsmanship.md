@@ -11,7 +11,7 @@
   // Loop through items
   items.forEach(item => ...);
   ```
-* Comments are reserved strictly for non-obvious mathematical formulas, security invariants, or cryptographic protocols.
+* Follow the [commenting standards](code-quality.md#3-commenting-quality-standards) for concise explanations of non-obvious constraints, formulas, security invariants, and failure modes.
 
 ### Gate 2: Strict Typing & Zero Type Escapes
 * The following are strictly banned: `any`, `unknown as any`, `@ts-ignore`, `@ts-nocheck`, `Record<string, any>`.
@@ -29,10 +29,5 @@
 
 ## 2. UI Anti-Slop Scope (Strictly Scoped)
 
-To prevent anti-slop rules from hindering natural design flow, UI anti-slop enforcement is strictly limited to these four rules:
-
-1. **Avoid Gradients Unless Meaningful:** Do not use decorative gradients unless they serve a clear functional or semantic purpose.
-2. **No Background Colors on Text or Icons:** Avoid colored pill backgrounds behind text or colored container fills behind icons.
-3. **No Redundant Eyebrow Labels:** Avoid small uppercase eyebrow text above headings (e.g., department/university sub-labels repeated above main titles) if the information is redundant.
-4. **Avoid UI Redundancy:** Do not repeat information, labels, or subtitles that are already obvious from the primary heading or component context.
+UI anti-slop enforcement is strictly limited to the four constraints defined in [UI rules 2-5](ui-ux.md#rule-2-never-use-background-colors-on-text-or-icons): text/icon backgrounds, decorative gradients, redundant eyebrow labels, and repeated information. The separate accessibility and mobile requirements in that file still apply.
 
