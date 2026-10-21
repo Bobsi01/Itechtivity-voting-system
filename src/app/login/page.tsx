@@ -1,21 +1,40 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, AlertCircle, KeyRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { AccountRoleSchema, getLoginDestination } from "@/lib/auth/redirect";
 
-const LoginResponseSchema = z.object({ success: z.literal(true), user: z.object({ fullName: z.string(), role: AccountRoleSchema }) });
+const LoginResponseSchema = z.object({
+  success: z.literal(true),
+  user: z.object({
+    fullName: z.string(),
+    role: AccountRoleSchema,
+  }),
+});
+
+interface DevAccountPreset {
+  label: string;
+  email: string;
+}
+
+const DevAccountPresetsResponseSchema = z.object({
+  success: z.literal(true),
+  presets: z.array(z.object({
+    label: z.string(),
+    email: z.string().email(),
+  })),
+});
 
 // Seeded account shortcuts are local development tools, excluded from production.
-const DEVELOPMENT_PRESETS = process.env.NODE_ENV === "development" ? [
-  { label: "Admin", email: "admin@itech2027.edu", password: "" },
-  { label: "Production", email: "prod@itech2027.edu", password: "" },
-  { label: "Registration", email: "reg.desk1@itech2027.edu", password: "" },
-  { label: "Booth CS-01", email: "booth.cs01@itech2027.edu", password: "" },
-  { label: "Booth CS-02", email: "booth.cs02@itech2027.edu", password: "" },
+const INITIAL_DEV_PRESETS: DevAccountPreset[] = process.env.NODE_ENV === "development" ? [
+  { label: "Admin", email: "admin@itech2027.edu" },
+  { label: "Production", email: "prod@itech2027.edu" },
+  { label: "Registration", email: "reg.desk1@itech2027.edu" },
+  { label: "Booth CS-01", email: "booth.cs01@itech2027.edu" },
+  { label: "Booth CS-02", email: "booth.cs02@itech2027.edu" },
 ] : [];
 
 function LoginForm() {
@@ -27,9 +46,46 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [presets, setPresets] = useState<DevAccountPreset[]>(INITIAL_DEV_PRESETS);
+
   const accessError = searchParams.get("error") === "UNAUTHORIZED_ROLE"
     ? "That page belongs to a different account role. Sign in or open your own portal."
     : searchParams.has("error") ? "Your session ended. Please sign in again." : null;
+
+  useEffect(() => {
+
+    let isMounted = true;
+
+    if (process.env.NODE_ENV === "development") {
+      fetch("/api/auth/presets")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: unknown) => {
+          const result = DevAccountPresetsResponseSchema.safeParse(data);
+
+          if (isMounted && result.success) {
+            setPresets(result.data.presets);
+          }
+        })
+        .catch((fetchError: unknown) => {
+          console.warn("Unable to load development account shortcuts:", fetchError);
+        });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handlePresetSelect = (preset: DevAccountPreset) => {
+
+    setEmail(preset.email);
+    setError(null);
+  };
+
+  const handleEmailChange = (newEmail: string) => {
+
+    setEmail(newEmail);
+  };
 
   const executeLogin = async (targetEmail: string, targetPassword: string) => {
 
@@ -117,21 +173,16 @@ function LoginForm() {
         {/* Column 1: Credentials Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
 
-          {DEVELOPMENT_PRESETS.length > 0 && (
+          {presets.length > 0 && (
             <fieldset className="space-y-2 border-b border-neutral-300 pb-4" disabled={isLoading}>
               <legend className="text-sm font-semibold text-neutral-900">Temporary local presets</legend>
               <p className="text-xs leading-relaxed text-neutral-600">Fill a test account, then select Authenticate to sign in.</p>
               <div className="flex flex-wrap gap-2">
-                {DEVELOPMENT_PRESETS.map((preset) => (
+                {presets.map((preset) => (
                   <button
                     key={preset.email}
                     type="button"
-                    onClick={() => {
-
-                      setEmail(preset.email);
-                      setPassword(preset.password);
-                      setError(null);
-                    }}
+                    onClick={() => handlePresetSelect(preset)}
                     className="min-h-11 min-w-11 rounded border border-neutral-300 px-3 py-2 text-xs font-medium text-neutral-900 transition-colors hover:border-neutral-900 disabled:opacity-50"
                   >
                     {preset.label}
@@ -147,7 +198,7 @@ function LoginForm() {
               id="login-email" autoComplete="username" inputMode="email" autoCapitalize="none"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
               placeholder="user@itech2027.edu"
               className="w-full px-3 py-2.5 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
               required
