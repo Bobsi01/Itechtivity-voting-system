@@ -77,7 +77,7 @@ export function BatchGeneratorCard({ onBatchGenerated }: BatchGeneratorCardProps
               Batch Ticket Sheet Generator
             </h2>
             <p className="text-xs text-neutral-600">
-              A4 Vellum Paper (4 Cards / Sheet with 0.2&quot; margins)
+              A4 Vellum Paper (4 Cards / Sheet with 5mm margins)
             </p>
           </div>
         </div>

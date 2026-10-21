@@ -87,6 +87,7 @@ export async function middleware(request: NextRequest) {
       '/api/auth/login',
       '/api/auth/logout',
       '/api/auth/me',
+      '/api/cards/validate',
     ];
 
     if (publicApiRoutes.some((route) => pathname.startsWith(route))) {

@@ -10,6 +10,7 @@ import {
   createResilientPoller,
 } from "@/lib/appwrite/client";
 import { SimpleSelect, type SimpleSelectOption } from "@/components/ui/simple-select";
+import { playAudioFeedback, triggerHaptic } from "@/lib/scanner/feedback";
 
 interface ScopedBoothTally {
   id: string;
@@ -43,61 +44,6 @@ export function MobileScanner() {
 
   const [scanFlash, setScanFlash] = useState<"success" | "error" | null>(null);
   const isProcessingScanRef = useRef<boolean>(false);
-
-  // Synthesizes acoustic feedback without memory leaks
-  const playAudioFeedback = (isSuccess: boolean) => {
-
-    try {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtx) return;
-
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      if (isSuccess) {
-        // High pleasant dual tone
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.frequency.setValueAtTime(1174, ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.25);
-      } else {
-        // Low rejection buzz
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(220, ctx.currentTime);
-        gain.gain.setValueAtTime(0.18, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.35);
-      }
-
-      osc.onended = () => {
-        ctx.close();
-      };
-    } catch (e) {
-      console.warn("Audio feedback initialization error:", e);
-    }
-  };
-
-  const triggerHaptic = (isSuccess: boolean) => {
-
-    if (typeof window !== "undefined" && "vibrate" in navigator) {
-      try {
-        if (isSuccess) {
-          navigator.vibrate([80]);
-        } else {
-          navigator.vibrate([120, 80, 120]);
-        }
-      } catch (e) {
-        console.warn("Haptic vibration error:", e);
-      }
-    }
-  };
 
   const fetchBoothTally = useCallback(async (overrideBoothId?: string) => {
 

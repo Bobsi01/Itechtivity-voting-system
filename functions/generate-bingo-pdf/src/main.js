@@ -9,7 +9,8 @@ const { Pool } = pg;
 
 const A4_WIDTH_PT = 595.28;
 const A4_HEIGHT_PT = 841.89;
-const MARGIN_PT = 0.2 * 72;
+const MARGIN_MM = 5.0;
+const MARGIN_PT = (MARGIN_MM * 72) / 25.4;
 const PRINTABLE_WIDTH_PT = A4_WIDTH_PT - 2 * MARGIN_PT;
 const PRINTABLE_HEIGHT_PT = A4_HEIGHT_PT - 2 * MARGIN_PT;
 const CARDS_PER_ROW = 2;

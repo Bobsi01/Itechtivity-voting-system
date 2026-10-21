@@ -27,13 +27,13 @@ env:
 jobs:
   changes:
     name: Detect Changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 3
     outputs:
       database: ${{ steps.diff.outputs.database }}
       functions: ${{ steps.diff.outputs.functions }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -54,7 +54,7 @@ jobs:
 
   verify:
     name: Verify (${{ matrix.check }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
       fail-fast: true
@@ -63,15 +63,15 @@ jobs:
           - check: typecheck
             command: npx tsc --noEmit
           - check: lint
-            command: npm run lint
+            command: npm run lint -- --max-warnings=0
           - check: crypto-pdf-audit
             command: npm run test:crypto && npm run test:pdf && npm run test:audit
     env:
       EVENT_HMAC_SECRET: ci_only_hmac_secret_key_with_at_least_32_characters
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -88,16 +88,16 @@ jobs:
       github.event_name != 'pull_request'
       && (github.ref == 'refs/heads/Production' || github.ref == 'refs/heads/production')
       && needs.changes.outputs.database == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     environment: production
     env:
       DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
       DIRECT_URL: ${{ secrets.SUPABASE_DIRECT_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -118,7 +118,7 @@ jobs:
       && github.event_name != 'pull_request'
       && (github.ref == 'refs/heads/Production' || github.ref == 'refs/heads/production')
       && needs.changes.outputs.functions == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: production
     env:
@@ -129,9 +129,9 @@ jobs:
       DIRECT_URL: ${{ secrets.SUPABASE_DIRECT_URL }}
       EVENT_HMAC_SECRET: ${{ secrets.EVENT_HMAC_SECRET }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -145,7 +145,7 @@ jobs:
       && needs.database-migration.result != 'failure'
       && github.event_name != 'pull_request'
       && (github.ref == 'refs/heads/Production' || github.ref == 'refs/heads/production')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: production
     env:
@@ -160,10 +160,10 @@ jobs:
       SMOKE_ONLY: ${{ inputs.full_e2e_test && 'false' || 'true' }}
       SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # The site deploy and verification scripts use only Node built-ins, so no npm install is needed here.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
 

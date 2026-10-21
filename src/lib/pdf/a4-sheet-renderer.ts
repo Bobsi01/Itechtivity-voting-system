@@ -294,7 +294,7 @@ export async function generateA4BingoPdfBuffer(
 
   const doc = new PDFDocument({
     size: 'A4',
-    margin: 0, // Zero document margin; internal geometry calculates exact 0.2" margins
+    margin: 0, // Zero document margin; internal geometry calculates exact 5.0mm margins
     autoFirstPage: false,
   });
 

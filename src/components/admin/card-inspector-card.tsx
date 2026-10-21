@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Search,
   ShieldAlert,
@@ -616,7 +616,7 @@ export function CardInspectorCard({
   const [showVoidConfirm, setShowVoidConfirm] = useState<boolean>(false);
   const [isPreviewExpandedModalOpen, setIsPreviewExpandedModalOpen] = useState<boolean>(false);
 
-  const fetchCardBySerial = async (targetSerial: string) => {
+  const fetchCardBySerial = useCallback(async (targetSerial: string) => {
 
     const trimmed = targetSerial.trim();
     if (!trimmed) {
@@ -655,7 +655,7 @@ export function CardInspectorCard({
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [onCardInspected]);
 
   useEffect(() => {
 
@@ -667,7 +667,7 @@ export function CardInspectorCard({
         onClearSelectedSerial();
       }
     }
-  }, [selectedSerial, onClearSelectedSerial]);
+  }, [selectedSerial, onClearSelectedSerial, fetchCardBySerial]);
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

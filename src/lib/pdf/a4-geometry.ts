@@ -1,23 +1,23 @@
 /**
  * A4 Vellum Paper Geometry & Multi-Card Placement Mathematics
  * Standard A4: 210mm x 297mm = 595.276pt x 841.890pt (at 72pt/inch)
- * Margin: 0.2 inches = 14.4 points on each edge
+ * Margin: 5.0 mm = 14.1732 points on each edge
  */
 
 export const A4_WIDTH_PT = 595.28;
 export const A4_HEIGHT_PT = 841.89;
-export const MARGIN_INCHES = 0.2;
-export const MARGIN_PT = MARGIN_INCHES * 72; // 14.4 pt
+export const MARGIN_MM = 5.0;
+export const MARGIN_PT = (MARGIN_MM * 72) / 25.4; // 14.1732 pt
 
-export const PRINTABLE_WIDTH_PT = A4_WIDTH_PT - 2 * MARGIN_PT; // 566.48 pt
-export const PRINTABLE_HEIGHT_PT = A4_HEIGHT_PT - 2 * MARGIN_PT; // 813.09 pt
+export const PRINTABLE_WIDTH_PT = A4_WIDTH_PT - 2 * MARGIN_PT; // 566.934 pt (200.0 mm)
+export const PRINTABLE_HEIGHT_PT = A4_HEIGHT_PT - 2 * MARGIN_PT; // 813.544 pt (287.0 mm)
 
 export const CARDS_PER_ROW = 2;
 export const CARDS_PER_COL = 2;
 export const CARDS_PER_SHEET = CARDS_PER_ROW * CARDS_PER_COL; // 4 cards
 
-export const CARD_WIDTH_PT = PRINTABLE_WIDTH_PT / CARDS_PER_ROW; // 283.24 pt
-export const CARD_HEIGHT_PT = PRINTABLE_HEIGHT_PT / CARDS_PER_COL; // 406.545 pt
+export const CARD_WIDTH_PT = PRINTABLE_WIDTH_PT / CARDS_PER_ROW; // 283.467 pt (100.0 mm)
+export const CARD_HEIGHT_PT = PRINTABLE_HEIGHT_PT / CARDS_PER_COL; // 406.772 pt (143.5 mm)
 
 // Page Center Cut Guidelines
 export const CUT_VERTICAL_X = A4_WIDTH_PT / 2; // 297.64 pt
@@ -69,9 +69,9 @@ export function getCardInternalLayout(cardY: number): CardInternalLayout {
   const gridHeight = 240;
   const demographicHeight = 18;
   const perforationY = cardY + headerHeight + gridHeight + demographicHeight; // ~300pt from top
-  const stubHeight = CARD_HEIGHT_PT - (headerHeight + gridHeight + demographicHeight); // ~99.3pt
+  const stubHeight = CARD_HEIGHT_PT - (headerHeight + gridHeight + demographicHeight); // ~106.77 pt
   const stubCount = 6;
-  const stubWidth = CARD_WIDTH_PT / stubCount; // ~46.0pt
+  const stubWidth = CARD_WIDTH_PT / stubCount; // ~47.24 pt
 
   return {
     headerHeight,

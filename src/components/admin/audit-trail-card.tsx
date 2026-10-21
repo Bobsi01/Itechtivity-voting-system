@@ -41,6 +41,7 @@ interface ParsedLogDetails {
   cardSerial?: string;
   code?: string;
   reason?: string;
+  newUserEmail?: string;
 }
 
 function getShortSummary(log: AuditLogItem): string {
@@ -136,6 +137,16 @@ function getShortSummary(log: AuditLogItem): string {
 
     case "ADMIN_EXPORT_CSV":
       return "Certified CSV data exported";
+
+    case "EXHIBITOR_BOOTH_UPDATE": {
+      const code = details.code || details.boothCode;
+      return code ? `Exhibitor updated booth ${code}` : "Exhibitor updated booth";
+    }
+
+    case "EXHIBITOR_COEXHIBITOR_CREATE": {
+      const email = details.newUserEmail || details.email;
+      return email ? `Added co-exhibitor: ${email}` : "Added co-exhibitor";
+    }
 
     default: {
       let cleaned = log.summary;

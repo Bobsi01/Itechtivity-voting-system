@@ -143,6 +143,12 @@ export function createHumanReadableSummary(
     case 'ADMIN_EXPORT_CSV':
       return `${actor} exported official certified CSV data report: ${data.details || 'data export'}.`;
 
+    case 'EXHIBITOR_BOOTH_UPDATE':
+      return `Exhibitor ${actor} updated booth configuration for ${data.boothCode || 'Booth'} (${data.projectTitle || ''}).`;
+
+    case 'EXHIBITOR_COEXHIBITOR_CREATE':
+      return `Exhibitor ${actor} created co-exhibitor account for booth ${data.boothCode || 'Booth'}: ${data.details || ''}.`;
+
     default:
       return `${actor} performed action ${action}${data.details ? `: ${data.details}` : ''}.`;
   }

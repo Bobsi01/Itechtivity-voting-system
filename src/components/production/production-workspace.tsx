@@ -89,7 +89,7 @@ export function ProductionWorkspace() {
         </div>
         <div className="p-3.5 border border-neutral-300 rounded-lg">
           <span className="text-[11px] font-mono uppercase text-neutral-500">Paper Margins</span>
-          <p className="text-xl font-bold text-neutral-900 font-mono mt-0.5 select-text">0.2&quot; / 14.4pt</p>
+          <p className="text-xl font-bold text-neutral-900 font-mono mt-0.5 select-text">5.0mm / 14.2pt</p>
         </div>
       </div>
 

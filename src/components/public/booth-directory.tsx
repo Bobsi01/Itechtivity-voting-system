@@ -2,14 +2,19 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, MapPin, Search, Users, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ExternalLink, MapPin, Search, Users, X } from "lucide-react";
 import styles from "./booth-directory.module.css";
 import { BOOTH_PROGRAM_CODES } from "@/lib/booths/programs";
+import { VenueFloorMap } from "@/components/public/venue-floor-map";
 
 export interface PublicBoothItem {
   id: string;
   code: string;
   projectTitle: string;
+  description?: string | null;
+  websiteUrl?: string | null;
+  coverUrl?: string | null;
+  mapSlot?: string | null;
   capstoneCategory: string;
   programCode: string | null;
   teamMembers: string | null;
@@ -32,6 +37,7 @@ interface BoothDirectoryProps {
 const PAGE_SIZE = 12;
 const DIRECTORY_VIEWS = [
   { id: "directory", label: "Projects" },
+  { id: "map", label: "Floor map" },
   { id: "rules", label: "Voting guide" },
   { id: "awards", label: "Awards" },
 ] as const;
@@ -46,7 +52,7 @@ const VOTING_GUIDE = [
 
 export function BoothDirectory({ booths, awards }: BoothDirectoryProps) {
 
-  const [activeView, setActiveView] = useState<"directory" | "rules" | "awards">("directory");
+  const [activeView, setActiveView] = useState<"directory" | "map" | "rules" | "awards">("directory");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedProgram, setSelectedProgram] = useState("");
@@ -56,7 +62,20 @@ export function BoothDirectory({ booths, awards }: BoothDirectoryProps) {
 
   const filteredBooths = booths.filter((booth) => {
 
-    const searchableText = [booth.code, booth.projectTitle, booth.teamMembers, booth.tableNumber, booth.capstoneCategory, booth.programCode].filter(Boolean).join(" ").toLowerCase();
+    const searchableText = [
+      booth.code,
+      booth.projectTitle,
+      booth.description,
+      booth.mapSlot,
+      booth.teamMembers,
+      booth.tableNumber,
+      booth.capstoneCategory,
+      booth.programCode,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
     const matchesProgram = !selectedProgram || (selectedProgram === "unassigned" ? !booth.programCode : booth.programCode === selectedProgram);
     return searchableText.includes(normalizedQuery) && (!selectedCategory || booth.capstoneCategory === selectedCategory) && matchesProgram;
   });
@@ -91,7 +110,15 @@ export function BoothDirectory({ booths, awards }: BoothDirectoryProps) {
       <div className={styles.viewBar}>
         <div className={styles.views} role="group" aria-label="Directory views">
           {DIRECTORY_VIEWS.map((view) => (
-            <button key={view.id} type="button" aria-pressed={activeView === view.id} aria-controls="directory-content" onClick={() => setActiveView(view.id)}>{view.label}</button>
+            <button
+              key={view.id}
+              type="button"
+              aria-pressed={activeView === view.id}
+              aria-controls="directory-content"
+              onClick={() => setActiveView(view.id)}
+            >
+              {view.label}
+            </button>
           ))}
         </div>
         <p className={styles.visitorHint}>Open to every visitor. No account needed.</p>
@@ -155,17 +182,75 @@ export function BoothDirectory({ booths, awards }: BoothDirectoryProps) {
               <div className={styles.projectGrid}>
                 {visibleBooths.map((booth) => (
                   <article key={booth.id} className={styles.projectCard}>
+                    {/* Optional Cover Photo Banner */}
+                    {booth.coverUrl && (
+                      <div className={styles.coverBanner}>
+                        <Image
+                          src={booth.coverUrl}
+                          alt={`${booth.projectTitle} cover banner`}
+                          fill
+                          unoptimized
+                          className="object-cover"
+                        />
+                      </div>
+                    )}
+
+                    {/* Card Top: Booth Code, Program, and Logo */}
                     <div className={styles.cardTop}>
                       <span className={styles.boothCode}>{booth.code}</span>
                       {booth.programCode && <span className={styles.programLabel}>{booth.programCode}</span>}
-                      {booth.logoUrl && <Image src={booth.logoUrl} alt={`${booth.code} project logo`} width={40} height={40} unoptimized className={styles.projectLogo} />}
+                      {booth.logoUrl && (
+                        <Image
+                          src={booth.logoUrl}
+                          alt={`${booth.code} project logo`}
+                          width={40}
+                          height={40}
+                          unoptimized
+                          className={styles.projectLogo}
+                        />
+                      )}
                     </div>
+
                     <p className={styles.category}>{booth.capstoneCategory || "Capstone project"}</p>
                     <h2>{booth.projectTitle}</h2>
+
+                    {/* Optional Synopsis Description */}
+                    {booth.description && (
+                      <p className={styles.synopsis}>{booth.description}</p>
+                    )}
+
+                    {/* Meta: Table & Floor Slot, Team Members */}
                     <div className={styles.projectMeta}>
-                      <p><MapPin size={16} strokeWidth={1.5} aria-hidden="true" /><span>{booth.tableNumber ? `Table ${booth.tableNumber}` : "Table to be announced"}</span></p>
-                      {booth.teamMembers && <p><Users size={16} strokeWidth={1.5} aria-hidden="true" /><span>{booth.teamMembers}</span></p>}
+                      <p>
+                        <MapPin size={16} strokeWidth={1.5} aria-hidden="true" />
+                        <span>
+                          {booth.tableNumber ? `Table ${booth.tableNumber}` : "Table to be announced"}
+                          {booth.mapSlot && ` · Slot ${booth.mapSlot}`}
+                        </span>
+                      </p>
+                      {booth.teamMembers && (
+                        <p>
+                          <Users size={16} strokeWidth={1.5} aria-hidden="true" />
+                          <span>{booth.teamMembers}</span>
+                        </p>
+                      )}
                     </div>
+
+                    {/* Optional External Website Link Button */}
+                    {booth.websiteUrl && (
+                      <div className={styles.cardActions}>
+                        <a
+                          href={booth.websiteUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.externalLinkButton}
+                          aria-label={`Visit demonstration website for ${booth.projectTitle}`}
+                        >
+                          <span>Visit project website</span>
+                          <ExternalLink size={15} strokeWidth={1.5} aria-hidden="true" />
+                        </a>
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>
@@ -185,6 +270,19 @@ export function BoothDirectory({ booths, awards }: BoothDirectoryProps) {
                 <button type="button" disabled={currentPage === pageCount} onClick={() => changePage(currentPage + 1)}>Next <ArrowRight size={17} aria-hidden="true" /></button>
               </nav>
             )}
+          </section>
+        )}
+
+        {activeView === "map" && (
+          <section className={styles.floorMapSection} aria-labelledby="floormap-heading">
+            <div className={styles.guideIntro}>
+              <h2 id="floormap-heading">Venue floor layout</h2>
+              <p>Explore 40 standardized exhibition slots across the venue hall, from the main entrance to the stage.</p>
+            </div>
+            <VenueFloorMap
+              booths={booths.filter((b): b is PublicBoothItem & { mapSlot: string } => Boolean(b.mapSlot))}
+              mode="public"
+            />
           </section>
         )}
 

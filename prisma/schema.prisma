@@ -79,6 +79,10 @@ model Booth {
   id               String   @id @default(uuid())
   code             String   @unique
   projectTitle     String
+  description      String?
+  websiteUrl       String?
+  coverUrl         String?
+  mapSlot          String?  @unique
   capstoneCategory String
   programCode      String?
   teamMembers      String?

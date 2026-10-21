@@ -24,6 +24,15 @@ const UpsertBoothSchema = z.object({
   teamMembers: z.string().trim().max(300).optional(),
   tableNumber: z.string().trim().max(40).optional(),
   logoUrl: z.string().trim().max(2000000).optional().nullable().or(z.literal('')),
+  mapSlot: z
+    .string()
+    .trim()
+    .regex(/^BOX-(0[1-9]|[1-3][0-9]|40)$/, {
+      message: 'Map slot must match BOX-01 to BOX-40',
+    })
+    .nullable()
+    .optional()
+    .or(z.literal('')),
   exhibitorEmail: z.string().trim().email().optional().or(z.literal('')),
   exhibitorName: z.string().trim().max(100).optional(),
   exhibitorPassword: z.string().min(6).max(100).optional().or(z.literal('')),
@@ -65,6 +74,7 @@ export async function GET() {
         teamMembers: booth.teamMembers,
         tableNumber: booth.tableNumber,
         logoUrl: booth.logoUrl,
+        mapSlot: booth.mapSlot,
         voteCount: booth._count.votes,
         exhibitors: booth.users,
       })),
@@ -104,6 +114,7 @@ export async function POST(request: Request) {
       teamMembers,
       tableNumber,
       logoUrl,
+      mapSlot,
       exhibitorEmail,
       exhibitorName,
       exhibitorPassword,
@@ -111,6 +122,23 @@ export async function POST(request: Request) {
 
     // Atomically upsert the capstone booth and optional exhibitor account
     const result = await prisma.$transaction(async (tx) => {
+      const normalizedMapSlot = mapSlot && mapSlot.length > 0 ? mapSlot : null;
+
+      // Verify mapSlot is unoccupied or already assigned to the same booth code
+      if (normalizedMapSlot) {
+        const existingSlotBooth = await tx.booth.findFirst({
+          where: {
+            mapSlot: normalizedMapSlot,
+            code: { not: code },
+          },
+        });
+
+        if (existingSlotBooth) {
+          throw new Error(
+            `MAP_SLOT_OCCUPIED: Slot ${normalizedMapSlot} is already assigned to booth ${existingSlotBooth.code}`
+          );
+        }
+      }
 
       const upsertedBooth = await tx.booth.upsert({
         where: { code },
@@ -121,6 +149,7 @@ export async function POST(request: Request) {
           teamMembers: teamMembers || null,
           tableNumber: tableNumber || null,
           logoUrl: logoUrl !== undefined ? (logoUrl || null) : undefined,
+          mapSlot: mapSlot !== undefined ? normalizedMapSlot : undefined,
         },
         create: {
           code,
@@ -130,6 +159,7 @@ export async function POST(request: Request) {
           teamMembers: teamMembers || null,
           tableNumber: tableNumber || `Booth-${code}`,
           logoUrl: logoUrl || null,
+          mapSlot: normalizedMapSlot,
         },
       });
 
@@ -198,6 +228,7 @@ export async function POST(request: Request) {
         boothId: result.id,
         code: result.code,
         projectTitle: result.projectTitle,
+        mapSlot: result.mapSlot,
         exhibitorEmail: exhibitorEmail || null,
         programCode: result.programCode,
         passwordUpdated: Boolean(exhibitorPassword && exhibitorPassword.length >= 6),
@@ -217,6 +248,13 @@ export async function POST(request: Request) {
     if (rawMessage.startsWith('CANNOT_REASSIGN_PRIVILEGED_USER:')) {
       return NextResponse.json(
         { success: false, error: 'CANNOT_REASSIGN_PRIVILEGED_USER', message: rawMessage },
+        { status: 409 }
+      );
+    }
+
+    if (rawMessage.startsWith('MAP_SLOT_OCCUPIED:')) {
+      return NextResponse.json(
+        { success: false, error: 'MAP_SLOT_OCCUPIED', message: rawMessage },
         { status: 409 }
       );
     }

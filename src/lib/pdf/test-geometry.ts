@@ -34,15 +34,15 @@ function runGeometryTests() {
   assert(Math.abs(A4_WIDTH_PT - 595.28) < 0.01, 'A4 Width is 595.28 pt');
   assert(Math.abs(A4_HEIGHT_PT - 841.89) < 0.01, 'A4 Height is 841.89 pt');
 
-  // Test 2: Margins of 0.2 inches
-  assert(Math.abs(MARGIN_PT - 14.4) < 0.001, '0.2 inch margin equals 14.4 pt');
-  assert(Math.abs(PRINTABLE_WIDTH_PT - 566.48) < 0.01, 'Printable width is 566.48 pt');
-  assert(Math.abs(PRINTABLE_HEIGHT_PT - 813.09) < 0.01, 'Printable height is 813.09 pt');
+  // Test 2: Margins of 5.0 mm (14.1732 pt)
+  assert(Math.abs(MARGIN_PT - 14.1732) < 0.001, '5.0 mm margin equals ~14.1732 pt');
+  assert(Math.abs(PRINTABLE_WIDTH_PT - 566.934) < 0.01, 'Printable width is 566.93 pt (200 mm)');
+  assert(Math.abs(PRINTABLE_HEIGHT_PT - 813.544) < 0.01, 'Printable height is 813.54 pt (287 mm)');
 
   // Test 3: Exactly 4 cards per sheet
   assert(CARDS_PER_SHEET === 4, 'Exactly 4 cards per sheet');
-  assert(Math.abs(CARD_WIDTH_PT - 283.24) < 0.01, 'Card width is 283.24 pt');
-  assert(Math.abs(CARD_HEIGHT_PT - 406.545) < 0.01, 'Card height is 406.545 pt');
+  assert(Math.abs(CARD_WIDTH_PT - 283.467) < 0.01, 'Card width is 283.47 pt (100 mm)');
+  assert(Math.abs(CARD_HEIGHT_PT - 406.772) < 0.01, 'Card height is 406.77 pt (143.5 mm)');
 
   // Test 4: All 4 quadrants stay strictly within printable bounds
   for (let i = 0; i < 4; i++) {

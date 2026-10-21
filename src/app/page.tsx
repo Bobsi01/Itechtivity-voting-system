@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowDown, ArrowRight, ArrowUpRight, Camera, ClipboardCheck, Fingerprint, Presentation, Printer, RotateCcw, Shield, ShieldCheck } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUpRight, Camera, ClipboardCheck, Fingerprint, Presentation, Printer, QrCode, RotateCcw, Shield, ShieldCheck } from "lucide-react";
+import { getBoothCode } from "@/lib/pdf/booth-grid";
 import styles from "./page.module.css";
 
 const STAFF_PORTALS = [
@@ -11,7 +12,7 @@ const STAFF_PORTALS = [
 
 const VOTING_STEPS = [
   { title: "Pick up your card.", description: "Visit the registration counter to purchase and activate your physical bingo card." },
-  { title: "Meet the makers.", description: "Visit the capstone booths, try the projects, and hear the ideas behind them." },
+  { title: "Complete your bingo card.", description: "Visit every booth, meet the makers, and collect a sticker at each stop. Complete all booth stickers for a chance to win exclusive Itechtivity merchandise." },
   { title: "Give your vote.", description: "Hand the matching award stub to your chosen booth. The exhibitor scans it to record your vote." },
 ];
 
@@ -35,7 +36,7 @@ export default function HomePage() {
       <section className={styles.hero} id="showcase" aria-labelledby="showcase-title">
         <div className={styles.heroCopy}>
           <p className={styles.eventLabel}>The CSD capstone exhibition</p>
-          <h1 id="showcase-title">Big ideas.<br />Real projects.<br /><span>Your vote.</span></h1>
+          <h1 id="showcase-title">Big ideas.<br /><span className={styles.projectLine}>Real projects.<i className={styles.typingCaret} aria-hidden="true" /></span><br /><span className={styles.voteLine}>Your vote.</span></h1>
           <p className={styles.heroDescription}>Meet the minds behind the projects. Find your favorite, take a closer look, and help recognize the work that stands out.</p>
           <div className={styles.heroActions}>
             <Link href="/projects" className={styles.primaryLink}>Explore Capstone Projects <ArrowUpRight aria-hidden="true" size={22} /></Link>
@@ -46,24 +47,49 @@ export default function HomePage() {
 
         <figure className={styles.cardFigure}>
           <div className={styles.cardOrbit} aria-hidden="true" />
-          <div className={styles.ticket} aria-hidden="true">
-            <div className={styles.ticketHeading}><span>ITECHTIVITY</span><span>2027 / CSD</span></div>
-            <div className={styles.ticketTitle}>MAKE<br />IT COUNT<ArrowUpRight size={68} strokeWidth={1.3} /></div>
-            <div className={styles.ticketDivider}><span>Visit. Connect. Vote.</span><span>01–40</span></div>
-            <div className={styles.bingoGrid}>
-              {Array.from({ length: 40 }, (_, index) => (
-                <span className={index === 9 || index === 18 || index === 26 ? styles.markedCell : undefined} key={index}>{String(index + 1).padStart(2, "0")}</span>
-              ))}
-            </div>
-            <div className={styles.stubHeading}><span>Your choice makes a difference.</span><span>6 award stubs</span></div>
-            <div className={styles.stubs}>
-              {Array.from({ length: 6 }, (_, index) => (
-                <div className={styles.stub} key={index}><span>VOTE</span><strong>{String(index + 1).padStart(2, "0")}</strong><ArrowUpRight size={18} /></div>
-              ))}
-            </div>
-            <p className={styles.sampleLabel}>Illustration only · Collect your voting card at registration</p>
+          <div className={styles.cardStack} aria-hidden="true">
+            {["back", "middle", "front"].map((layer) => (
+              <div className={styles.ticket} data-layer={layer} key={layer}>
+                <div className={styles.ticketHeading}>
+                  <strong>ITECHTIVITY 2027</strong>
+                  <span>UNIVERSITY OF CALOOCAN CITY · CSD CAPSTONE</span>
+                  <span className={styles.cardSerial}>CARD SERIAL: #SAMPLE</span>
+                </div>
+                <div className={styles.bingoGrid}>
+                  {Array.from({ length: 56 }, (_, index) => {
+
+                    const row = Math.floor(index / 8);
+                    const column = index % 8;
+                    const boothCode = getBoothCode(row, column);
+
+                    if (!boothCode) {
+                      return index === 19 ? (
+                        <div className={styles.masterCode} key="master">
+                          <strong>CSD</strong><QrCode aria-hidden="true" /><span>#SAMPLE</span>
+                        </div>
+                      ) : null;
+                    }
+
+                    return (
+                      <div className={styles.boothCell} key={boothCode}>
+                        <strong>{boothCode}</strong><span>STICKER</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className={styles.cardDetails}><span>Name: ______________</span><span>Program/Yr/Sec: __________</span></div>
+                <div className={styles.stubs}>
+                  {Array.from({ length: 6 }, (_, index) => (
+                    <div className={styles.stub} key={index}>
+                      <QrCode aria-hidden="true" /><span>#SAMPLE</span><strong>SLOT {index + 1}</strong><span>AWARD STUB</span>
+                    </div>
+                  ))}
+                </div>
+                <p className={styles.sampleLabel}>Illustration only · QR symbols are nonfunctional</p>
+              </div>
+            ))}
           </div>
-          <figcaption><span className={styles.captionLine} />A physical card. A vote that counts.</figcaption>
+          <figcaption><span className={styles.captionLine} />Collect stickers. Cast your votes.</figcaption>
         </figure>
       </section>
 
@@ -99,7 +125,7 @@ export default function HomePage() {
       <section className={styles.votingSection} id="how-to-vote" aria-labelledby="voting-title">
         <div className={styles.sectionIntro}>
           <h2 id="voting-title">Walk the booths.<br />Back a big idea.</h2>
-          <p>Your bingo card is part exhibition guide, part ballot. Here’s how to put it to use.</p>
+          <p>One card for booth stickers and award votes. Complete every booth sticker for a chance to win exclusive Itechtivity merchandise.</p>
         </div>
         <ol className={styles.steps}>
           {VOTING_STEPS.map((step, index) => (

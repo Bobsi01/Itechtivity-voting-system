@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { Plus, RefreshCw, Edit2, Store, X, Search, ChevronLeft, ChevronRight, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { BOOTH_PROGRAM_CODES } from "@/lib/booths/programs";
@@ -20,9 +21,15 @@ interface BoothRecord {
   teamMembers: string | null;
   tableNumber: string | null;
   logoUrl?: string | null;
+  mapSlot?: string | null;
   voteCount: number;
   exhibitors: ExhibitorAccountSummary[];
 }
+
+const FLOOR_MAP_SLOTS = Array.from({ length: 40 }, (_, i) => {
+  const num = String(i + 1).padStart(2, "0");
+  return `BOX-${num}`;
+});
 
 export function BoothManagementCard() {
 
@@ -43,6 +50,7 @@ export function BoothManagementCard() {
   const [capstoneCategory, setCapstoneCategory] = useState<string>("");
   const [programCode, setProgramCode] = useState("");
   const [tableNumber, setTableNumber] = useState<string>("");
+  const [mapSlot, setMapSlot] = useState<string>("");
   const [teamMembers, setTeamMembers] = useState<string>("");
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [exhibitorEmail, setExhibitorEmail] = useState<string>("");
@@ -78,6 +86,7 @@ export function BoothManagementCard() {
     setCapstoneCategory("");
     setProgramCode("");
     setTableNumber("");
+    setMapSlot("");
     setTeamMembers("");
     setLogoUrl("");
     setExhibitorEmail("");
@@ -123,6 +132,7 @@ export function BoothManagementCard() {
     setCapstoneCategory(booth.capstoneCategory);
     setProgramCode(booth.programCode || "");
     setTableNumber(booth.tableNumber || "");
+    setMapSlot(booth.mapSlot || "");
     setTeamMembers(booth.teamMembers || "");
     setLogoUrl(booth.logoUrl || "");
     setExhibitorEmail(primaryExhibitor?.email || "");
@@ -193,6 +203,7 @@ export function BoothManagementCard() {
           capstoneCategory: capstoneCategory.trim(),
           programCode: programCode || null,
           tableNumber: tableNumber.trim() || undefined,
+          mapSlot: mapSlot.trim() || "",
           teamMembers: teamMembers.trim() || undefined,
           logoUrl: logoUrl.trim() || null,
           exhibitorEmail: exhibitorEmail.trim() || undefined,
@@ -208,7 +219,11 @@ export function BoothManagementCard() {
         handleCloseModal();
         fetchBooths();
       } else {
-        toast.error(data.error || "Failed to save capstone booth.");
+        if (data.error === "MAP_SLOT_OCCUPIED") {
+          toast.error(data.message || "That floor map slot is already occupied.");
+        } else {
+          toast.error(data.error || "Failed to save capstone booth.");
+        }
       }
     } catch (err) {
       console.warn("Network error while saving booth:", err);
@@ -321,9 +336,12 @@ export function BoothManagementCard() {
                   <div className="flex items-center gap-2.5 min-w-0">
                     {booth.logoUrl ? (
                       <div className="w-11 h-11 rounded border border-neutral-300 flex-shrink-0 flex items-center justify-center p-1 bg-white overflow-hidden">
-                        <img
+                        <Image
                           src={booth.logoUrl}
                           alt={`${booth.code} logo`}
+                          width={44}
+                          height={44}
+                          unoptimized
                           className="w-full h-full object-contain"
                         />
                       </div>
@@ -341,6 +359,15 @@ export function BoothManagementCard() {
                         <span className="text-[11px] font-mono text-neutral-600 border border-neutral-200 px-1.5 py-0.5 rounded truncate select-text">
                           Table: {booth.tableNumber || "Unassigned"}
                         </span>
+                        {booth.mapSlot ? (
+                          <span className="text-[11px] font-mono text-neutral-900 border border-neutral-900 px-1.5 py-0.5 rounded truncate select-text font-bold">
+                            Slot: {booth.mapSlot}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-mono text-neutral-400 border border-neutral-200 px-1.5 py-0.5 rounded truncate select-text">
+                            No Slot
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -438,9 +465,12 @@ export function BoothManagementCard() {
                 {logoUrl ? (
                   <div className="flex items-center gap-3.5">
                     <div className="w-16 h-16 rounded border border-neutral-300 p-1 flex items-center justify-center bg-white flex-shrink-0">
-                      <img
+                      <Image
                         src={logoUrl}
                         alt="Booth logo preview"
+                        width={64}
+                        height={64}
+                        unoptimized
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -570,6 +600,34 @@ export function BoothManagementCard() {
                     onChange={(e) => setTableNumber(e.target.value)}
                     className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
                   />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-mono uppercase text-neutral-700" htmlFor="booth-mapslot-input">
+                    Venue Floor Slot
+                  </label>
+                  <select
+                    id="booth-mapslot-input"
+                    value={mapSlot}
+                    onChange={(e) => setMapSlot(e.target.value)}
+                    className="w-full min-h-11 rounded border border-neutral-300 px-3 py-2 text-base text-neutral-900"
+                  >
+                    <option value="">Unassigned</option>
+                    {FLOOR_MAP_SLOTS.map((slot) => {
+                      const occupiedBy = booths.find((b) => b.mapSlot === slot && b.code !== code);
+                      const isCurrent = editingBooth && editingBooth.mapSlot === slot;
+                      const isOccupied = Boolean(occupiedBy);
+
+                      return (
+                        <option key={slot} value={slot} disabled={isOccupied}>
+                          {slot}
+                          {isCurrent ? " (Current Booth)" : ""}
+                          {isOccupied && occupiedBy ? ` (Occupied - ${occupiedBy.code})` : ""}
+                          {!isOccupied && !isCurrent ? " (Available)" : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
                 </div>
               </div>
 

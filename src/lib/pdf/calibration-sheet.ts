@@ -31,7 +31,7 @@ export async function generateCalibrationPdfBuffer(): Promise<Buffer> {
 
   doc.addPage({ size: 'A4', margin: 0 });
 
-  // 1. Draw outer page margin boundary (0.2 in / 14.4 pt)
+  // 1. Draw outer page margin boundary (5.0 mm / 14.17 pt)
   const m = MARGIN_PT;
   const pw = A4_WIDTH_PT;
   const ph = A4_HEIGHT_PT;
