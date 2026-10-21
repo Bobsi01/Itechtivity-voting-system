@@ -11,11 +11,11 @@ const LoginResponseSchema = z.object({ success: z.literal(true), user: z.object(
 
 // Seeded account shortcuts are local development tools, excluded from production.
 const DEVELOPMENT_PRESETS = process.env.NODE_ENV === "development" ? [
-  { label: "Admin", email: "admin@itech2027.edu", password: "AdminPass2027!" },
-  { label: "Production", email: "prod@itech2027.edu", password: "ProdPass2027!" },
-  { label: "Registration", email: "reg.desk1@itech2027.edu", password: "RegPass2027!" },
-  { label: "Booth CS-01", email: "booth.cs01@itech2027.edu", password: "BoothPass2027!" },
-  { label: "Booth CS-02", email: "booth.cs02@itech2027.edu", password: "BoothPass2027!" },
+  { label: "Admin", email: "admin@itech2027.edu", password: "" },
+  { label: "Production", email: "prod@itech2027.edu", password: "" },
+  { label: "Registration", email: "reg.desk1@itech2027.edu", password: "" },
+  { label: "Booth CS-01", email: "booth.cs01@itech2027.edu", password: "" },
+  { label: "Booth CS-02", email: "booth.cs02@itech2027.edu", password: "" },
 ] : [];
 
 function LoginForm() {

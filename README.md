@@ -168,15 +168,15 @@ The application will be running at `http://localhost:3000`.
 
 ## Seed Accounts for Local Testing
 
-The seed script (`prisma/seed.ts`) populates the database with default accounts and 40 capstone booths:
+The seed script (`prisma/seed.ts`) populates the database with default accounts and capstone booths:
 
-| Role | Email | Password | Access / Scope |
-|---|---|---|---|
-| **Admin** | `admin@itech2027.edu` | `AdminPass2027!` | Full event control, audit logs, global tallies |
-| **Production** | `prod@itech2027.edu` | `ProdPass2027!` | Batch generator, PDF downloads, calibration |
-| **Registration** | `reg.desk1@itech2027.edu` | `RegPass2027!` | Counter sales, attendee demographics, card binding |
-| **Exhibitor** | `booth.cs01@itech2027.edu` | `BoothPass2027!` | Mobile scanner, scoped to Booth CS-01 |
-| **Exhibitor** | `booth.cs02@itech2027.edu` | `BoothPass2027!` | Mobile scanner, scoped to Booth CS-02 |
+| Role | Email | Access / Scope |
+|---|---|---|
+| **Admin** | `admin@itech2027.edu` | Full event control, audit logs, global tallies |
+| **Production** | `prod@itech2027.edu` | Batch generator, PDF downloads, calibration |
+| **Registration** | `reg.desk1@itech2027.edu` | Counter sales, attendee demographics, card binding |
+| **Exhibitor** | `booth.cs01@itech2027.edu` | Mobile scanner, scoped to Booth CS-01 |
+| **Exhibitor** | `booth.cs02@itech2027.edu` | Mobile scanner, scoped to Booth CS-02 |
 
 ---
 
