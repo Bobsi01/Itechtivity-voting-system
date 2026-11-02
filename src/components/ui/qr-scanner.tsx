@@ -117,7 +117,7 @@ export function QrScanner({ onDecode, autoStart = false, imageInput = true }: Qr
 
   return (
     <section aria-label="QR scanner" className="space-y-3 border border-neutral-300 rounded-lg p-3">
-      <div className="relative aspect-square w-full max-w-[280px] mx-auto overflow-hidden border border-neutral-300 rounded">
+      <div className={`relative w-full mx-auto overflow-hidden border border-neutral-300 rounded ${status === "active" ? "aspect-square max-w-[280px]" : "h-20"}`}>
         <video ref={videoRef} muted playsInline aria-label="Camera preview" className="h-full w-full object-cover" />
         {status !== 'active' && <p className="absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-neutral-900">{status === 'starting' ? 'Starting camera...' : 'Camera is inactive'}</p>}
       </div>

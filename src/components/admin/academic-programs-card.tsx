@@ -154,6 +154,8 @@ export function AcademicProgramsCard() {
       {/* 2-Column Responsive Layout for Desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Column 1: Add New Program Form */}
+        <details className="border border-neutral-300 rounded-lg p-3">
+          <summary className="min-h-11 flex items-center cursor-pointer font-semibold text-sm underline">Add academic program</summary>
         <form onSubmit={handleCreateProgram} className="border border-neutral-200 p-4 rounded-lg space-y-3">
           <span className="text-xs font-bold uppercase tracking-wider text-neutral-900 block">
             Add New Academic Program
@@ -205,11 +207,13 @@ export function AcademicProgramsCard() {
           </div>
         </form>
 
+        </details>
+
         {/* Column 2: Existing Programs Table */}
         <div className="border border-neutral-300 rounded-lg overflow-hidden">
           <div className="px-4 py-2.5 border-b border-neutral-300 bg-white flex items-center justify-between text-xs font-mono text-neutral-700">
             <span>Degree Programs ({programs.filter((program) => program.isActive).length} active / {programs.length} total)</span>
-            <span>Display: Abbreviation - Full Title</span>
+
           </div>
 
           {programs.length === 0 ? (
@@ -229,11 +233,9 @@ export function AcademicProgramsCard() {
                   </span>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-neutral-900 select-text">
-                      {prog.code} - {prog.name}
+                      {prog.name}
                     </p>
-                    <p className="text-xs text-neutral-600 font-mono">
-                      Full Degree: {prog.name}
-                    </p>
+
                   </div>
                 </div>
 

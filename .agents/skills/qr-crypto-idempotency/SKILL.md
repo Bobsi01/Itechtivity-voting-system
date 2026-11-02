@@ -5,10 +5,6 @@ description: >-
   redemption, and handling idempotent mobile scan retries in PostgreSQL. Use when implementing
   or testing ticket generation, ticket scanning, cryptographic signatures, or anti-double-spend logic.
   Do not use for UI styling, client-side camera scanning components, or Appwrite Storage uploads.
-author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
-assisted_by:
-  - OpenAI Codex
-  - Google Gemini
 ---
 
 # QR Cryptography & Idempotent Redemption Skill

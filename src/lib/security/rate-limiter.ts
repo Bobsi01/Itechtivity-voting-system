@@ -1,5 +1,7 @@
 interface RateLimitRecord {
   timestamps: number[];
+  windowMs: number;
+  expiresAt: number;
 }
 
 export interface RateLimitResult {
@@ -8,9 +10,17 @@ export interface RateLimitResult {
   remaining?: number;
 }
 
-class SlidingWindowRateLimiter {
+export class SlidingWindowRateLimiter {
   private records = new Map<string, RateLimitRecord>();
-  private lastCleanup = Date.now();
+  private lastCleanup: number;
+
+  constructor(
+    private readonly maxRecords = 10000,
+    private readonly getTime: () => number = Date.now
+  ) {
+
+    this.lastCleanup = getTime();
+  }
 
   /**
    * Evaluates if a request identified by key is allowed within the sliding window.
@@ -21,21 +31,29 @@ class SlidingWindowRateLimiter {
     windowMs: number
   ): RateLimitResult {
 
-    const now = Date.now();
-    this.maybeCleanup(windowMs);
+    const now = this.getTime();
+    this.maybeCleanup(now);
 
     let record = this.records.get(key);
     if (!record) {
-      record = { timestamps: [] };
+      if (this.records.size >= this.maxRecords) {
+        this.maybeCleanup(now, true);
+        if (this.records.size >= this.maxRecords) {
+          return { allowed: false, retryAfterSeconds: 60, remaining: 0 };
+        }
+      }
+
+      record = { timestamps: [], windowMs, expiresAt: now + windowMs };
       this.records.set(key, record);
     }
 
     // Filter out timestamps outside the sliding window
-    const windowStart = now - windowMs;
-    record.timestamps = record.timestamps.filter((t) => t > windowStart);
+    record.windowMs = Math.max(record.windowMs, windowMs);
+    record.timestamps = record.timestamps.filter((timestamp) => timestamp > now - record.windowMs);
+    const activeTimestamps = record.timestamps.filter((timestamp) => timestamp > now - windowMs);
 
-    if (record.timestamps.length >= maxRequests) {
-      const oldestInWindow = record.timestamps[0];
+    if (activeTimestamps.length >= maxRequests) {
+      const oldestInWindow = activeTimestamps[0];
       const retryAfterSeconds = Math.max(1, Math.ceil((oldestInWindow + windowMs - now) / 1000));
       return {
         allowed: false,
@@ -45,9 +63,10 @@ class SlidingWindowRateLimiter {
     }
 
     record.timestamps.push(now);
+    record.expiresAt = now + record.windowMs;
     return {
       allowed: true,
-      remaining: maxRequests - record.timestamps.length,
+      remaining: maxRequests - activeTimestamps.length - 1,
     };
   }
 
@@ -62,16 +81,14 @@ class SlidingWindowRateLimiter {
   /**
    * Prunes stale records periodically to prevent unbounded memory growth.
    */
-  private maybeCleanup(windowMs: number): void {
+  private maybeCleanup(now: number, force = false): void {
 
-    const now = Date.now();
-    if (now - this.lastCleanup < 60000) return;
+    if (!force && now - this.lastCleanup < 60000) return;
     this.lastCleanup = now;
 
-    const threshold = now - windowMs * 2;
     for (const [key, record] of this.records.entries()) {
-      record.timestamps = record.timestamps.filter((t) => t > threshold);
-      if (record.timestamps.length === 0) {
+      // Each key retains its own window; scan traffic must not erase longer login limits.
+      if (record.expiresAt <= now) {
         this.records.delete(key);
       }
     }

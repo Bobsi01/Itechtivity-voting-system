@@ -1,6 +1,8 @@
 import { cookies } from 'next/headers';
 import crypto from 'node:crypto';
 import type { Role } from '@prisma/client';
+import { z } from 'zod';
+import prisma from '@/lib/db/prisma';
 
 export interface SessionPayload {
   userId: string;
@@ -9,7 +11,18 @@ export interface SessionPayload {
   role: Role;
   boothId: string | null;
   expiresAt: number;
+  accountVersion: string;
 }
+
+const SessionPayloadSchema = z.object({
+  userId: z.string().uuid(),
+  email: z.string().email().max(320),
+  fullName: z.string().min(1).max(200),
+  role: z.enum(['ADMIN', 'PRODUCTION', 'REGISTRATION', 'EXHIBITOR']),
+  boothId: z.string().uuid().nullable(),
+  expiresAt: z.number().int().positive().finite(),
+  accountVersion: z.string().datetime(),
+}).strict();
 
 const SESSION_COOKIE_NAME = 'itech2027_session';
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -52,6 +65,10 @@ export function signSession(payload: Omit<SessionPayload, 'expiresAt'>): string 
 export function verifySession(sessionCookie: string): SessionPayload | null {
 
   try {
+    if (sessionCookie.length > 4096) {
+      return null;
+    }
+
     const secret = getSessionSecret();
     const parts = sessionCookie.split('.');
 
@@ -78,14 +95,18 @@ export function verifySession(sessionCookie: string): SessionPayload | null {
     }
 
     const payloadJson = Buffer.from(payloadBase64, 'base64url').toString('utf8');
-    const payload = JSON.parse(payloadJson) as SessionPayload;
+    const parsed = SessionPayloadSchema.safeParse(JSON.parse(payloadJson));
+    if (!parsed.success) {
+      return null;
+    }
+    const payload = parsed.data;
 
-    if (Date.now() > payload.expiresAt) {
+    if (Date.now() >= payload.expiresAt) {
       return null;
     }
 
     return payload;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -121,6 +142,15 @@ export async function clearSessionCookie(): Promise<void> {
  */
 export async function getCurrentUser(): Promise<SessionPayload | null> {
 
+  const session = await getVerifiedSessionClaims();
+  if (!session) return null;
+
+  return resolveCurrentAccount(session);
+}
+
+// Claims alone do not authorize mutations; callers must also resolve current account state.
+export async function getVerifiedSessionClaims(): Promise<SessionPayload | null> {
+
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
@@ -129,4 +159,45 @@ export async function getCurrentUser(): Promise<SessionPayload | null> {
   }
 
   return verifySession(sessionCookie);
+}
+
+async function resolveCurrentAccount(session: SessionPayload): Promise<SessionPayload | null> {
+
+  // Authenticate the cookie before this account lookup; QR verification still precedes ticket database operations.
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        boothId: true,
+        updatedAt: true,
+      },
+    });
+
+    // Account edits revoke existing sessions, including password resets and booth reassignment.
+    if (
+      !user ||
+      user.updatedAt.toISOString() !== session.accountVersion ||
+      user.role !== session.role ||
+      user.boothId !== session.boothId
+    ) {
+      return null;
+    }
+
+    return {
+      userId: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role,
+      boothId: user.boothId,
+      expiresAt: session.expiresAt,
+      accountVersion: session.accountVersion,
+    };
+  } catch {
+    console.error('Session account verification unavailable.');
+    return null;
+  }
 }

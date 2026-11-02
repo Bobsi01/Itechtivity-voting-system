@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, Download, RefreshCw, FileText, Calendar, Layers, Search, Hash } from "lucide-react";
+import { Eye, Download, RefreshCw, FileText, Calendar, Layers, Search } from "lucide-react";
 import { type PdfFileItem, formatFileSize } from "@/lib/utils/format";
 
 export type { PdfFileItem };
@@ -9,6 +9,7 @@ export type { PdfFileItem };
 interface PdfFileExplorerProps {
   files: PdfFileItem[];
   isLoading: boolean;
+  error: string | null;
   onRefresh: () => void;
   onPreview: (file: PdfFileItem) => void;
 }
@@ -16,6 +17,7 @@ interface PdfFileExplorerProps {
 export function PdfFileExplorer({
   files,
   isLoading,
+  error,
   onRefresh,
   onPreview,
 }: PdfFileExplorerProps) {
@@ -50,10 +52,10 @@ export function PdfFileExplorer({
       <div className="p-4 border-b border-neutral-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-900">
-            Print Sheet File Explorer
+            Batch history
           </h3>
           <p className="text-xs text-neutral-600">
-            Batch print sheets history with sequential card serial ranges
+            Preview completed batches or inspect generation status.
           </p>
         </div>
 
@@ -99,7 +101,10 @@ export function PdfFileExplorer({
       </div>
 
       {/* Explorer Content */}
-      {files.length === 0 ? (
+      {error && <p role="alert" className="p-4 text-sm text-neutral-900">{error}{files.length > 0 && " Showing the last loaded batches."}</p>}
+      {error && files.length === 0 ? null : isLoading && files.length === 0 ? (
+        <p role="status" className="p-8 text-sm text-neutral-700">Loading print batches...</p>
+      ) : files.length === 0 ? (
         <div className="p-12 text-center space-y-2">
           <FileText className="w-8 h-8 text-neutral-700 mx-auto" strokeWidth={1.5} />
           <p className="text-sm font-semibold text-neutral-800">No print batches generated yet</p>
@@ -127,31 +132,26 @@ export function PdfFileExplorer({
                 <div className="min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-xs font-bold text-neutral-900 truncate select-text">
-                      {file.fileName}
-                    </span>
-                    <span className="text-[10px] font-mono border border-neutral-300 px-1.5 py-0.5 rounded text-neutral-700 flex-shrink-0 select-text">
                       Batch #{file.batchNumber}
                     </span>
+
                     <span className="text-[10px] font-mono border border-neutral-900 px-1.5 py-0.5 rounded text-neutral-900 flex-shrink-0 select-text uppercase">
                       {file.status || "COMPLETED"}
                     </span>
                   </div>
 
-                  {/* Serial Range Display */}
-                  {file.serialRange && (
-                    <div className="flex items-center gap-1.5 text-xs font-mono text-neutral-700 select-text">
-                      <Hash className="w-3.5 h-3.5 text-neutral-500 flex-shrink-0" />
-                      <span className="font-semibold text-neutral-900">{file.serialRange}</span>
-                    </div>
-                  )}
+                  <details className="text-xs text-neutral-700">
+                    <summary className="min-h-11 flex items-center cursor-pointer underline">File details</summary>
+                    <p className="break-all select-text">{file.fileName}</p>
+                    {file.serialRange && <p className="break-all select-text">Serials: {file.serialRange}</p>}
+                    <p>{formatFileSize(file.fileSizeBytes)}</p>
+                  </details>
 
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-600 font-mono select-text">
                     <span className="flex items-center gap-1">
                       <Layers className="w-3.5 h-3.5 text-neutral-500" />
                       <span>{file.totalSheets} A4 {file.totalSheets === 1 ? "Sheet" : "Sheets"} ({file.totalCards} Cards)</span>
                     </span>
-                    <span>•</span>
-                    <span>{formatFileSize(file.fileSizeBytes)}</span>
                     <span>•</span>
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5 text-neutral-500" />
@@ -162,7 +162,7 @@ export function PdfFileExplorer({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 flex-shrink-0 pt-2 sm:pt-0">
+              {file.status === "COMPLETED" ? <div className="flex items-center gap-2 flex-shrink-0 pt-2 sm:pt-0">
                 <button
                   type="button"
                   onClick={() => onPreview(file)}
@@ -180,7 +180,7 @@ export function PdfFileExplorer({
                   <Download className="w-4 h-4" />
                   <span>Download</span>
                 </a>
-              </div>
+              </div> : <p className="text-xs text-neutral-700">{file.status === "FAILED" ? "Generation failed. Create a new batch to retry." : "PDF is being prepared."}</p>}
             </div>
           ))}
         </div>

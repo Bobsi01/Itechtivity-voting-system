@@ -44,6 +44,7 @@ export function MobileScanner() {
 
   const [scanFlash, setScanFlash] = useState<"success" | "error" | null>(null);
   const isProcessingScanRef = useRef<boolean>(false);
+  const pendingScanRef = useRef<{ payload: string; boothId: string; key: string } | null>(null);
 
   const fetchBoothTally = useCallback(async (overrideBoothId?: string) => {
 
@@ -53,6 +54,7 @@ export function MobileScanner() {
       const res = await fetch(url);
       const data = await res.json();
       if (res.ok && data.success) {
+        if (typeof data.isVotingOpen === "boolean") setIsVotingOpen(data.isVotingOpen);
         if (data.booth) {
           setBoothData(data.booth);
           if (!selectedAdminBoothId && data.scoped === false) {
@@ -136,7 +138,11 @@ export function MobileScanner() {
       typeof window !== "undefined" && window.crypto?.randomUUID
         ? window.crypto.randomUUID().slice(0, 12)
         : Date.now().toString(36);
-    const idempotencyKey = `${boothData.id}:${stubSerialPart}:${nonce}`;
+    const previousScan = pendingScanRef.current;
+    const idempotencyKey = previousScan?.payload === trimmedPayload && previousScan.boothId === boothData.id
+      ? previousScan.key
+      : `${boothData.id}:${stubSerialPart}:${nonce}`;
+    pendingScanRef.current = { payload: trimmedPayload, boothId: boothData.id, key: idempotencyKey };
 
     try {
       const res = await fetch("/api/vote", {
@@ -169,6 +175,7 @@ export function MobileScanner() {
         setManualInputText("");
         fetchBoothTally();
       } else {
+        if (res.status < 500 && res.status !== 429) pendingScanRef.current = null;
         playAudioFeedback(false);
         triggerHaptic(false);
         setScanFlash("error");

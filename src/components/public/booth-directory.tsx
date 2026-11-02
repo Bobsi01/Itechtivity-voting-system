@@ -32,16 +32,10 @@ export interface PublicAwardItem {
 interface BoothDirectoryProps {
   booths: PublicBoothItem[];
   awards: PublicAwardItem[];
+  activeView: "directory" | "map" | "rules" | "awards";
 }
 
 const PAGE_SIZE = 12;
-const DIRECTORY_VIEWS = [
-  { id: "directory", label: "Projects" },
-  { id: "map", label: "Floor map" },
-  { id: "rules", label: "Voting guide" },
-  { id: "awards", label: "Awards" },
-] as const;
-
 const VOTING_GUIDE = [
   { title: "Register your card", description: "Purchase your physical bingo card at registration. The event team records your attendee details and activates your voting stubs." },
   { title: "Visit the projects", description: "Find booths in the directory, try the demonstrations, and talk to the student teams. Collect booth stamps on your printed bingo grid as you visit." },
@@ -50,9 +44,8 @@ const VOTING_GUIDE = [
   { title: "Make each choice count", description: "Each activated stub can be redeemed once. You may support the same project in different award categories using the matching stubs." },
 ];
 
-export function BoothDirectory({ booths, awards }: BoothDirectoryProps) {
+export function BoothDirectory({ booths, awards, activeView }: BoothDirectoryProps) {
 
-  const [activeView, setActiveView] = useState<"directory" | "map" | "rules" | "awards">("directory");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedProgram, setSelectedProgram] = useState("");
@@ -107,23 +100,6 @@ export function BoothDirectory({ booths, awards }: BoothDirectoryProps) {
 
   return (
     <div className={styles.directory}>
-      <div className={styles.viewBar}>
-        <div className={styles.views} role="group" aria-label="Directory views">
-          {DIRECTORY_VIEWS.map((view) => (
-            <button
-              key={view.id}
-              type="button"
-              aria-pressed={activeView === view.id}
-              aria-controls="directory-content"
-              onClick={() => setActiveView(view.id)}
-            >
-              {view.label}
-            </button>
-          ))}
-        </div>
-        <p className={styles.visitorHint}>Open to every visitor. No account needed.</p>
-      </div>
-
       <div id="directory-content">
         {activeView === "directory" && (
           <section aria-label="Capstone project directory">
@@ -171,7 +147,7 @@ export function BoothDirectory({ booths, awards }: BoothDirectoryProps) {
               </div>
             </div>
 
-            {unassignedCount > 0 && <p className={styles.programNote}>{unassignedCount} {unassignedCount === 1 ? "group has" : "groups have"} no program assigned yet. They appear under All programs and Not assigned.</p>}
+            {unassignedCount > 0 && selectedProgram === "unassigned" && <p className={styles.programNote}>{unassignedCount} {unassignedCount === 1 ? "group has" : "groups have"} no program assigned yet. They appear under All programs and Not assigned.</p>}
 
             <div className={styles.resultsHeader} id="project-results" tabIndex={-1}>
               <p role="status">{resultsSummary}{hasFilters && ` · ${booths.length} in the collection`}</p>
@@ -277,7 +253,7 @@ export function BoothDirectory({ booths, awards }: BoothDirectoryProps) {
           <section className={styles.floorMapSection} aria-labelledby="floormap-heading">
             <div className={styles.guideIntro}>
               <h2 id="floormap-heading">Venue floor layout</h2>
-              <p>Explore 40 standardized exhibition slots across the venue hall, from the main entrance to the stage.</p>
+              <p>The map shows 40 venue positions. {booths.filter((booth) => booth.mapSlot).length} of {booths.length} projects have a floor assignment. For projects without an assignment, use the booth location in the directory.</p>
             </div>
             <VenueFloorMap
               booths={booths.filter((b): b is PublicBoothItem & { mapSlot: string } => Boolean(b.mapSlot))}

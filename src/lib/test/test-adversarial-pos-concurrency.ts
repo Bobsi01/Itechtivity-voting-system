@@ -50,20 +50,22 @@ nextHeaders.cookies = async () => ({
   delete: () => {},
 });
 
-function createSessionToken(user: MockUser): string {
+async function createSessionToken(user: MockUser): Promise<string> {
 
+  const account = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
   return signSession({
     userId: user.id,
     email: user.email,
     fullName: user.fullName,
     role: user.role,
     boothId: user.boothId,
+    accountVersion: account.updatedAt.toISOString(),
   });
 }
 
-function setGlobalSession(user: MockUser): void {
+async function setGlobalSession(user: MockUser): Promise<void> {
 
-  globalFallbackToken = createSessionToken(user);
+  globalFallbackToken = await createSessionToken(user);
 }
 
 let totalAssertions = 0;
@@ -251,7 +253,7 @@ async function runAdversarialPosConcurrencySuite(): Promise<void> {
 
     // Asynchronous state flapper toggling registration open -> pause -> open -> pause -> open
     let flapperRunning = true;
-    const adminToken = createSessionToken(adminUser);
+    const adminToken = await createSessionToken(adminUser);
 
     const flapperPromise = (async () => {
       let state = false;
@@ -271,7 +273,7 @@ async function runAdversarialPosConcurrencySuite(): Promise<void> {
     })();
 
     // Fire 12 simultaneous bind requests during active flapping
-    const clerkToken = createSessionToken(clerk1);
+    const clerkToken = await createSessionToken(clerk1);
     const flapRequests = flappingSerials.map((serial, idx) => {
       const req = new Request('http://localhost/api/registration/bind', {
         method: 'POST',
@@ -667,8 +669,8 @@ async function runAdversarialPosConcurrencySuite(): Promise<void> {
     allCreatedCardIds.push(...cardIds3D);
 
     const sharedKeyBetweenClerks = `shared-clerk-key-${runId}`;
-    const clerk1Token = createSessionToken(clerk1);
-    const clerk2Token = createSessionToken(clerk2);
+    const clerk1Token = await createSessionToken(clerk1);
+    const clerk2Token = await createSessionToken(clerk2);
 
     rateLimiter.reset(`reg:${clerk1.id}`);
     rateLimiter.reset(`reg:${clerk2.id}`);
@@ -794,7 +796,7 @@ async function runAdversarialPosConcurrencySuite(): Promise<void> {
     );
 
     // Scenario 4B: Tampered session token
-    const legitToken = createSessionToken(clerk1);
+    const legitToken = await createSessionToken(clerk1);
     const tamperedToken = legitToken.slice(0, -6) + 'abcdef';
 
     const reqTampered = new Request('http://localhost/api/registration/bind', {
@@ -817,7 +819,7 @@ async function runAdversarialPosConcurrencySuite(): Promise<void> {
     );
 
     // Scenario 4C: Unauthorized Role - EXHIBITOR
-    const exhibitorToken = createSessionToken(exhibitorUser);
+    const exhibitorToken = await createSessionToken(exhibitorUser);
     const reqExhibitor = new Request('http://localhost/api/registration/bind', {
       method: 'POST',
       headers: {
@@ -838,7 +840,7 @@ async function runAdversarialPosConcurrencySuite(): Promise<void> {
     );
 
     // Scenario 4D: Unauthorized Role - PRODUCTION
-    const productionToken = createSessionToken(productionUser);
+    const productionToken = await createSessionToken(productionUser);
     const reqProduction = new Request('http://localhost/api/registration/bind', {
       method: 'POST',
       headers: {

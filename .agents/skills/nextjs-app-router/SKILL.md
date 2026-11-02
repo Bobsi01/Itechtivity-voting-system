@@ -5,10 +5,6 @@ description: >-
   Use when creating or modifying routes, Server Actions, Server Components, Client Components,
   route handlers, or data mutations in the Next.js App Router. Do not use for visual styling,
   cryptographic token hashing, or PDF rendering layout.
-author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
-assisted_by:
-  - OpenAI Codex
-  - Google Gemini
 ---
 
 # Next.js 15 App Router Engineering Skill

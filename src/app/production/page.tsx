@@ -32,7 +32,7 @@ export default async function ProductionPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <NotificationBell autoOpenIfUnseen={true} />
+          <NotificationBell />
           <form action="/api/auth/logout" method="POST">
             <button
               type="submit"

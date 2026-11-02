@@ -126,6 +126,7 @@ jobs:
       APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
       APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
       DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+      DATABASE_CA_CERT: ${{ secrets.SUPABASE_CA_CERT }}
       DIRECT_URL: ${{ secrets.SUPABASE_DIRECT_URL }}
       EVENT_HMAC_SECRET: ${{ secrets.EVENT_HMAC_SECRET }}
     steps:

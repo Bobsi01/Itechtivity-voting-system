@@ -1,3 +1,4 @@
+import { generateCalibrationPdfBuffer } from './calibration-sheet';
 import {
   A4_WIDTH_PT,
   A4_HEIGHT_PT,
@@ -15,7 +16,7 @@ import {
   getCardInternalLayout,
 } from './a4-geometry';
 
-function runGeometryTests() {
+async function runGeometryTests() {
   console.log('Running A4 Paper & Card Geometry Verification...');
   let passed = 0;
   let failed = 0;
@@ -64,10 +65,17 @@ function runGeometryTests() {
   assert(internal.stubCount === 6, 'Exactly 6 vertical stubs');
   assert(Math.abs(internal.stubWidth * 6 - CARD_WIDTH_PT) < 0.01, '6 stubs span entire card width');
 
+  const calibration = await generateCalibrationPdfBuffer();
+  const pageObjects = calibration.toString('latin1').match(/\/Type\s*\/Page\b/g) || [];
+  assert(pageObjects.length === 1, 'Calibration rulers and card guides remain on one A4 page');
+
   console.log(`\nResults: ${passed} passed, ${failed} failed.`);
   if (failed > 0) {
     process.exit(1);
   }
 }
 
-runGeometryTests();
+runGeometryTests().catch((error) => {
+  console.error('PDF geometry verification failed:', error);
+  process.exitCode = 1;
+});

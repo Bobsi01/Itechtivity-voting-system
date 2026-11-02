@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readBoundedJson, RequestBodyError } from '@/lib/security/request-body';
 import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -119,11 +120,11 @@ export async function PATCH(request: Request) {
 
   let rawJson: unknown;
   try {
-    rawJson = await request.json();
-  } catch {
+    rawJson = await readBoundedJson(request, 5 * 1024 * 1024);
+  } catch (error) {
     return NextResponse.json(
       { success: false, error: 'INVALID_JSON', message: 'Malformed JSON payload.' },
-      { status: 400 }
+      { status: error instanceof RequestBodyError ? error.status : 400 }
     );
   }
 

@@ -5,11 +5,12 @@ import prisma from '@/lib/db/prisma';
 import { setSessionCookie } from '@/lib/auth/session';
 import { rateLimiter, getClientIp } from '@/lib/security/rate-limiter';
 import { recordAuditLog, createHumanReadableSummary } from '@/lib/audit/log';
+import { readBoundedJson, RequestBodyError } from '@/lib/security/request-body';
 
 const LoginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
+  email: z.string().email().max(254),
+  password: z.string().min(1).max(100),
+}).strict();
 
 // Precomputed bcrypt hash used to normalize execution time against user enumeration (SEC-09)
 const DUMMY_BCRYPT_HASH = '$2a$10$w095F9wY41R5cR42B8s1..4bEslN2D82W9.K8hR8v1bE5kQz2oG7W';
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json();
+    const body = await readBoundedJson(request, 2048);
     const parsed = LoginSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -119,13 +120,14 @@ export async function POST(request: Request) {
     rateLimiter.reset(rateLimitKey);
     rateLimiter.reset(emailRateKey);
 
-    // Set HTTP-only encrypted session cookie
+    // Bind the signed session to the current account revision so account changes revoke it.
     await setSessionCookie({
       userId: user.id,
       email: user.email,
       fullName: user.fullName,
       role: user.role,
       boothId: user.boothId,
+      accountVersion: user.updatedAt.toISOString(),
     });
 
     await recordAuditLog({
@@ -159,6 +161,13 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
+
     console.error('Login API error:', error);
     return NextResponse.json(
       { success: false, error: 'INTERNAL_SERVER_ERROR' },

@@ -18,6 +18,7 @@ async function main() {
     fullName: adminUser.fullName,
     role: adminUser.role,
     boothId: adminUser.boothId,
+      accountVersion: adminUser.updatedAt.toISOString(),
   });
 
   const browser = await puppeteer.launch({

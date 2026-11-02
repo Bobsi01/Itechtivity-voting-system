@@ -12,7 +12,19 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function ProjectsPage() {
+const PROJECT_VIEWS = [
+  { id: "directory", label: "Capstone projects" },
+  { id: "map", label: "Floor map" },
+  { id: "rules", label: "Voting guide" },
+  { id: "awards", label: "Awards" },
+] as const;
+
+export default async function ProjectsPage({ searchParams }: {
+  searchParams: Promise<{ view?: string | string[] }>;
+}) {
+
+  const { view } = await searchParams;
+  const activeView = PROJECT_VIEWS.find((item) => item.id === view)?.id ?? "directory";
 
   const [booths, awards] = await Promise.all([
     prisma.booth.findMany({
@@ -69,12 +81,20 @@ export default async function ProjectsPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link href="/" className={styles.homeLink}><ArrowLeft size={16} aria-hidden="true" /> Back to home</Link>
         <Link href="/" className={styles.wordmark} aria-label="Itechtivity 2027 home">ITECHTIVITY <span>2027</span></Link>
+        <nav className={styles.navigation} aria-label="Exhibition navigation">
+          {PROJECT_VIEWS.map((item) => (
+            <Link key={item.id} href={item.id === "directory" ? "/projects" : `/projects?view=${item.id}`}
+              aria-current={activeView === item.id ? "page" : undefined}>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
       </header>
 
       <section className={styles.intro} aria-labelledby="projects-title">
         <div>
+          <Link href="/" className={styles.homeLink}><ArrowLeft size={16} aria-hidden="true" /> Back to home</Link>
           <h1 id="projects-title">Capstone projects</h1>
           <p className={styles.introDescription}>Find a group, visit their booth, and meet the people behind the project.</p>
         </div>
@@ -86,7 +106,7 @@ export default async function ProjectsPage() {
         </div>
       </section>
 
-      <BoothDirectory booths={publicBooths} awards={publicAwards} />
+      <BoothDirectory key={activeView} booths={publicBooths} awards={publicAwards} activeView={activeView} />
 
       <footer className={styles.footer}>
         <p>University of Caloocan City <span>Computer Studies Department</span></p>

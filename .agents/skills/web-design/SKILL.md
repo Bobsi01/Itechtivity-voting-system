@@ -5,10 +5,6 @@ description: >-
   with Tailwind CSS and shadcn/ui. Use when building UI layouts, styling components,
   designing mobile viewports, or formatting typography. Do not use for server actions,
   route handlers, database mutations, or cryptographic operations.
-author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
-assisted_by:
-  - OpenAI Codex
-  - Google Gemini
 ---
 
 # Web Design & Interface Craftsmanship Skill

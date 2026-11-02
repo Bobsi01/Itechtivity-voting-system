@@ -8,11 +8,7 @@ import { VersionUpdateModal } from "./version-update-modal";
 
 const SEEN_VERSION_STORAGE_KEY = "itechtivity_seen_version";
 
-interface NotificationBellProps {
-  autoOpenIfUnseen?: boolean;
-}
-
-export function NotificationBell({ autoOpenIfUnseen = false }: NotificationBellProps) {
+export function NotificationBell() {
 
   const latestRelease: VersionRelease = getLatestRelease();
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -28,15 +24,11 @@ export function NotificationBell({ autoOpenIfUnseen = false }: NotificationBellP
       const isUnseen = seenVersion !== latestRelease.version;
       setHasUnseenUpdate(isUnseen);
 
-      // Auto-open modal on first login / authenticated entry if unseen
-      if (isUnseen && autoOpenIfUnseen) {
-        setModalOpen(true);
-      }
     } catch (storageErr) {
       // Gracefully handle localStorage access restrictions in private browsing modes
       console.warn("Unable to read seen version from localStorage:", storageErr);
     }
-  }, [latestRelease.version, autoOpenIfUnseen]);
+  }, [latestRelease.version]);
 
   // Click-outside and Escape key listener to close dropdown
   useEffect(() => {

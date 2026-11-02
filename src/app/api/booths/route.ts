@@ -60,6 +60,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: false, error: 'UNAUTHENTICATED' }, { status: 401 });
   }
 
+  const eventConfig = await prisma.eventConfig.findFirst({ select: { isVotingOpen: true } });
+  const isVotingOpen = eventConfig?.isVotingOpen ?? false;
+
   // If Exhibitor, scope query strictly to their assigned booth only
   if (session.role === 'EXHIBITOR') {
     if (!session.boothId) {
@@ -74,6 +77,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       scoped: true,
+      isVotingOpen,
       booth: detailedBooth,
     });
   }
@@ -102,6 +106,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     success: true,
     scoped: false,
+    isVotingOpen,
     booth: activeBoothDetail,
     booths: booths.map((b) => ({
       id: b.id,

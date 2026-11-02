@@ -12,6 +12,7 @@ export function ProductionWorkspace() {
 
   const [files, setFiles] = useState<PdfFileItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<PdfFileItem | null>(null);
 
   const fetchFiles = async () => {
@@ -22,10 +23,13 @@ export function ProductionWorkspace() {
       const data = await res.json();
       if (res.ok && data.success) {
         setFiles(data.files || []);
+        setLoadError(null);
       } else {
+        setLoadError("Could not load print batches. Use Refresh to retry.");
         toast.error("Failed to load generated files list");
       }
     } catch (err) {
+      setLoadError("Connection lost. Use Refresh to reload print batches.");
       toast.error("Network error fetching file list");
     } finally {
       setIsLoading(false);
@@ -68,31 +72,21 @@ export function ProductionWorkspace() {
     };
   }, []);
 
-  const totalCardsGenerated = files.reduce((acc, f) => acc + f.totalCards, 0);
-  const totalSheetsGenerated = files.reduce((acc, f) => acc + f.totalSheets, 0);
+  const completedFiles = files.filter((file) => file.status === "COMPLETED");
+  const totalCardsGenerated = completedFiles.reduce((total, file) => total + file.totalCards, 0);
+  const totalSheetsGenerated = completedFiles.reduce((total, file) => total + file.totalSheets, 0);
 
   return (
     <div className="space-y-6">
-      {/* Production Metrics Overview */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3.5 border border-neutral-300 rounded-lg">
-          <span className="text-[11px] font-mono uppercase text-neutral-500">Total Batches</span>
-          <p className="text-xl font-bold text-neutral-900 font-mono mt-0.5 select-text">{files.length}</p>
-        </div>
-        <div className="p-3.5 border border-neutral-300 rounded-lg">
-          <span className="text-[11px] font-mono uppercase text-neutral-500">Total Cards</span>
-          <p className="text-xl font-bold text-neutral-900 font-mono mt-0.5 select-text">{totalCardsGenerated}</p>
-        </div>
-        <div className="p-3.5 border border-neutral-300 rounded-lg">
-          <span className="text-[11px] font-mono uppercase text-neutral-500">A4 Sheets (4/Sheet)</span>
-          <p className="text-xl font-bold text-neutral-900 font-mono mt-0.5 select-text">{totalSheetsGenerated}</p>
-        </div>
-        <div className="p-3.5 border border-neutral-300 rounded-lg">
-          <span className="text-[11px] font-mono uppercase text-neutral-500">Paper Margins</span>
-          <p className="text-xl font-bold text-neutral-900 font-mono mt-0.5 select-text">5.0mm / 14.2pt</p>
-        </div>
+      <div role="status" className="text-sm text-neutral-700">
+        {loadError && files.length === 0 ? "Print batch totals unavailable." : isLoading && files.length === 0 ? "Loading print batches..." : (
+          <p>{completedFiles.length} completed batches · {totalCardsGenerated} cards · {totalSheetsGenerated} A4 sheets
+            {files.some((file) => file.status !== "COMPLETED") && (
+              <span> · {files.filter((file) => file.status === "FAILED").length} failed · {files.filter((file) => file.status !== "COMPLETED" && file.status !== "FAILED").length} in progress</span>
+            )}
+          </p>
+        )}
       </div>
-
       {/* 2-Column Responsive Layout for Desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Column 1: Batch Generator Control */}
@@ -105,6 +99,7 @@ export function ProductionWorkspace() {
           <PdfFileExplorer
             files={files}
             isLoading={isLoading}
+            error={loadError}
             onRefresh={fetchFiles}
             onPreview={(file) => setPreviewFile(file)}
           />

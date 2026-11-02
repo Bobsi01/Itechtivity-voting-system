@@ -1,12 +1,19 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { readBoundedJson, RequestBodyError } from '@/lib/security/request-body';
+import { lockAndReadIdempotency, fingerprintRequest, encodeIdempotencyResponse, IdempotencyConflictError } from '@/lib/security/idempotency';
 import { RegistrationBindSchema } from '@/lib/registration/demographics';
 import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
 import { BuyerType, CardStatus, StubStatus } from '@prisma/client';
 import { rateLimiter, getClientIp } from '@/lib/security/rate-limiter';
-import { recordAuditLog, createHumanReadableSummary } from '@/lib/audit/log';
-import { broadcastRegistrationEvent } from '@/lib/appwrite/server';
+import { createHumanReadableSummary } from '@/lib/audit/log';
+import { broadcastRegistrationEvent, broadcastAuditEvent } from '@/lib/appwrite/server';
+
+const RegistrationResponseSchema = z.object({
+  success: z.literal(true), message: z.string(), transactionId: z.string(),
+  cardsActivatedCount: z.number(), stubsActivatedCount: z.number(),
+});
 
 const IdempotencyKeySchema = z
   .string()
@@ -56,34 +63,8 @@ export async function POST(request: Request) {
   }
 
   const scopedIdempotencyKey = `reg:${session.userId}:${parsedIdempotencyKey.data}`;
-  const existingLog = await prisma.idempotencyLog.findUnique({
-    where: { idempotencyKey: scopedIdempotencyKey },
-  });
-  if (existingLog) {
-    return NextResponse.json(
-      JSON.parse(existingLog.responseBody),
-      { status: existingLog.responseStatus }
-    );
-  }
-
-  // Gate: verify that registration is currently open in event configuration before processing
-  const eventConfig = await prisma.eventConfig.findFirst({
-    select: { isRegistrationOpen: true },
-  });
-
-  if (!eventConfig || !eventConfig.isRegistrationOpen) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'REGISTRATION_CLOSED',
-        message: 'Registration is currently paused by the event administrator.',
-      },
-      { status: 403 }
-    );
-  }
-
   try {
-    const body = await request.json();
+    const body = await readBoundedJson(request);
     const parsed = RegistrationBindSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -95,6 +76,7 @@ export async function POST(request: Request) {
 
     const {
       buyerType,
+      paymentMethod,
       buyerName,
       studentNumber,
       program,
@@ -117,8 +99,23 @@ export async function POST(request: Request) {
       )
     );
 
+    const requestFingerprint = fingerprintRequest({
+      buyerType, buyerName, paymentMethod,
+      studentNumber: studentNumber || null, program: program || null,
+      yearAndSection: yearAndSection || null, affiliation: affiliation || null,
+      contactInfo: contactInfo || null, cardSerials: [...normalizedSerials].sort(),
+    });
+
     // Execute atomic transaction: bind purchaser record, activate all cards/stubs, and persist idempotency log
     const result = await prisma.$transaction(async (tx) => {
+      const cached = await lockAndReadIdempotency(tx, scopedIdempotencyKey, requestFingerprint, RegistrationResponseSchema);
+      if (cached) return { payload: cached.body, cached: true };
+
+      const configs = await tx.$queryRaw<Array<{ isRegistrationOpen: boolean }>>`
+        SELECT "isRegistrationOpen" FROM "EventConfig" LIMIT 1 FOR SHARE
+      `;
+      if (!configs[0]?.isRegistrationOpen) return { closed: true };
+
       // 1. Verify all cards exist and are currently unactivated
       const existingCards = await tx.bingoCard.findMany({
         where: {
@@ -202,92 +199,82 @@ export async function POST(request: Request) {
       };
 
       // 5. Persist idempotency log atomically inside the same transaction
-      await tx.idempotencyLog.upsert({
-        where: { idempotencyKey: scopedIdempotencyKey },
-        update: {},
-        create: {
+      await tx.idempotencyLog.create({
+        data: {
           idempotencyKey: scopedIdempotencyKey,
           responseStatus: 200,
-          responseBody: JSON.stringify(txPayload),
+          responseBody: encodeIdempotencyResponse(requestFingerprint, txPayload),
         },
       });
 
-      return txPayload;
+      await tx.auditLog.create({
+        data: {
+          userId: session.userId,
+          actorName: session.fullName,
+          actorEmail: session.email,
+          actorRole: session.role,
+          action: 'REGISTRATION_BIND',
+          resource: 'REGISTRATION',
+          summary: createHumanReadableSummary('REGISTRATION_BIND', {
+            actorName: session.fullName,
+            actorRole: session.role,
+            buyerName,
+            studentNumber: studentNumber || null,
+            programSection: [program, yearAndSection].filter(Boolean).join(' ') || null,
+            cardCount: normalizedSerials.length,
+            serials: normalizedSerials,
+            paymentMethod,
+            amount: paymentMethod === 'COMPLIMENTARY' ? 0 : normalizedSerials.length * 50,
+          }),
+          details: JSON.stringify({
+            transactionId: txPayload.transactionId,
+            buyerType,
+            buyerName,
+            studentNumber,
+            program,
+            yearAndSection,
+            affiliation,
+            contactInfo,
+            quantity: normalizedSerials.length,
+            serials: normalizedSerials,
+            paymentMethod,
+            amountPaid: paymentMethod === 'COMPLIMENTARY' ? 0 : normalizedSerials.length * 50,
+            stubsActivatedCount: txPayload.stubsActivatedCount,
+          }),
+          ipAddress: clientIp,
+        },
+      });
+
+      return { payload: txPayload, cached: false };
     });
 
-    const responsePayload = result;
+    if ('closed' in result) {
+      return NextResponse.json({ success: false, error: 'REGISTRATION_CLOSED' }, { status: 403 });
+    }
+    const responsePayload = result.payload;
+    if (result.cached) return NextResponse.json(responsePayload);
 
-    const paymentMethod = typeof body === 'object' && body && 'paymentMethod' in body && typeof body.paymentMethod === 'string'
-      ? body.paymentMethod
-      : 'CASH';
-
-    await recordAuditLog({
-      userId: session.userId,
-      actorName: session.fullName,
-      actorEmail: session.email,
-      actorRole: session.role,
-      action: 'REGISTRATION_BIND',
-      resource: 'REGISTRATION',
-      summary: createHumanReadableSummary('REGISTRATION_BIND', {
-        actorName: session.fullName,
-        actorRole: session.role,
-        buyerName,
-        studentNumber: studentNumber || null,
-        programSection: [program, yearAndSection].filter(Boolean).join(' ') || null,
-        cardCount: normalizedSerials.length,
-        serials: normalizedSerials,
-        paymentMethod,
-        amount: paymentMethod === 'COMPLIMENTARY' ? 0 : normalizedSerials.length * 50,
-      }),
-      details: {
-        transactionId: result.transactionId,
-        buyerType,
-        buyerName,
-        studentNumber,
-        program,
-        yearAndSection,
-        affiliation,
-        contactInfo,
-        quantity: normalizedSerials.length,
-        serials: normalizedSerials,
-        paymentMethod,
-        amountPaid: paymentMethod === 'COMPLIMENTARY' ? 0 : normalizedSerials.length * 50,
-        stubsActivatedCount: result.stubsActivatedCount,
-      },
-      ipAddress: clientIp,
-    });
+    void broadcastAuditEvent({ eventType: 'AUDIT_EVENT', action: 'REGISTRATION_BIND', resource: 'REGISTRATION', timestamp: new Date().toISOString() });
 
     // Broadcast sanitized registration event signal to sync concurrent cashier counters in real time
     await broadcastRegistrationEvent({
       eventType: 'REGISTRATION_EVENT',
-      transactionId: result.transactionId,
-      quantity: result.cardsActivatedCount,
+      transactionId: responsePayload.transactionId,
+      quantity: responsePayload.cardsActivatedCount,
       timestamp: new Date().toISOString(),
       processedByRole: session.role as 'REGISTRATION' | 'ADMIN',
     });
 
     return NextResponse.json(responsePayload);
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
+    if (error instanceof IdempotencyConflictError) {
+      return NextResponse.json({ success: false, error: 'IDEMPOTENCY_KEY_CONFLICT' }, { status: 409 });
+    }
     const rawMessage = error instanceof Error ? error.message : '';
     console.error('Registration bind transaction error:', error);
-
-    // Check if a concurrent request with the same idempotency key succeeded while this transaction was running
-    if (scopedIdempotencyKey) {
-      try {
-        const concurrentLog = await prisma.idempotencyLog.findUnique({
-          where: { idempotencyKey: scopedIdempotencyKey },
-        });
-
-        if (concurrentLog) {
-          return NextResponse.json(
-            JSON.parse(concurrentLog.responseBody),
-            { status: concurrentLog.responseStatus }
-          );
-        }
-      } catch (logLookupErr) {
-        console.error('Failed to check concurrent idempotency log:', logLookupErr);
-      }
-    }
 
     // SEC-11: Sanitize errors to prevent leaking internal database stack traces or SQL state
     if (

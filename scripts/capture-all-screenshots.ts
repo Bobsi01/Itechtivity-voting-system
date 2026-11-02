@@ -160,6 +160,7 @@ async function captureAllScreenshots() {
       fullName: user.fullName,
       role: user.role,
       boothId: user.boothId,
+      accountVersion: user.updatedAt.toISOString(),
     });
     sessionTokenMap.set(user.email, token);
   }

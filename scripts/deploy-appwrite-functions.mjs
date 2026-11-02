@@ -19,7 +19,7 @@ function loadDotEnv() {
     if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
       val = val.slice(1, -1);
     }
-    if (!process.env[key]) {
+    if (process.env[key] === undefined) {
       process.env[key] = val;
     }
   }
@@ -34,7 +34,7 @@ async function syncFunctionVariables(endpoint, headers, functionId, envMap) {
   const existingList = await existingRes.json();
   const existingByKey = new Map((existingList.variables || []).map((v) => [v.key, v]));
 
-  const entries = Object.entries(envMap).filter(([, value]) => Boolean(value));
+  const entries = Object.entries(envMap).filter(([key, value]) => key === 'DATABASE_CA_CERT' || Boolean(value));
   await Promise.all(
     entries.map(async ([key, value]) => {
       const existing = existingByKey.get(key);
@@ -161,6 +161,7 @@ async function main() {
 
   const envMap = {
     DATABASE_URL: process.env.DATABASE_URL || '',
+    DATABASE_CA_CERT: process.env.DATABASE_CA_CERT || '',
     DIRECT_URL: process.env.DIRECT_URL || '',
     EVENT_HMAC_SECRET: process.env.EVENT_HMAC_SECRET || '',
     APPWRITE_ENDPOINT: endpoint,

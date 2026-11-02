@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const RegistrationBindSchema = z.object({
   buyerType: z.enum(['CSD_STUDENT', 'NON_CSD_STUDENT', 'VISITOR', 'ALUMNI']),
+  paymentMethod: z.enum(['CASH', 'GCASH', 'COMPLIMENTARY']).default('CASH'),
   buyerName: z.string().trim().min(2).max(150),
   studentNumber: z.string().trim().max(80).nullish(),
   program: z.string().trim().max(150).nullish(),

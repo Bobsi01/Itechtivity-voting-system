@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
 import { Prisma } from '@prisma/client';
+import { z } from 'zod';
+
+const AuditQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(100000).default(1),
+  limit: z.coerce.number().int().min(5).max(100).default(25),
+  resource: z.string().max(64).default('ALL'),
+  actorRole: z.enum(['ALL', 'ADMIN', 'PRODUCTION', 'REGISTRATION', 'EXHIBITOR', 'SYSTEM']).default('ALL'),
+  search: z.string().trim().max(200).default(''),
+}).strict();
 
 export async function GET(request: Request) {
 
@@ -15,11 +24,11 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const limit = Math.min(100, Math.max(5, parseInt(searchParams.get('limit') || '25', 10)));
-    const resource = searchParams.get('resource') || 'ALL';
-    const actorRole = searchParams.get('actorRole') || 'ALL';
-    const search = searchParams.get('search')?.trim() || '';
+    const parsedQuery = AuditQuerySchema.safeParse(Object.fromEntries(searchParams));
+    if (!parsedQuery.success) {
+      return NextResponse.json({ success: false, error: 'INVALID_AUDIT_QUERY' }, { status: 400 });
+    }
+    const { page, limit, resource, actorRole, search } = parsedQuery.data;
 
     const where: Prisma.AuditLogWhereInput = {};
 

@@ -328,12 +328,14 @@ async function runUnifiedAdversarialSuite() {
   assert.equal(unauthMembersPost.status, 401, 'Unauthenticated POST members must return HTTP 401.');
 
   // Test forbidden role (e.g. REGISTRATION role cannot access exhibitor routes)
+  const registrationActor = await prisma.user.findFirstOrThrow({ where: { role: 'REGISTRATION' } });
   currentSessionToken = signSession({
-    userId: 'staff-user-id',
-    email: 'staff@itech2027.edu',
-    fullName: 'Registration Staff',
-    role: 'REGISTRATION',
-    boothId: null,
+    userId: registrationActor.id,
+    email: registrationActor.email,
+    fullName: registrationActor.fullName,
+    role: registrationActor.role,
+    boothId: registrationActor.boothId,
+    accountVersion: registrationActor.updatedAt.toISOString(),
   });
 
   const forbiddenGetRes = await getBoothGet();
@@ -342,12 +344,14 @@ async function runUnifiedAdversarialSuite() {
 
   // 2.2 Broken Object Level Authorization (BOLA) Defense & Read-Only Immutability
   console.log('2.2 Testing BOLA attack defense and read-only field immutability...');
+  const exhibitorActor = await prisma.user.findFirstOrThrow({ where: { role: 'EXHIBITOR', boothId: boothA.id } });
   currentSessionToken = signSession({
-    userId: 'test-lead-booth-a',
-    email: 'lead.a@itech2027.edu',
-    fullName: 'Booth A Lead Exhibitor',
-    role: 'EXHIBITOR',
-    boothId: boothA.id,
+    userId: exhibitorActor.id,
+    email: exhibitorActor.email,
+    fullName: exhibitorActor.fullName,
+    role: exhibitorActor.role,
+    boothId: exhibitorActor.boothId,
+    accountVersion: exhibitorActor.updatedAt.toISOString(),
   });
 
   const attackPayload = {
@@ -579,12 +583,14 @@ async function runUnifiedAdversarialSuite() {
 
   // 3.3 Admin floor box assignment API endpoint & collision response
   console.log('3.3 Testing admin booth assignment API (POST /api/admin/booths)...');
+  const adminActor = await prisma.user.findFirstOrThrow({ where: { role: 'ADMIN' } });
   currentSessionToken = signSession({
-    userId: 'admin-tester-id',
-    email: 'admin@itech2027.edu',
-    fullName: 'System Admin',
-    role: 'ADMIN',
-    boothId: null,
+    userId: adminActor.id,
+    email: adminActor.email,
+    fullName: adminActor.fullName,
+    role: adminActor.role,
+    boothId: adminActor.boothId,
+    accountVersion: adminActor.updatedAt.toISOString(),
   });
 
   // Attempting to assign occupied slot BOX-39 to Booth 2 via admin API

@@ -4,10 +4,6 @@ description: >-
   Enforces guidelines and formatting standards for student-friendly, maintainable code.
   Use when structuring functions, adding spacing, writing balanced comments, or reviewing
   naming conventions. Do not use for security verification, cryptography, or Appwrite configuration.
-author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
-assisted_by:
-  - OpenAI Codex
-  - Google Gemini
 ---
 
 # Code Quality & Readability Runbook

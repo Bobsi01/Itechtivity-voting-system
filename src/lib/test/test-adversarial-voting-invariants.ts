@@ -50,19 +50,21 @@ nextHeaders.cookies = async () => ({
   delete: () => {},
 });
 
-function setMockSession(user: MockUser | null): void {
+async function setMockSession(user: MockUser | null): Promise<void> {
 
   if (!user) {
     currentSessionToken = null;
     return;
   }
 
+  const account = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
   currentSessionToken = signSession({
     userId: user.id,
     email: user.email,
     fullName: user.fullName,
     role: user.role,
-    boothId: user.boothId,
+    boothId: account.boothId,
+    accountVersion: account.updatedAt.toISOString(),
   });
 }
 
@@ -266,7 +268,7 @@ async function runAdversarialVotingInvariantsVerification(): Promise<void> {
     // SECTION 1: Unsold and Voided Card Stub Invariants at POST /api/vote
     // ===================================================================================
     console.log('--- SECTION 1: Unsold & Voided Card Stub Invariants at POST /api/vote ---');
-    setMockSession(exhibitorUser);
+    await setMockSession(exhibitorUser);
 
     // 1A. Scan unsold card stub (Card A Slot 1: status = GENERATED, stub = INACTIVE)
     console.log('[Test 1A] Scanning ticket stub from unsold card (status = GENERATED)...');
@@ -594,7 +596,7 @@ async function runAdversarialVotingInvariantsVerification(): Promise<void> {
     ];
 
     for (const { roleName, user } of testRoles) {
-      setMockSession(user);
+      await setMockSession(user);
       console.log(`[Probing POST /api/admin/cards/batch as ${roleName}]`);
 
       for (const probe of batchProbeCases) {
@@ -617,7 +619,7 @@ async function runAdversarialVotingInvariantsVerification(): Promise<void> {
     // SECTION 4: Concurrency Race Test on Voting Redemption
     // ===================================================================================
     console.log('--- SECTION 4: Concurrency Race Test on Voting Redemption ---');
-    setMockSession(exhibitorUser);
+    await setMockSession(exhibitorUser);
 
     // 4A: Race Test with DISTINCT Idempotency Keys on the same activated stub (Card D Slot 1)
     console.log('[Test 4A] Simulating concurrent race with 6 parallel requests on Card D Slot 1...');

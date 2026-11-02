@@ -7,7 +7,7 @@ export function DataExportCard() {
   const exportItems = [
     {
       title: "Official Final Standings CSV",
-      description: "Complete ranking of all 40 capstone booths with total vote counts and per-award slot breakdowns for faculty evaluation.",
+      description: "Complete ranking of registered capstone booths with total vote counts and per-award slot breakdowns for faculty evaluation.",
       href: "/api/admin/export?type=standings",
       filename: "itechtivity-2027-official-standings.csv",
       icon: FileSpreadsheet,

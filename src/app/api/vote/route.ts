@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { readBoundedJson, RequestBodyError } from '@/lib/security/request-body';
+import { lockAndReadIdempotency, fingerprintRequest, encodeIdempotencyResponse, IdempotencyConflictError } from '@/lib/security/idempotency';
 import prisma from '@/lib/db/prisma';
-import { getCurrentUser } from '@/lib/auth/session';
+import { getCurrentUser, getVerifiedSessionClaims } from '@/lib/auth/session';
 import { verifyStubPayload, getVerifiedHmacSecret } from '@/lib/crypto/stub-tokens';
-import { broadcastVoteEvent, triggerLeaderboardSnapshot } from '@/lib/appwrite/server';
+import { broadcastVoteEvent, triggerLeaderboardSnapshot, broadcastAuditEvent } from '@/lib/appwrite/server';
 import { rateLimiter, getClientIp } from '@/lib/security/rate-limiter';
-import { recordAuditLog, createHumanReadableSummary } from '@/lib/audit/log';
+import { createHumanReadableSummary } from '@/lib/audit/log';
 
 const VoteRequestSchema = z.object({
   qrPayload: z.string().min(5).max(512),
@@ -19,6 +21,12 @@ const IdempotencyKeySchema = z
   .max(128)
   .regex(/^[a-zA-Z0-9:._-]+$/);
 
+const VoteResponseSchema = z.object({
+  success: z.literal(true), message: z.string(), voteId: z.string(), stubSerial: z.string(),
+  awardTitle: z.string(), slotNumber: z.number(), boothCode: z.string(), projectTitle: z.string(),
+  totalVotesForAward: z.number(), scannedAt: z.string(),
+});
+
 interface UpdatedStubRow {
   id: string;
   awardId: string | null;
@@ -29,7 +37,7 @@ interface UpdatedStubRow {
 export async function POST(request: Request) {
 
   // Step 1: Enforce authentication and strict role boundary (EXHIBITOR or ADMIN only)
-  const session = await getCurrentUser();
+  const session = await getVerifiedSessionClaims();
   if (!session) {
     return NextResponse.json(
       { success: false, error: 'UNAUTHENTICATED' },
@@ -44,10 +52,10 @@ export async function POST(request: Request) {
     );
   }
 
-  // Rate limit booth scanning to 45 scans per minute per client IP or booth
+  // An old session may spend only its own revision's input budget before revalidation.
   const clientIp = getClientIp(request);
-  const rateLimitKey = `vote:${session.boothId || clientIp}`;
-  const rateCheck = rateLimiter.check(rateLimitKey, 45, 60 * 1000);
+  const rateLimitKey = `vote-input:${session.userId}:${session.accountVersion}`;
+  const rateCheck = rateLimiter.check(rateLimitKey, 90, 60 * 1000);
 
   if (!rateCheck.allowed) {
     return NextResponse.json(
@@ -75,7 +83,7 @@ export async function POST(request: Request) {
   const rawIdempotencyKey = parsedIdempotencyKey.data;
 
   try {
-    const body = await request.json();
+    const body = await readBoundedJson(request);
     const parsed = VoteRequestSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -109,37 +117,37 @@ export async function POST(request: Request) {
 
     const { stubSerial, slotNumber } = cryptoCheck.data;
 
+    // Both signatures are checked before the account or ticket database is touched.
+    // Fresh account state still determines whether these claims retain authorization.
+    if (!await getCurrentUser()) {
+      return NextResponse.json({ success: false, error: 'UNAUTHENTICATED' }, { status: 401 });
+    }
+
+    const boothRateCheck = rateLimiter.check(`vote:${session.boothId || clientIp}`, 45, 60 * 1000);
+    if (!boothRateCheck.allowed) {
+      return NextResponse.json({ success: false, error: 'RATE_LIMIT_EXCEEDED' }, {
+        status: 429,
+        headers: { 'Retry-After': String(boothRateCheck.retryAfterSeconds || 60) },
+      });
+    }
+
     // Scope idempotency key to boothId to prevent cross-booth key replay
     const scopedIdempotencyKey = rawIdempotencyKey.startsWith(`${boothId}:`)
       ? rawIdempotencyKey
       : `${boothId}:${rawIdempotencyKey}`;
 
-    const existingLog = await prisma.idempotencyLog.findUnique({
-      where: { idempotencyKey: scopedIdempotencyKey },
-    });
-
-    if (existingLog) {
-      return NextResponse.json(
-        JSON.parse(existingLog.responseBody),
-        { status: existingLog.responseStatus }
-      );
-    }
-
-    // Check system configuration to verify voting is currently open
-    const eventConfig = await prisma.eventConfig.findFirst({
-      select: { isVotingOpen: true },
-    });
-
-    if (eventConfig && !eventConfig.isVotingOpen) {
-      return NextResponse.json(
-        { success: false, error: 'VOTING_IS_CLOSED' },
-        { status: 403 }
-      );
-    }
-
+    const requestFingerprint = fingerprintRequest({ boothId, stubSerial, slotNumber });
 
     // Step 3: Execute stub redemption, award lookup, vote recording, and idempotency log atomically
     const transactionResult = await prisma.$transaction(async (tx) => {
+
+      const cached = await lockAndReadIdempotency(tx, scopedIdempotencyKey, requestFingerprint, VoteResponseSchema);
+      if (cached) return { cachedPayload: cached.body, httpCode: cached.status };
+
+      const configs = await tx.$queryRaw<Array<{ isVotingOpen: boolean }>>`
+        SELECT "isVotingOpen" FROM "EventConfig" LIMIT 1 FOR SHARE
+      `;
+      if (!configs[0]?.isVotingOpen) return { errorStatus: 'VOTING_IS_CLOSED', httpCode: 403 };
 
       // 1. Atomic conditional update: only succeeds if currently ACTIVATED and parent BingoCard is ACTIVATED
       const updatedRows = await tx.$queryRaw<UpdatedStubRow[]>`
@@ -169,18 +177,6 @@ export async function POST(request: Request) {
         }
 
         if (existingStub.status === 'REDEEMED') {
-          // SEC-02: Check if a concurrent request with this idempotency key already completed successfully
-          const concurrentLog = await tx.idempotencyLog.findUnique({
-            where: { idempotencyKey: scopedIdempotencyKey },
-          });
-
-          if (concurrentLog) {
-            return {
-              cachedPayload: JSON.parse(concurrentLog.responseBody),
-              httpCode: concurrentLog.responseStatus,
-            };
-          }
-
           return { errorStatus: 'TICKET_ALREADY_REDEEMED', httpCode: 409 };
         }
 
@@ -242,13 +238,41 @@ export async function POST(request: Request) {
       };
 
       // 4. Persist idempotency log atomically inside the same transaction
-      await tx.idempotencyLog.upsert({
-        where: { idempotencyKey: scopedIdempotencyKey },
-        update: {},
-        create: {
+      await tx.idempotencyLog.create({
+        data: {
           idempotencyKey: scopedIdempotencyKey,
           responseStatus: 200,
-          responseBody: JSON.stringify(payload),
+          responseBody: encodeIdempotencyResponse(requestFingerprint, payload),
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: session.userId,
+          actorName: session.fullName,
+          actorEmail: session.email,
+          actorRole: session.role,
+          action: 'VOTE_CAST',
+          resource: 'VOTING',
+          summary: createHumanReadableSummary('VOTE_CAST', {
+            boothCode: voteRecord.booth.code,
+            projectTitle: voteRecord.booth.projectTitle,
+            stubSerial: voteRecord.ticketStub.stubSerial,
+            awardTitle: voteRecord.award.title,
+            slotNumber: voteRecord.award.slotNumber,
+          }),
+          details: JSON.stringify({
+            voteId: voteRecord.id,
+            ticketStubId: voteRecord.ticketStubId,
+            stubSerial: voteRecord.ticketStub.stubSerial,
+            boothId: voteRecord.boothId,
+            boothCode: voteRecord.booth.code,
+            awardId: voteRecord.awardId,
+            awardTitle: voteRecord.award.title,
+            slotNumber: voteRecord.award.slotNumber,
+            totalVotesForAward,
+          }),
+          ipAddress: clientIp,
         },
       });
 
@@ -280,6 +304,8 @@ export async function POST(request: Request) {
 
     const { vote, totalVotesForAward, responsePayload } = transactionResult;
 
+    void broadcastAuditEvent({ eventType: 'AUDIT_EVENT', action: 'VOTE_CAST', resource: 'VOTING', timestamp: responsePayload.scannedAt });
+
     // Step 4: Dispatch live WebSocket event to Appwrite Realtime and refresh leaderboard snapshot
     await broadcastVoteEvent({
       boothId,
@@ -293,37 +319,14 @@ export async function POST(request: Request) {
 
     void triggerLeaderboardSnapshot();
 
-    // Step 5: Record human-readable audit trail log
-    await recordAuditLog({
-      userId: session.userId,
-      actorName: session.fullName,
-      actorEmail: session.email,
-      actorRole: session.role,
-      action: 'VOTE_CAST',
-      resource: 'VOTING',
-      summary: createHumanReadableSummary('VOTE_CAST', {
-        boothCode: vote.booth.code,
-        projectTitle: vote.booth.projectTitle,
-        stubSerial: vote.ticketStub.stubSerial,
-        awardTitle: vote.award.title,
-        slotNumber: vote.award.slotNumber,
-      }),
-      details: {
-        voteId: vote.id,
-        ticketStubId: vote.ticketStubId,
-        stubSerial: vote.ticketStub.stubSerial,
-        boothId: vote.boothId,
-        boothCode: vote.booth.code,
-        awardId: vote.awardId,
-        awardTitle: vote.award.title,
-        slotNumber: vote.award.slotNumber,
-        totalVotesForAward,
-      },
-      ipAddress: clientIp,
-    });
-
     return NextResponse.json(responsePayload, { status: 200 });
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
+    if (error instanceof IdempotencyConflictError) {
+      return NextResponse.json({ success: false, error: 'IDEMPOTENCY_KEY_CONFLICT' }, { status: 409 });
+    }
     console.error('Vote processing error:', error);
     return NextResponse.json(
       { success: false, error: 'VOTE_PROCESSING_ERROR' },

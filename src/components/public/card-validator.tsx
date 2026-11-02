@@ -221,9 +221,9 @@ export function CardValidator() {
               id="manual-serial-input"
               type="text"
               value={manualCode}
-              onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+              onChange={(e) => setManualCode(e.target.value)}
               placeholder="e.g. B27-B01-0001 or B27-B01-0001-S1"
-              autoCapitalize="characters"
+              autoCapitalize="none"
               autoComplete="off"
               spellCheck="false"
               autoFocus
@@ -309,8 +309,8 @@ export function CardValidator() {
             <div className="text-xs text-neutral-700 space-y-1">
               {result.card.status === "ACTIVATED" && (
                 <p>
-                  This card has been sold and activated for voting. Attendee details and
-                  stub redemption records are confirmed below.
+                  This card has been sold and activated for voting. Its award stub status
+                  is shown below.
                 </p>
               )}
               {result.card.status === "GENERATED" && (
@@ -339,7 +339,7 @@ export function CardValidator() {
               <div className="flex items-center gap-1.5">
                 <User className="w-4 h-4 text-neutral-900" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-900">
-                  Attendee Demographics
+                  Attendee Privacy
                 </h3>
               </div>
               {result.demographics && (
@@ -395,7 +395,7 @@ export function CardValidator() {
               </div>
             ) : (
               <p className="text-xs text-neutral-600 italic">
-                No attendee is registered to this card.
+                Attendee details and voting choices are private. Ask the registration desk for help with your card.
               </p>
             )}
           </div>

@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
 import pg from 'pg';
+import { createDatabasePoolConfig } from './database-config.js';
 import { Client, Storage, Databases, ID } from 'node-appwrite';
 import { InputFile } from 'node-appwrite/file';
 
@@ -281,7 +282,12 @@ export default async ({ req, res, log, error }) => {
   const bucketId = process.env.APPWRITE_STORAGE_BUCKET_ID || 'bingo-cards-pdf';
   const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
   const batchesCollectionId = process.env.APPWRITE_PDF_BATCHES_COLLECTION_ID || 'pdf_batches';
-  const databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+  const databaseUrl = process.env.DATABASE_URL;
+
+  if (batchId && !databaseUrl) {
+    error('Missing pooled DATABASE_URL for batch persistence.');
+    return res.json({ success: false, error: 'MISSING_DATABASE_URL' }, 500);
+  }
 
   try {
     log(`Starting vector PDF generation for Batch #${batchNumber} (${totalCards} cards, ${totalSheets} sheets)...`);
@@ -355,15 +361,22 @@ export default async ({ req, res, log, error }) => {
 
       // Update Supabase PdfBatch record to COMPLETED
       if (databaseUrl && batchId) {
-        const pool = new Pool({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } });
+        let pool;
         try {
+          pool = new Pool(createDatabasePoolConfig());
           await pool.query(
             `UPDATE "PdfBatch" SET "status" = 'COMPLETED', "fileId" = $1, "fileSize" = $2, "updatedAt" = NOW() WHERE "id" = $3`,
             [uploadedFileId, pdfBuffer.length, batchId]
           );
           log(`Updated Supabase PdfBatch ${batchId} to COMPLETED`);
         } finally {
-          await pool.end();
+          if (pool) {
+            try {
+              await pool.end();
+            } catch {
+              error('PDF generation database shutdown failed.');
+            }
+          }
         }
       }
 
@@ -392,19 +405,26 @@ export default async ({ req, res, log, error }) => {
       fileSize: pdfBuffer.length,
     });
   } catch (err) {
-    error(`Async PDF Generation Failed: ${err.message}`);
+    error('Async PDF generation failed.');
 
     if (databaseUrl && batchId) {
-      const pool = new Pool({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } });
+      let pool;
       try {
+        pool = new Pool(createDatabasePoolConfig());
         await pool.query(
           `UPDATE "PdfBatch" SET "status" = 'FAILED', "updatedAt" = NOW() WHERE "id" = $1`,
           [batchId]
         );
       } catch (dbErr) {
-        error(`Failed to mark batch as FAILED in DB: ${dbErr.message}`);
+        error('Failed to persist PDF batch failure status.');
       } finally {
-        await pool.end();
+        if (pool) {
+          try {
+            await pool.end();
+          } catch {
+            error('PDF failure recovery database shutdown failed.');
+          }
+        }
       }
     }
 

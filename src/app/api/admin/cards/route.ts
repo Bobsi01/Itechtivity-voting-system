@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readBoundedJson, RequestBodyError } from '@/lib/security/request-body';
 import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -137,7 +138,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const body = await request.json();
+    const body = await readBoundedJson(request, 2048);
     const parsed = UpdateCardStatusSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -163,6 +164,9 @@ export async function PATCH(request: Request) {
     // Atomically transition card status and cascade unredeemed stub states
     const updatedCard = await prisma.$transaction(async (tx) => {
 
+      await tx.$queryRaw`SELECT "id" FROM "BingoCard" WHERE "id" = ${cardId} FOR UPDATE`;
+      const currentCard = await tx.bingoCard.findUniqueOrThrow({ where: { id: cardId } });
+
       if (action === 'VOID') {
         const voided = await tx.bingoCard.update({
           where: { id: cardId },
@@ -184,7 +188,8 @@ export async function PATCH(request: Request) {
       }
 
       // Restore card to ACTIVATED if bound to a buyer transaction, otherwise GENERATED
-      const restoredStatus = existingCard.transactionId ? 'ACTIVATED' : 'GENERATED';
+      if (currentCard.status !== 'VOID') return currentCard;
+      const restoredStatus = currentCard.transactionId ? 'ACTIVATED' : 'GENERATED';
       const restored = await tx.bingoCard.update({
         where: { id: cardId },
         data: { status: restoredStatus },
@@ -234,6 +239,9 @@ export async function PATCH(request: Request) {
     });
   } catch (error) {
     console.error('Failed to update bingo card status:', error);
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     return NextResponse.json(
       { success: false, error: 'FAILED_TO_UPDATE_CARD_STATUS' },
       { status: 500 }

@@ -81,11 +81,7 @@ export function BatchGeneratorCard({ onBatchGenerated }: BatchGeneratorCardProps
             </p>
           </div>
         </div>
-        <div className="text-right flex-shrink-0">
-          <span className="text-xs font-mono whitespace-nowrap border border-neutral-300 px-2.5 py-1 rounded text-neutral-800 select-text">
-            {calculatedSheets} A4 {calculatedSheets === 1 ? "Sheet" : "Sheets"}
-          </span>
-        </div>
+
       </div>
 
       <form onSubmit={handleGenerate} className="space-y-4">
@@ -107,16 +103,14 @@ export function BatchGeneratorCard({ onBatchGenerated }: BatchGeneratorCardProps
                 }`}
               >
                 <span className="text-xs text-neutral-900">{preset.cards} Cards</span>
-                <span className="text-xs text-neutral-500 font-mono">
-                  {preset.sheets} A4 {preset.sheets === 1 ? "Sheet" : "Sheets"}
-                </span>
+
               </button>
             ))}
           </div>
         </div>
 
         {/* Custom Input & Action Button */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 pt-1">
+        <div className="flex flex-col items-stretch gap-3 pt-1">
           <div className="flex-1 space-y-1.5">
             <label className="text-xs font-semibold text-neutral-700 uppercase tracking-wider" htmlFor="batch-generator-card-field-1">
               Exact Card Quantity (4-200, Multiples of 4)
@@ -134,7 +128,8 @@ export function BatchGeneratorCard({ onBatchGenerated }: BatchGeneratorCardProps
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <p className="text-sm text-neutral-700">{Number(cardCount) >= 4 && Number(cardCount) <= 200 && Number(cardCount) % 4 === 0 ? `${calculatedSheets} A4 sheets · 4 cards per sheet` : "Choose a multiple of 4 between 4 and 200."}</p>
+          <div className="flex flex-col xl:flex-row items-stretch gap-2">
             <a
               href="/api/production/calibration"
               target="_blank"

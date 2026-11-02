@@ -5,10 +5,6 @@ description: >-
   Use when planning releases, calculating version increments from pull requests, tracking points for bug fixes
   and features, and publishing release updates to the notification system.
   Do not use for Git branch management, database schema migrations, or third-party package dependency versioning.
-author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
-assisted_by:
-  - OpenAI Codex
-  - Google Gemini
 ---
 
 # Versioning Skill — 3-Tier Semantic & Points-Based Release System

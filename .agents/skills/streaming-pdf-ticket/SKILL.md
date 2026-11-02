@@ -5,10 +5,6 @@ description: >-
   ticket stubs with vector QR codes using pdfkit. Use when implementing, debugging, or optimizing
   ticket sheet generation, printing layouts, or memory usage. Do not use for ticket
   redemption transactions, QR cryptographic signing, or real-time vote broadcasting.
-author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
-assisted_by:
-  - OpenAI Codex
-  - Google Gemini
 ---
 
 # Streaming PDF Ticket & Bingo Card Generator Skill

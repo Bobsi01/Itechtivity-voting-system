@@ -106,6 +106,8 @@ model User {
   votesScanned Vote[]
   createdAt    DateTime                  @default(now())
   updatedAt    DateTime                  @updatedAt
+
+  @@index([boothId])
 }
 
 model RegistrationTransaction {
@@ -122,6 +124,8 @@ model RegistrationTransaction {
   quantityBought    Int
   cards             BingoCard[]
   createdAt         DateTime    @default(now())
+
+  @@index([processedByUserId])
 }
 
 model BingoCard {
@@ -136,6 +140,9 @@ model BingoCard {
   pdfBatch      PdfBatch?                @relation(fields: [pdfBatchId], references: [id])
   activatedAt   DateTime?
   createdAt     DateTime                 @default(now())
+
+  @@index([pdfBatchId])
+  @@index([transactionId])
 }
 
 model TicketStub {
@@ -153,6 +160,8 @@ model TicketStub {
   createdAt     DateTime   @default(now())
 
   @@index([stubSerial, status])
+  @@index([bingoCardId])
+  @@index([awardId])
 }
 
 model Vote {
@@ -168,6 +177,8 @@ model Vote {
   scannedAt       DateTime   @default(now())
 
   @@index([boothId, awardId])
+  @@index([awardId])
+  @@index([scannedByUserId])
 }
 
 model IdempotencyLog {

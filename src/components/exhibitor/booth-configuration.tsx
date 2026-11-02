@@ -317,6 +317,8 @@ export function BoothConfiguration() {
             : "No floor map slot has been assigned to your booth yet. Please contact event administrators to reserve a floor location."}
         </p>
 
+        <details>
+          <summary className="min-h-11 flex items-center cursor-pointer text-sm font-semibold underline">View floor map</summary>
         <VenueFloorMap
           booths={
             booth.mapSlot
@@ -334,6 +336,7 @@ export function BoothConfiguration() {
           mode="exhibitor-preview"
           highlightedSlot={booth.mapSlot}
         />
+        </details>
       </section>
 
       {/* Editable Metadata Form Card */}

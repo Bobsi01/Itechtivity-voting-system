@@ -85,8 +85,6 @@ export function AdminWorkspace() {
 
   // Explicit user rule: If 1 to 3 items, top buttons on phone; if 4+ items, it is a side menu
   const isCompactPhoneMenu = SECTIONS.length <= 3;
-  const currentSectionMeta = SECTIONS.find((s) => s.label === section) || SECTIONS[0];
-  const CurrentIcon = currentSectionMeta.icon;
 
   return (
     <div className="flex min-h-dvh w-full">
@@ -181,17 +179,14 @@ export function AdminWorkspace() {
 
             <div className="flex items-center gap-3 min-w-0">
               <h1 className="text-lg sm:text-xl font-bold uppercase tracking-tight text-neutral-900 truncate">
-                Live Leaderboard & Governance
+                {section}
               </h1>
-              <span className="hidden lg:inline-flex items-center gap-1.5 border border-neutral-300 rounded px-2.5 py-1 text-xs text-neutral-700">
-                <CurrentIcon className="w-3.5 h-3.5 text-neutral-900" />
-                <span className="font-semibold">{section}</span>
-              </span>
+
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            <NotificationBell autoOpenIfUnseen={true} />
+            <NotificationBell />
             <form action="/api/auth/logout" method="POST">
               <button
                 type="submit"

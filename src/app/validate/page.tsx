@@ -46,7 +46,7 @@ export default function ValidatePage() {
           </div>
           <p className="text-xs text-neutral-600">
             Scan a card master QR or stub QR code, or enter a serial number to inspect validity,
-            purchaser registration, and 6-slot vote status.
+            activation, and award stub status. Personal details and voting choices remain private.
           </p>
         </section>
 

@@ -6,10 +6,6 @@ description: >-
   shells (dvh), safe-area insets, mobile touch ergonomics, bottom sheets, mobile camera scanner
   viewfinders, or virtual keyboard form interactions. Do not use for server actions, route
   handlers, database migrations, or cryptographic verification.
-author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
-assisted_by:
-  - OpenAI Codex
-  - Google Gemini
 ---
 
 # Mobile-First Web App UI Engineering Skill

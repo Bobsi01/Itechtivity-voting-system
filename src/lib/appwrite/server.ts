@@ -398,10 +398,41 @@ export async function downloadBoothLogoFromAppwrite(fileId: string): Promise<Buf
   }
 
   try {
-    const { storage } = getServerClient();
     const bucketId = process.env.APPWRITE_BOOTH_LOGOS_BUCKET_ID || 'booth-logos';
-    const arrayBuffer = await storage.getFileView(bucketId, fileId);
-    return Buffer.from(arrayBuffer);
+    const endpoint = process.env.APPWRITE_ENDPOINT || 'https://sgp.cloud.appwrite.io/v1';
+    const projectId = process.env.APPWRITE_PROJECT_ID || 'itechtivity-2027';
+    const url = `${endpoint}/storage/buckets/${encodeURIComponent(bucketId)}/files/${encodeURIComponent(fileId)}/view`;
+    const response = await fetch(url, {
+      headers: { 'X-Appwrite-Project': projectId, 'X-Appwrite-Key': process.env.APPWRITE_API_KEY || '' },
+      redirect: 'error',
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok || !response.body) return null;
+
+    const maxBytes = 3 * 1024 * 1024;
+    if (Number(response.headers.get('content-length')) > maxBytes) {
+      await response.body.cancel();
+      return null;
+    }
+
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let byteLength = 0;
+    try {
+      while (true) {
+        const result = await reader.read();
+        if (result.done) break;
+        byteLength += result.value.byteLength;
+        if (byteLength > maxBytes) {
+          await reader.cancel();
+          return null;
+        }
+        chunks.push(result.value);
+      }
+      return Buffer.concat(chunks);
+    } finally {
+      reader.releaseLock();
+    }
   } catch (error) {
     console.warn('[Appwrite Booth Logo Download Fallback]:', error);
     return null;

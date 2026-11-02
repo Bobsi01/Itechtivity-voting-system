@@ -252,7 +252,7 @@ export function BoothManagementCard() {
             </h2>
           </div>
           <p className="text-xs text-neutral-600 mt-0.5">
-            Register capstone booths (CS-01 to CS-40), assign table spots, upload stamp logos, and provision exhibitor scanner logins.
+            Manage capstone booths, floor assignments, stamp logos, and exhibitor accounts.
           </p>
         </div>
 
@@ -345,11 +345,7 @@ export function BoothManagementCard() {
                           className="w-full h-full object-contain"
                         />
                       </div>
-                    ) : (
-                      <div className="w-11 h-11 rounded border border-neutral-300 flex-shrink-0 flex items-center justify-center font-mono font-bold text-xs text-neutral-700 bg-white">
-                        {booth.code}
-                      </div>
-                    )}
+                    ) : null}
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -387,6 +383,8 @@ export function BoothManagementCard() {
                   </p>
                 </div>
 
+                <details>
+                  <summary className="min-h-11 flex items-center cursor-pointer text-xs underline">Team and scanner accounts</summary>
                 {/* Team Members & Exhibitor Scanner Login */}
                 <div className="space-y-1 pt-1 border-t border-neutral-200 text-xs text-neutral-600 font-mono">
                   {booth.teamMembers && (
@@ -398,6 +396,7 @@ export function BoothManagementCard() {
                     Scanner: {booth.exhibitors.length > 0 ? booth.exhibitors.map((u) => u.email).join(", ") : "None assigned"}
                   </p>
                 </div>
+                </details>
               </div>
 
               {/* Action Button */}

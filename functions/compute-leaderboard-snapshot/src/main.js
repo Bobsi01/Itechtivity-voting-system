@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { createDatabasePoolConfig } from './database-config.js';
 import { Client, Databases, ID } from 'node-appwrite';
 
 const { Pool } = pg;
@@ -9,7 +10,7 @@ const { Pool } = pg;
  */
 export default async ({ res, log, error }) => {
 
-  const databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+  const databaseUrl = process.env.DATABASE_URL;
   const appwriteEndpoint = process.env.APPWRITE_ENDPOINT || 'https://sgp.cloud.appwrite.io/v1';
   const appwriteProjectId = process.env.APPWRITE_PROJECT_ID || 'itechtivity-2027';
   const appwriteApiKey = process.env.APPWRITE_API_KEY;
@@ -21,12 +22,9 @@ export default async ({ res, log, error }) => {
     return res.json({ success: false, error: 'MISSING_CONFIGURATION' }, 500);
   }
 
-  const pool = new Pool({
-    connectionString: databaseUrl,
-    ssl: { rejectUnauthorized: false },
-  });
-
+  let pool;
   try {
+    pool = new Pool(createDatabasePoolConfig());
     const tallyResult = await pool.query(`
       SELECT
         a."id" AS "awardId",
@@ -79,9 +77,15 @@ export default async ({ res, log, error }) => {
       updatedAt: snapshotPayload.generatedAt,
     });
   } catch (err) {
-    error(`Leaderboard snapshot computation failed: ${err.message}`);
+    error('Leaderboard snapshot operation failed.');
     return res.json({ success: false, error: 'SNAPSHOT_COMPUTATION_FAILED' }, 500);
   } finally {
-    await pool.end();
+    if (pool) {
+      try {
+        await pool.end();
+      } catch {
+        error('Leaderboard database shutdown failed.');
+      }
+    }
   }
 };

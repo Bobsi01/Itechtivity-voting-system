@@ -36,12 +36,14 @@ async function runExhibitorM3TestSuite() {
   console.log(`Test Booth B: ${boothB.code} (${boothB.id})`);
 
   // Sign session token for Booth A's exhibitor
+  const exhibitor = await prisma.user.findFirstOrThrow({ where: { role: 'EXHIBITOR', boothId: boothA.id } });
   currentSessionToken = signSession({
-    userId: 'test-user-booth-a',
-    email: 'lead.bootha@itech2027.edu',
-    fullName: 'Booth A Lead',
-    role: 'EXHIBITOR',
-    boothId: boothA.id,
+    userId: exhibitor.id,
+    email: exhibitor.email,
+    fullName: exhibitor.fullName,
+    role: exhibitor.role,
+    boothId: exhibitor.boothId,
+    accountVersion: exhibitor.updatedAt.toISOString(),
   });
 
   // -------------------------------------------------------------------------

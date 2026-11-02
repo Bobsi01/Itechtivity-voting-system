@@ -167,13 +167,11 @@ async function runValidatorTests() {
   assert.strictEqual(cardSerialData.stubs.length, 6, 'Must always report exactly 6 stubs');
   assert.strictEqual(cardSerialData.stubsSummary.total, 6);
 
-  // Demographics Sanitization Check: Strictly NO contactInfo, NO phone, NO email
-  assert.ok(cardSerialData.demographics !== null, 'Activated card must have demographics');
-  assert.strictEqual(typeof cardSerialData.demographics.buyerName, 'string');
-  assert.strictEqual(typeof cardSerialData.demographics.buyerTypeLabel, 'string');
-  assert.strictEqual('contactInfo' in cardSerialData.demographics, false, 'contactInfo must NOT leak');
-  assert.strictEqual('phone' in cardSerialData.demographics, false, 'phone must NOT leak');
-  assert.strictEqual('email' in cardSerialData.demographics, false, 'email must NOT leak');
+  assert.strictEqual(cardSerialData.demographics, null, 'Public validation must not disclose attendee data');
+  for (const stub of cardSerialData.stubs) {
+    assert.strictEqual(stub.votedBooth, null, 'Public validation must not disclose voting choices');
+    assert.strictEqual(stub.redeemedAt, null, 'Public validation must not disclose individual scan times');
+  }
   console.log('Passed: Card serial resolution and demographic PII sanitization verified.');
 
   // Test 4B: Validate via Master QR format: MASTER:<serial>

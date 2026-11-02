@@ -35,15 +35,6 @@ export function CardsAdminControl() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
-      {/* Left Column: Generated Print Batches Directory */}
-      <section aria-label="Print Batches Directory Control" className="w-full lg:col-span-5">
-        <BatchActivationCard
-          onCardSelect={handleCardSelect}
-          selectedSerial={activeInspectedSerial}
-          onAwardsLoaded={handleAwardsLoaded}
-        />
-      </section>
-
       {/* Right Column: Individual Card Inspection & 1-Card Print Preview */}
       <section aria-label="Individual Card Inspection Control" className="w-full lg:col-span-7">
         <CardInspectorCard
@@ -53,6 +44,16 @@ export function CardsAdminControl() {
           defaultAwards={awards}
         />
       </section>
+      {/* Left Column: Generated Print Batches Directory */}
+      <section aria-label="Print Batches Directory Control" className="w-full lg:col-span-5">
+        <BatchActivationCard
+          onCardSelect={handleCardSelect}
+          selectedSerial={activeInspectedSerial}
+          onAwardsLoaded={handleAwardsLoaded}
+        />
+      </section>
+
+
     </div>
   );
 }

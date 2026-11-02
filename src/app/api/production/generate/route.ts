@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readBoundedJson, RequestBodyError } from '@/lib/security/request-body';
 import { z } from 'zod';
 import { getCurrentUser } from '@/lib/auth/session';
 import { generateCardBatch } from '@/lib/pdf/local-generator';
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json();
+    const body = await readBoundedJson(request, 2048);
     const parsed = GenerateBatchSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -84,6 +85,9 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Batch PDF generation failed:', error);
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     return NextResponse.json(
       { success: false, error: 'BATCH_GENERATION_FAILED' },
       { status: 500 }

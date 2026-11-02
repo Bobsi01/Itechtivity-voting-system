@@ -89,9 +89,7 @@ export function BatchActivationCard({
           onAwardsLoaded(data.awards);
         }
 
-        if (loadedBatches.length > 0) {
-          setExpandedBatchId((prev) => prev ?? loadedBatches[0].id);
-        }
+
       }
     } catch (err) {
       console.warn("Failed to load print batches directory:", err);

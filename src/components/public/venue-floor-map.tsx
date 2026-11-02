@@ -172,7 +172,7 @@ export function VenueFloorMap({
   };
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`min-w-0 w-full max-w-full space-y-4 ${className}`}>
       {/* Legend & Mode Guidance */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-neutral-600 border border-neutral-300 rounded-lg p-3">
         <div className="flex items-center gap-4 flex-wrap">

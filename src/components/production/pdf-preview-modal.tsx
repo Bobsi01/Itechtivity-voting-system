@@ -62,7 +62,7 @@ export function PdfPreviewModal({ file, isOpen, onClose }: PdfPreviewModalProps)
               <ExternalLink className="w-4 h-4" />
               <span>Open PDF in New Tab</span>
             </a>
-            <a href={`${file.downloadUrl}?download=1`} download={file.fileName} className="min-h-11 min-w-11 flex items-center justify-center gap-1.5 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 active:bg-black rounded px-2 text-sm font-semibold uppercase tracking-wider transition-colors touch-manipulation select-none">
+            <a href={file.downloadUrl} download={file.fileName} className="min-h-11 min-w-11 flex items-center justify-center gap-1.5 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 active:bg-black rounded px-2 text-sm font-semibold uppercase tracking-wider transition-colors touch-manipulation select-none">
               <Download className="w-4 h-4" />
               <span>Download PDF</span>
             </a>

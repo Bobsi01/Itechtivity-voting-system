@@ -5,10 +5,6 @@ description: >-
   (live tally broadcasts). Use when uploading card print sheets, streaming files, or dispatching
   and subscribing to real-time vote updates in Next.js. Do not use for PostgreSQL database mutations,
   QR code cryptographic verification, or PDF rendering layout.
-author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
-assisted_by:
-  - OpenAI Codex
-  - Google Gemini
 ---
 
 # Appwrite Cloud Storage & Realtime WebSocket Skill

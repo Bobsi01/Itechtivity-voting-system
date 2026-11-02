@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readBoundedJson, RequestBodyError } from '@/lib/security/request-body';
 import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json();
+    const body = await readBoundedJson(request, 2048);
     const parsed = CreateProgramSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -102,6 +103,9 @@ export async function POST(request: Request) {
       program,
     });
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ success: false, error: 'FAILED_TO_CREATE_PROGRAM' }, { status: 500 });
   }
 }
@@ -114,7 +118,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const body = await request.json();
+    const body = await readBoundedJson(request, 2048);
     const parsed = UpdateProgramSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -153,6 +157,9 @@ export async function PATCH(request: Request) {
       program: updated,
     });
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ success: false, error: 'FAILED_TO_UPDATE_PROGRAM' }, { status: 500 });
   }
 }

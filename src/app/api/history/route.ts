@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
+import { z } from 'zod';
 
 export async function GET(request: Request) {
 
@@ -13,7 +14,11 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search')?.trim() || '';
+  const parsedSearch = z.string().trim().max(200).safeParse(searchParams.get('search') || '');
+  if (!parsedSearch.success) {
+    return NextResponse.json({ success: false, error: 'INVALID_HISTORY_QUERY' }, { status: 400 });
+  }
+  const search = parsedSearch.data;
 
   try {
     if (session.role === 'REGISTRATION') {

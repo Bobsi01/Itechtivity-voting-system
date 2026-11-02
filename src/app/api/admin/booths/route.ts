@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
+import { readBoundedJson, RequestBodyError } from '@/lib/security/request-body';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/db/prisma';
@@ -96,7 +97,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json();
+    const body = await readBoundedJson(request, 3 * 1024 * 1024);
     const parsed = UpsertBoothSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -243,6 +244,9 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const rawMessage = error instanceof Error ? error.message : '';
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     console.error('Failed to upsert capstone booth:', error);
 
     if (rawMessage.startsWith('CANNOT_REASSIGN_PRIVILEGED_USER:')) {

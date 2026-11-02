@@ -64,14 +64,16 @@ nextHeaders.cookies = async () => ({
   delete: () => {},
 });
 
-function setMockSession(user: MockUser): void {
+async function setMockSession(user: MockUser): Promise<void> {
 
+  const account = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
   currentSessionToken = signSession({
     userId: user.id,
     email: user.email,
     fullName: user.fullName,
     role: user.role,
-    boothId: user.boothId,
+    boothId: account.boothId,
+    accountVersion: account.updatedAt.toISOString(),
   });
 }
 
@@ -209,7 +211,7 @@ async function runRegistrationLifecycleGateVerification(): Promise<void> {
     // Vector 1: Admin config toggles isRegistrationOpen: false via POST /api/admin/config
     // -----------------------------------------------------------------------------------
     console.log('--- Vector 1: Admin config toggles isRegistrationOpen: false via POST /api/admin/config ---');
-    setMockSession(adminUser);
+    await setMockSession(adminUser);
 
     const pauseReq = new Request('http://localhost/api/admin/config', {
       method: 'POST',
@@ -253,7 +255,7 @@ async function runRegistrationLifecycleGateVerification(): Promise<void> {
     // Vector 4: Defensive POS Gating with isRegistrationOpen: false
     // -----------------------------------------------------------------------------------
     console.log('--- Vector 4: Defensive POS Gating (Closed Desk Rejection) ---');
-    setMockSession(regUser);
+    await setMockSession(regUser);
 
     const bindGatedReq = new Request('http://localhost/api/registration/bind', {
       method: 'POST',
@@ -299,7 +301,7 @@ async function runRegistrationLifecycleGateVerification(): Promise<void> {
     // Vector 5: Admin config toggles isRegistrationOpen: true via POST /api/admin/config
     // -----------------------------------------------------------------------------------
     console.log('--- Vector 5: Admin config toggles isRegistrationOpen: true via POST /api/admin/config ---');
-    setMockSession(adminUser);
+    await setMockSession(adminUser);
 
     const openReq = new Request('http://localhost/api/admin/config', {
       method: 'POST',
@@ -333,7 +335,7 @@ async function runRegistrationLifecycleGateVerification(): Promise<void> {
     // Vector 6: Exclusive POS Activation via POST /api/registration/bind
     // -----------------------------------------------------------------------------------
     console.log('--- Vector 6: Exclusive POS Activation (Open Desk Binding) ---');
-    setMockSession(regUser);
+    await setMockSession(regUser);
 
     const bindOpenReq = new Request('http://localhost/api/registration/bind', {
       method: 'POST',
@@ -377,7 +379,7 @@ async function runRegistrationLifecycleGateVerification(): Promise<void> {
     // Vector 7: Invariant Check at Voting Booth Scanner
     // -----------------------------------------------------------------------------------
     console.log('--- Vector 7: Invariant Check at Voting Booth Scanner ---');
-    setMockSession(exhibitorUser);
+    await setMockSession(exhibitorUser);
 
     // 7a: Scan unactivated/unsold card stub (Card 2 Slot 1)
     const card2Stub1 = await prisma.ticketStub.findFirst({

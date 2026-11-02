@@ -7,7 +7,7 @@ import { decodeQrImage } from "@/lib/scanner/decode-image";
 import { toast } from "sonner";
 import { SearchableProgramPicker, type ProgramOption } from "@/components/ui/searchable-program-picker";
 import { SimpleSelect, type SimpleSelectOption } from "@/components/ui/simple-select";
-import { formatProgramYearSection } from "@/lib/utils/format";
+import { formatBuyerType, formatProgramYearSection } from "@/lib/utils/format";
 import {
   subscribeToRegistrationEvents,
   subscribeToSystemConfigEvents,
@@ -93,6 +93,8 @@ export function RegistrationCounter() {
 
   const [cameraError, setCameraError] = useState<string | null>(null);
   const queuedSerialsRef = useRef<string[]>([]);
+  const pendingBindRef = useRef<{ body: string; key: string } | null>(null);
+  const isBindingRef = useRef(false);
   const [formError, setFormError] = useState<string | null>(null);
   const regFileInputRef = useRef<HTMLInputElement | null>(null);
   const lastScannedSerialRef = useRef<string>("");
@@ -328,6 +330,7 @@ export function RegistrationCounter() {
   const handleBindCards = async (e: React.FormEvent) => {
 
     e.preventDefault();
+    if (isBindingRef.current) return;
     setFormError(null);
     setLastReceipt(null);
 
@@ -346,16 +349,28 @@ export function RegistrationCounter() {
       return;
     }
 
+    isBindingRef.current = true;
     setIsSubmitting(true);
     const toastId = toast.loading(`Binding and activating ${cardSerials.length} card(s)...`);
 
     const isStudent = buyerType === "CSD_STUDENT" || buyerType === "NON_CSD_STUDENT";
     const formattedYearAndSection = isStudent ? `${yearLevel} ${section}` : undefined;
     const formattedClassString = isStudent ? formatProgramYearSection(program, `${yearLevel} ${section}`) : null;
-    const idempotencyKey =
-      typeof window !== "undefined" && window.crypto?.randomUUID
+    const body = JSON.stringify({
+      buyerType, paymentMethod, buyerName: buyerName.trim(),
+      studentNumber: isStudent ? studentNumber.trim() || undefined : undefined,
+      program: isStudent ? program.trim() || undefined : undefined,
+      yearAndSection: formattedYearAndSection,
+      affiliation: buyerType === "VISITOR" ? affiliation.trim() || undefined : undefined,
+      contactInfo: contactInfo.trim() || undefined,
+      cardSerials,
+    });
+    const idempotencyKey = pendingBindRef.current?.body === body
+      ? pendingBindRef.current.key
+      : typeof window !== "undefined" && window.crypto?.randomUUID
         ? window.crypto.randomUUID()
         : `reg-${Date.now()}`;
+    pendingBindRef.current = { body, key: idempotencyKey };
 
     try {
       const res = await fetch("/api/registration/bind", {
@@ -364,21 +379,13 @@ export function RegistrationCounter() {
           "Content-Type": "application/json",
           "Idempotency-Key": idempotencyKey,
         },
-        body: JSON.stringify({
-          buyerType,
-          buyerName: buyerName.trim(),
-          studentNumber: isStudent ? studentNumber.trim() || undefined : undefined,
-          program: isStudent ? program.trim() || undefined : undefined,
-          yearAndSection: formattedYearAndSection,
-          affiliation: buyerType === "VISITOR" ? affiliation.trim() || undefined : undefined,
-          contactInfo: contactInfo.trim() || undefined,
-          cardSerials,
-        }),
+        body,
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        if (res.status < 500 && res.status !== 429) pendingBindRef.current = null;
         const message = typeof data.error === "string" ? data.error.replace(/^[A-Z_]+:\s*/, "") : "Card binding failed. Please retry.";
         setFormError(message);
         toast.error(message, { id: toastId });
@@ -390,6 +397,7 @@ export function RegistrationCounter() {
         `Successfully activated ${data.cardsActivatedCount} card(s) and ${data.stubsActivatedCount} voting stubs!`,
         { id: toastId }
       );
+      pendingBindRef.current = null;
 
       if (data.transactionId) {
         deduplicatorRef.current.add(data.transactionId);
@@ -422,6 +430,7 @@ export function RegistrationCounter() {
       setFormError("Connection lost. Your entry is preserved. Retry to check whether the card was activated.");
       toast.error("Network error during card registration", { id: toastId });
     } finally {
+      isBindingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -449,6 +458,11 @@ export function RegistrationCounter() {
         </div>
       )}
 
+      <a href="#registration-card-entry" className="min-h-11 inline-flex items-center text-sm font-semibold underline touch-manipulation">
+        Go to card scanner and serial entry
+      </a>
+      <details className="border border-neutral-300 rounded-lg p-3">
+        <summary className="min-h-11 flex items-center cursor-pointer text-sm font-semibold underline">Shift summary and card price</summary>
       {/* Cashier Shift Ledger & Pricing Bar */}
       <div className="border border-neutral-300 p-3.5 rounded-lg bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
         <div className="flex flex-wrap items-center gap-4">
@@ -465,6 +479,7 @@ export function RegistrationCounter() {
         </div>
       </div>
 
+      </details>
       {/* 2-Column Responsive Layout for Desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Column 1: Purchaser Intake & Card Binding */}
@@ -531,38 +546,9 @@ export function RegistrationCounter() {
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-700 uppercase tracking-wider" htmlFor="registration-counter-field-2">
-              Contact / Mobile / Email (Optional)
-            </label>
-            <input id="registration-counter-field-2"
-              type="text"
-              aria-label="Contact or email"
-              disabled={!isRegistrationOpen || isSubmitting}
-              value={contactInfo}
-              onChange={(e) => setContactInfo(e.target.value)}
-              placeholder="e.g. 0917-000-0000 or email"
-              className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
-            />
-          </div>
 
           {(buyerType === "CSD_STUDENT" || buyerType === "NON_CSD_STUDENT") && (
             <>
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-semibold text-neutral-700 uppercase tracking-wider" htmlFor="registration-counter-field-3">
-                  Student Number (Optional)
-                </label>
-                <input id="registration-counter-field-3"
-                  type="text"
-                  aria-label="Student number"
-                  disabled={!isRegistrationOpen || isSubmitting}
-                  value={studentNumber}
-                  onChange={(e) => setStudentNumber(e.target.value)}
-                  placeholder="e.g. 2023-12345"
-                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
-                />
-              </div>
-
               {/* Customized Searchable Program Picker Dropdown */}
               <div className={`space-y-1 sm:col-span-2 ${!isRegistrationOpen || isSubmitting ? "pointer-events-none opacity-50" : ""}`}>
                 <label className="text-xs font-semibold text-neutral-700 uppercase tracking-wider">
@@ -604,15 +590,44 @@ export function RegistrationCounter() {
                 />
               </div>
 
-              {/* Standardized Program Year Section Format Preview */}
-              <div className="sm:col-span-2 p-2.5 border border-neutral-200 rounded flex items-center justify-between text-xs font-mono">
-                <span className="text-neutral-500 uppercase">Log Format Preview:</span>
-                <span className="font-bold text-neutral-900 border border-neutral-300 px-2.5 py-0.5 rounded select-text">
-                  {formatProgramYearSection(program, `${yearLevel} ${section}`)}
-                </span>
-              </div>
+
             </>
           )}
+
+          <details className="sm:col-span-2">
+            <summary className="min-h-11 flex items-center cursor-pointer text-sm font-semibold underline">Optional contact and student details</summary>
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-neutral-700 uppercase tracking-wider" htmlFor="registration-counter-field-2">
+              Contact / Mobile / Email (Optional)
+            </label>
+            <input id="registration-counter-field-2"
+              type="text"
+              aria-label="Contact or email"
+              disabled={!isRegistrationOpen || isSubmitting}
+              value={contactInfo}
+              onChange={(e) => setContactInfo(e.target.value)}
+              placeholder="e.g. 0917-000-0000 or email"
+              className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
+            />
+          </div>
+
+            {(buyerType === "CSD_STUDENT" || buyerType === "NON_CSD_STUDENT") && (<>              <div className="space-y-1 sm:col-span-2">
+                <label className="text-xs font-semibold text-neutral-700 uppercase tracking-wider" htmlFor="registration-counter-field-3">
+                  Student Number (Optional)
+                </label>
+                <input id="registration-counter-field-3"
+                  type="text"
+                  aria-label="Student number"
+                  disabled={!isRegistrationOpen || isSubmitting}
+                  value={studentNumber}
+                  onChange={(e) => setStudentNumber(e.target.value)}
+                  placeholder="e.g. 2023-12345"
+                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
+                />
+              </div>
+
+</>)}
+          </details>
 
           {buyerType === "VISITOR" && (
             <div className="space-y-1 sm:col-span-2">
@@ -634,7 +649,7 @@ export function RegistrationCounter() {
       </div>
 
       {/* Sequential Card Scanner / Serial Binding Section */}
-      <div className="border border-neutral-300 p-5 rounded-lg space-y-4 bg-white">
+      <div id="registration-card-entry" className="border border-neutral-300 p-5 rounded-lg space-y-4 bg-white scroll-mt-20">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-300 pb-3">
           <div className="flex items-center gap-2">
             <QrCode className="w-5 h-5 text-neutral-800" strokeWidth={1.75} />
@@ -718,7 +733,7 @@ export function RegistrationCounter() {
               }
             }}
             placeholder="e.g. B27-B01-0001"
-            className="min-w-0 flex-1 px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
+            className="min-w-0 basis-full sm:basis-auto flex-1 px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
           />
           <button
             type="button"
@@ -908,6 +923,8 @@ export function RegistrationCounter() {
         </div>
       )}
 
+      <details className="border border-neutral-300 rounded-lg p-3">
+        <summary className="min-h-11 flex items-center cursor-pointer text-sm font-semibold underline">Recent registrations</summary>
       {/* Recent Desk Registration Activity Logs (Standardized Program Year Section Format) */}
       <div className="border border-neutral-300 rounded-lg p-4 bg-white space-y-3">
         <div className="flex items-center justify-between border-b border-neutral-200 pb-2.5">
@@ -1021,6 +1038,7 @@ export function RegistrationCounter() {
           </div>
         )}
       </div>
+      </details>
       </div>
     </div>
 
@@ -1058,7 +1076,7 @@ export function RegistrationCounter() {
               </div>
               <div>
                 <span className="text-neutral-500 block">Category:</span>
-                <strong className="text-neutral-900 select-text">{selectedTxDetails.buyerType}</strong>
+                <strong className="text-neutral-900 select-text">{formatBuyerType(selectedTxDetails.buyerType)}</strong>
               </div>
               <div>
                 <span className="text-neutral-500 block">Student ID:</span>

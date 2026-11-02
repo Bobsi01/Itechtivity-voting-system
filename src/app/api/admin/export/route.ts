@@ -3,6 +3,7 @@ import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
 import { recordAuditLog, createHumanReadableSummary } from '@/lib/audit/log';
 import { rateLimiter, getClientIp } from '@/lib/security/rate-limiter';
+import { z } from 'zod';
 
 function escapeCsvField(field: unknown): string {
 
@@ -36,6 +37,9 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type') || 'standings';
+  if (!z.enum(['standings', 'votes', 'registrations']).safeParse(type).success) {
+    return NextResponse.json({ success: false, error: 'INVALID_EXPORT_TYPE' }, { status: 400 });
+  }
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   await recordAuditLog({
     userId: session.userId,

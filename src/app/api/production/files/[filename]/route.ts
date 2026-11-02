@@ -53,19 +53,21 @@ export async function GET(request: Request, context: RouteContext) {
 
   let fileBuffer: Buffer | null = null;
 
+  const batchRecord = await prisma.pdfBatch.findFirst({
+    where: { fileName: filename },
+    select: { batchNumber: true, totalCards: true, fileId: true, status: true, _count: { select: { cards: true } } },
+  });
+  if (!batchRecord) {
+    return NextResponse.json({ success: false, error: 'FILE_NOT_FOUND' }, { status: 404 });
+  }
+  if (batchRecord.status !== 'COMPLETED' || batchRecord._count.cards !== batchRecord.totalCards) {
+    return NextResponse.json({ success: false, error: 'BATCH_NOT_READY' }, { status: 409 });
+  }
+
   if (fs.existsSync(resolvedPath)) {
     fileBuffer = fs.readFileSync(resolvedPath);
   } else {
     // Fallback 1: Appwrite Cloud Storage if local ephemeral disk was cleared
-    const batchRecord = await prisma.pdfBatch.findFirst({
-      where: { fileName: filename },
-      select: {
-        batchNumber: true,
-        totalCards: true,
-        fileId: true,
-      },
-    });
-
     if (batchRecord?.fileId) {
       fileBuffer = await downloadBatchPdfFromAppwrite(batchRecord.fileId);
     }

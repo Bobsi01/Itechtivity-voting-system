@@ -5,10 +5,6 @@ description: >-
   Use when writing, refactoring, or reviewing code to eliminate generic AI boilerplate,
   placeholder comments, unneeded abstractions, loose typing, and formulaic AI layouts.
   Do not use for implementing domain-specific business logic, database migrations, or cryptographic verification.
-author: Daniel Bobis (GitHub: @ItsMeYourNightmare)
-assisted_by:
-  - OpenAI Codex
-  - Google Gemini
 ---
 
 # Anti-Slop Engineering & Clean Craftsmanship Skill

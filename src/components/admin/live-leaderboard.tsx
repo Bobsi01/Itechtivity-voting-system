@@ -478,7 +478,9 @@ export function LiveLeaderboard() {
       {/* 2-Column Responsive Layout for Desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Column 1: Configuration, Demographics & Activity Logs */}
-        <div className="space-y-6">
+        <div className="space-y-6 lg:order-first">
+          <details className="border border-neutral-300 rounded-lg p-3">
+            <summary className="min-h-11 flex items-center cursor-pointer font-semibold text-sm underline">Award configuration and totals</summary>
           {/* 6 Award Slots Breakdown & Editor */}
           {stats.awards && stats.awards.length > 0 && (
         <div className="border border-neutral-300 p-4 rounded-lg space-y-3 bg-white">
@@ -565,6 +567,9 @@ export function LiveLeaderboard() {
         </div>
       )}
 
+          </details>
+      <details className="border border-neutral-300 rounded-lg p-3">
+        <summary className="min-h-11 flex items-center cursor-pointer font-semibold text-sm underline">Attendance and recent registrations</summary>
       {/* Demographics Summary */}
       <div className="border border-neutral-300 p-4 rounded-lg space-y-3 bg-white">
         <div className="flex items-center gap-2 border-b border-neutral-300 pb-2">
@@ -630,10 +635,11 @@ export function LiveLeaderboard() {
           </div>
         </div>
       )}
+      </details>
       </div>
 
       {/* Column 2: Global Live Leaderboard Standings */}
-      <div className="space-y-6">
+      <div className="space-y-6 order-first lg:order-last">
         {/* Global Live Leaderboard Table */}
         <div className="border border-neutral-300 rounded-lg overflow-hidden space-y-0 bg-white">
         <div className="p-4 border-b border-neutral-300 flex items-center justify-between">

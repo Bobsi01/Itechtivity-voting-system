@@ -169,7 +169,7 @@ function LoginForm() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="space-y-6">
         {/* Column 1: Credentials Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -238,7 +238,8 @@ function LoginForm() {
         </form>
 
         {/* Column 2: Assigned Access Roles & Descriptions */}
-        <div className="space-y-4 border-t lg:border-t-0 lg:border-l border-neutral-300 pt-4 lg:pt-0 lg:pl-6">
+        <details className="space-y-4 border-t border-neutral-300 pt-4">
+          <summary className="min-h-11 flex items-center cursor-pointer text-sm font-semibold underline">Help with assigned access</summary>
           <div className="space-y-1">
             <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-900">Assigned Access Roles</h2>
             <p className="text-xs text-neutral-600">
@@ -266,7 +267,7 @@ function LoginForm() {
               </div>
             ))}
           </div>
-        </div>
+        </details>
       </div>
     </div>
   );
@@ -274,7 +275,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="flex-1 flex flex-col justify-center max-w-md lg:max-w-4xl mx-auto w-full px-4 py-8">
+    <main className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full px-4 py-8">
       <Suspense fallback={<div className="p-8 text-center font-mono text-xs text-neutral-500">Loading portal login...</div>}>
         <LoginForm />
       </Suspense>

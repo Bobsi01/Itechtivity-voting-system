@@ -3,7 +3,7 @@ import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
 import { rateLimiter, getClientIp } from '@/lib/security/rate-limiter';
 import { verifyStubPayload } from '@/lib/crypto/stub-tokens';
-import { formatBuyerType, formatProgramYearSection } from '@/lib/utils/format';
+import { readBoundedJson, RequestBodyError } from '@/lib/security/request-body';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +31,7 @@ interface ResolvedQuery {
   resolvedStubSerial?: string;
 }
 
-function resolveValidationQuery(rawInput: string): ResolvedQuery {
+function resolveValidationQuery(rawInput: string): ResolvedQuery | null {
 
   const rawCode = rawInput.trim();
   const secretKey = process.env.EVENT_HMAC_SECRET;
@@ -57,16 +57,8 @@ function resolveValidationQuery(rawInput: string): ResolvedQuery {
   const manualStubMatch = rawCode.match(
     /^([A-Za-z0-9]+-[A-Za-z0-9]+-[0-9]{4}-S([1-6]))[.:]([A-Za-z0-9_-]+)$/
   );
-  if (manualStubMatch) {
-    const stubSerial = manualStubMatch[1].toUpperCase();
-    const candidateCardSerial = stubSerial.replace(/-S[1-6]$/i, '');
-    return {
-      rawCode,
-      cleanSerial: stubSerial,
-      candidateCardSerial,
-      resolvedStubSerial: stubSerial,
-    };
-  }
+  // A supplied signature that failed verification must not become a plain serial lookup.
+  if (manualStubMatch) return null;
 
   const cleanSerial = rawCode.replace(/^(#|MASTER:|M-)/i, '').trim().toUpperCase();
 
@@ -79,6 +71,8 @@ function resolveValidationQuery(rawInput: string): ResolvedQuery {
       resolvedStubSerial: cleanSerial,
     };
   }
+
+  if (!/^[A-Z0-9]+-[A-Z0-9]+-[0-9]{4}$/.test(cleanSerial)) return null;
 
   return {
     rawCode,
@@ -112,15 +106,15 @@ export async function POST(request: Request) {
 
   let body: unknown;
   try {
-    body = await request.json();
-  } catch {
+    body = await readBoundedJson(request, 2048);
+  } catch (error) {
     return NextResponse.json(
       {
         success: false,
         error: 'INVALID_JSON',
         message: 'Request payload must be valid JSON.',
       },
-      { status: 400 }
+      { status: error instanceof RequestBodyError ? error.status : 400 }
     );
   }
 
@@ -136,8 +130,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const { rawCode, cleanSerial, candidateCardSerial, resolvedStubSerial } =
-    resolveValidationQuery(parsed.data.code);
+  const resolved = resolveValidationQuery(parsed.data.code);
+  if (!resolved) {
+    return NextResponse.json({ success: false, error: 'INVALID_VALIDATION_CODE' }, { status: 400 });
+  }
+  const { rawCode, cleanSerial, candidateCardSerial, resolvedStubSerial } = resolved;
 
   const orConditions: Array<Record<string, unknown>> = [
     { cardSerial: cleanSerial },
@@ -165,18 +162,6 @@ export async function POST(request: Request) {
       OR: orConditions,
     },
     include: {
-      transaction: {
-        select: {
-          id: true,
-          buyerName: true,
-          buyerType: true,
-          studentNumber: true,
-          program: true,
-          yearAndSection: true,
-          affiliation: true,
-          createdAt: true,
-        },
-      },
       pdfBatch: {
         select: {
           batchNumber: true,
@@ -189,17 +174,6 @@ export async function POST(request: Request) {
             select: {
               slotNumber: true,
               title: true,
-            },
-          },
-          vote: {
-            include: {
-              booth: {
-                select: {
-                  code: true,
-                  projectTitle: true,
-                  tableNumber: true,
-                },
-              },
             },
           },
         },
@@ -219,36 +193,6 @@ export async function POST(request: Request) {
   }
 
   const isGenerated = card.status === 'GENERATED';
-
-  let sanitizedDemographics: {
-    buyerName: string;
-    buyerType: string;
-    buyerTypeLabel: string;
-    program: string | null;
-    yearAndSection: string | null;
-    studentNumber: string | null;
-    affiliation: string | null;
-    academicAffiliation: string | null;
-    registeredAt: string;
-  } | null = null;
-
-  if (!isGenerated && card.transaction) {
-    const tx = card.transaction;
-    const academicAffiliation = formatProgramYearSection(tx.program, tx.yearAndSection);
-
-    sanitizedDemographics = {
-      buyerName: tx.buyerName,
-      buyerType: tx.buyerType,
-      buyerTypeLabel: formatBuyerType(tx.buyerType),
-      program: tx.program,
-      yearAndSection: tx.yearAndSection,
-      studentNumber: tx.studentNumber,
-      affiliation: tx.affiliation,
-      academicAffiliation:
-        academicAffiliation === 'N/A' ? (tx.affiliation || null) : academicAffiliation,
-      registeredAt: tx.createdAt.toISOString(),
-    };
-  }
 
   const existingStubsMap = new Map(card.stubs.map((stub) => [stub.slotNumber, stub]));
 
@@ -294,16 +238,8 @@ export async function POST(request: Request) {
       stubSerial: existingStub.stubSerial,
       status: existingStub.status,
       isRedeemed,
-      redeemedAt: existingStub.vote?.scannedAt
-        ? existingStub.vote.scannedAt.toISOString()
-        : null,
-      votedBooth: existingStub.vote?.booth
-        ? {
-            code: existingStub.vote.booth.code,
-            projectTitle: existingStub.vote.booth.projectTitle,
-            tableNumber: existingStub.vote.booth.tableNumber,
-          }
-        : null,
+      redeemedAt: null,
+      votedBooth: null,
     };
   });
 
@@ -320,7 +256,8 @@ export async function POST(request: Request) {
       activatedAt: card.activatedAt ? card.activatedAt.toISOString() : null,
       batchNumber: card.pdfBatch?.batchNumber ?? null,
     },
-    demographics: sanitizedDemographics,
+    // Plain printed serials prove no authority over attendee or voting details.
+    demographics: null,
     stubsSummary: {
       total: 6,
       redeemed: redeemedCount,

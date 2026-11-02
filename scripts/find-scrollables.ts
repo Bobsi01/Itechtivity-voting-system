@@ -1,3 +1,4 @@
+import prisma from '@/lib/db/prisma';
 import puppeteer from 'puppeteer-core';
 import { signSession } from '@/lib/auth/session';
 
@@ -8,12 +9,14 @@ async function main() {
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900 });
 
+  const adminUser = await prisma.user.findFirstOrThrow({ where: { role: 'ADMIN' } });
   const token = signSession({
-    userId: 'admin-1',
-    email: 'admin@itech2027.edu',
-    fullName: 'System Administrator',
-    role: 'ADMIN',
-    boothId: null,
+    userId: adminUser.id,
+    email: adminUser.email,
+    fullName: adminUser.fullName,
+    role: adminUser.role,
+    boothId: adminUser.boothId,
+    accountVersion: adminUser.updatedAt.toISOString(),
   });
 
   await page.setCookie({

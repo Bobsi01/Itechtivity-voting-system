@@ -1,0 +1,25 @@
+{
+  "status": "requires-human-approval-before-production-application",
+  "projectId": "itechtivity-2027",
+  "storage": [
+    {
+      "bucketId": "bingo-cards-pdf",
+      "currentPermissions": ["read(\"any\")"],
+      "proposedPermissions": [],
+      "fileSecurity": false,
+      "purpose": "Serve signed printable inventory only through authenticated application routes."
+    }
+  ],
+  "collections": [
+    { "databaseId": "itech2027-db", "collectionId": "votes", "currentPermissions": ["read(\"any\")"], "proposedPermissions": [], "documentSecurity": false },
+    { "databaseId": "itech2027-db", "collectionId": "pdf_batches", "currentPermissions": ["read(\"any\")"], "proposedPermissions": [], "documentSecurity": false },
+    { "databaseId": "itech2027-db", "collectionId": "leaderboard_cache", "currentPermissions": ["read(\"any\")"], "proposedPermissions": [], "documentSecurity": false }
+  ],
+  "compatibility": "Server API-key access remains. Staff clients use authenticated polling until an Appwrite authentication bridge and tenant-specific permissions are implemented.",
+  "followUp": [
+    "Verify anonymous reads are denied after the approved changes.",
+    "Verify authenticated application PDF delivery and role-scoped polling.",
+    "Configure system_events or retain polling; its default collection does not exist in the inspected deployment.",
+    "Review credential rotation separately; changing EVENT_HMAC_SECRET invalidates already printed stubs."
+  ]
+}

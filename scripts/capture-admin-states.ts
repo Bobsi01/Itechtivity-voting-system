@@ -1,3 +1,4 @@
+import prisma from '@/lib/db/prisma';
 import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
@@ -8,12 +9,14 @@ const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
 const ARTIFACT_DIR = 'C:\\Users\\Daniel\\.gemini\\antigravity\\brain\\22902949-9e23-44c6-85fa-a1ea022c6348';
 
 async function main() {
+  const adminUser = await prisma.user.findFirstOrThrow({ where: { role: 'ADMIN' } });
   const token = signSession({
-    userId: 'admin-1',
-    email: 'admin@itech2027.edu',
-    fullName: 'System Administrator',
-    role: 'ADMIN',
-    boothId: null,
+    userId: adminUser.id,
+    email: adminUser.email,
+    fullName: adminUser.fullName,
+    role: adminUser.role,
+    boothId: adminUser.boothId,
+    accountVersion: adminUser.updatedAt.toISOString(),
   });
 
   const browser = await puppeteer.launch({

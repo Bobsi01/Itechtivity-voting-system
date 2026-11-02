@@ -12,7 +12,7 @@ const STAFF_PORTALS = [
 
 const VOTING_STEPS = [
   { title: "Pick up your card.", description: "Visit the registration counter to purchase and activate your physical bingo card." },
-  { title: "Complete your bingo card.", description: "Visit every booth, meet the makers, and collect a sticker at each stop. Complete all booth stickers for a chance to win exclusive Itechtivity merchandise." },
+  { title: "Complete your bingo card.", description: "Visit every booth, meet the makers, and collect a sticker at each stop." },
   { title: "Give your vote.", description: "Hand the matching award stub to your chosen booth. The exhibitor scans it to record your vote." },
 ];
 

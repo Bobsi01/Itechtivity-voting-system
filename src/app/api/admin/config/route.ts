@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readBoundedJson, RequestBodyError } from '@/lib/security/request-body';
 import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json();
+    const body = await readBoundedJson(request);
     const parsed = UpdateConfigSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -179,6 +180,9 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Update config error:', error);
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ success: false, error: 'UPDATE_CONFIG_FAILED' }, { status: 500 });
   }
 }
