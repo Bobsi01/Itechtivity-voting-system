@@ -30,8 +30,7 @@ assert.deepEqual(JSON.parse(requests[1].body), { key: 'DATABASE_CA_CERT', value:
 requests.length = 0;
 existingVariables = [];
 await vm.runInContext("syncFunctionVariables('https://fixture.invalid', {}, 'worker', { DATABASE_CA_CERT: '' })", deploymentContext);
-assert.equal(requests[1].method, 'POST');
-assert.deepEqual(JSON.parse(requests[1].body), { key: 'DATABASE_CA_CERT', value: '' });
+assert.equal(requests.length, 1, 'Do not create an empty CA variable when none exists');
 
 const workerSource = fs.readFileSync(new URL('../../../functions/generate-bingo-pdf/src/main.js', import.meta.url), 'utf8');
 let generationAttempts = 0;
@@ -50,4 +49,4 @@ const response = await workerContext.handler({
 assert.equal(response.status, 500);
 assert.equal(response.body.error, 'MISSING_DATABASE_URL');
 assert.equal(generationAttempts, 0);
-console.log('Worker deployment regressions passed: explicit empty environment, stale CA clearing, empty CA creation, and fail-fast PDF persistence configuration.');
+console.log('Worker deployment regressions passed: explicit empty environment, stale CA clearing, no empty CA creation, and fail-fast PDF persistence configuration.');

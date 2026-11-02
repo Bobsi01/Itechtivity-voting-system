@@ -34,7 +34,9 @@ async function syncFunctionVariables(endpoint, headers, functionId, envMap) {
   const existingList = await existingRes.json();
   const existingByKey = new Map((existingList.variables || []).map((v) => [v.key, v]));
 
-  const entries = Object.entries(envMap).filter(([key, value]) => key === 'DATABASE_CA_CERT' || Boolean(value));
+  const entries = Object.entries(envMap).filter(([key, value]) =>
+    Boolean(value) || (key === 'DATABASE_CA_CERT' && existingByKey.has(key))
+  );
   await Promise.all(
     entries.map(async ([key, value]) => {
       const existing = existingByKey.get(key);
