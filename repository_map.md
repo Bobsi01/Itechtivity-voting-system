@@ -21,10 +21,10 @@ c:\Workspace\Itech 2027\
 │   │   ├── code-quality/SKILL.md            # Code formatting mannerisms, spacing, and naming standards
 │   │   ├── web-design/SKILL.md              # Web design & UI styling standards (Zero emoji/bg-color)
 │   │   ├── mobile-web-ui/SKILL.md           # Mobile-first web app viewports, dvh, touch ergonomics & PWA UX
-│   │   ├── nextjs-app-router/SKILL.md       # Next.js 15 App Router architecture & boundaries
+│   │   ├── nextjs-app-router/SKILL.md       # Next.js 16 App Router architecture, middleware & route handler boundaries
 │   │   ├── qr-crypto-idempotency/SKILL.md   # HMAC-SHA256, single-redemption & idempotency
 │   │   ├── appwrite-cloud/SKILL.md          # Appwrite Cloud Storage & Realtime WebSockets
-│   │   ├── streaming-pdf-ticket/SKILL.md    # Low-memory streaming vector PDF ticket generator
+│   │   ├── streaming-pdf-ticket/SKILL.md    # Vector PDF A4 quadrant sheet & ticket stub generator
 │   │   └── versioning/SKILL.md              # 3-tier semantic versioning & points-based patch scoring
 │   └── README.md                            # Agent evaluation guidelines & architectural checklist
 ├── README.md                                # Root repository guide, user roles & CSD contribution guide
@@ -37,8 +37,8 @@ c:\Workspace\Itech 2027\
 ```
 
 ## Source Tree Reference
-* `src/app/` — App Router routes (`/admin`, `/registration`, `/exhibitor`, `/production`, `/api`)
-* `src/components/` — UI components (shadcn/ui, camera scanner, live tallies)
-* `src/lib/` — Cryptography utilities, Appwrite client/server SDK, Prisma database client
-* `functions/generate-bingo-pdf/` — Appwrite background PDF generation function
+* `src/app/` — App Router routes (`/admin`, `/registration`, `/exhibitor`, `/production`, `/presentation`, `/projects`, `/validate`, `/notifications`, `/login`, `/api`)
+* `src/components/` — UI components (`admin`, `exhibitor`, `notifications`, `presentation`, `production`, `public`, `registration`, `ui`)
+* `src/lib/` — Cryptography utilities, Appwrite client/server SDK, Prisma database client, PDF engine, security & versioning
+* `functions/` — Appwrite Cloud Functions (`generate-bingo-pdf`, `cleanup-idempotency-sessions`, `compute-leaderboard-snapshot`)
 * `prisma/` — PostgreSQL schema, migrations, seeders

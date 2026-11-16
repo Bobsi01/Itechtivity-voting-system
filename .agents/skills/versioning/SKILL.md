@@ -20,7 +20,7 @@ The Itechtivity 2027 voting web application adheres to a deterministic 3-tier ve
 ```text
 V<major>.<minor>.<patch>
 ```
-Examples: `V1.0.0`, `V1.2.14`, `V2.10.45` (double digits are fully supported across all three positions).
+Examples: `V1.0.0`, `V1.0.33`, `V2.10.45` (double digits are fully supported across all three positions).
 
 ---
 
@@ -28,7 +28,7 @@ Examples: `V1.0.0`, `V1.2.14`, `V2.10.45` (double digits are fully supported acr
 
 ### 2.1 Tier 1: Major Production Release (`V1.#.#`)
 * **Scope:** Official production releases, university event deployment milestones, or foundational platform paradigm shifts.
-* **Governance:** **Exclusively incremented by the repository owner (Daniel Bobis — `@ItsMeYourNightmare` / `Bobsi01`)**. No contributor or automated pipeline may increment the major version without explicit owner direction.
+* **Governance:** **Exclusively incremented by the repository owner (Daniel Bobis — `@ItsMeYourNightmare`)**. No contributor or automated pipeline may increment the major version without explicit owner direction.
 * **Reset Behavior:** When `major` increments, `minor` and `patch` reset to zero (e.g., `V0.9.42 -> V1.0.0`).
 
 ### 2.2 Tier 2: Major System Update (`V#.1.#`)
@@ -39,7 +39,7 @@ Examples: `V1.0.0`, `V1.2.14`, `V2.10.45` (double digits are fully supported acr
 ### 2.3 Tier 3: Minor Changes & Points-Based Patch System (`V#.#.1`)
 * **Scope:** Incremental feature additions, UI/UX adjustments, performance optimizations, and bug remediations.
 * **Increment Rule:** The patch number increments according to the cumulative **points score** awarded to the pull request or commit batch.
-* Each PR claims points based on the point scoring matrices below (1 to 5 points per change).
+* Each PR claims points based on the point scoring matrices below (1 to 5 points per change), using `.github/pull_request_template.md`.
 
 ---
 
@@ -69,40 +69,45 @@ Examples: `V1.0.0`, `V1.2.14`, `V2.10.45` (double digits are fully supported acr
 
 ## 4. Contributor Attribution Standard
 
-Every version release published to the notification system must include explicit contributor attribution formatted as:
-```text
-Contributor: First Name (GitHub Icon) Username
-```
-Example:
-`Daniel (GitHub Icon) ItsMeYourNightmare`
-
-Link all GitHub usernames directly to their profile: `https://github.com/<username>`.
+Every version release published to the notification system must include explicit contributor attribution linking to `https://github.com/<username>`:
+* In `src/components/notifications/version-update-modal.tsx` and `src/app/notifications/page.tsx`, render the contributor name, optional role, and an inline monochrome GitHub `<svg>` icon next to the `githubUsername` and a `lucide-react` `<ExternalLink />` icon inside a `min-h-[44px]` anchor (`https://github.com/<username>`).
+* Example contributor entry: `name: "Daniel"`, `githubUsername: "ItsMeYourNightmare"`, `role: "Repository Owner & Lead Systems Architect"`.
 
 ---
 
-## 5. Release Update Record Schema
+## 5. Release Update Record Schema & Publishing Workflow
 
-All version updates rendered in the Notification Modal and Notification Page must conform to the following structured format:
+All version updates live in `src/lib/version/releases.ts` (`SYSTEM_RELEASES`, consumed via `getLatestRelease()`, `getAllReleases()`, and `getReleaseByVersion()` by `src/components/notifications/notification-bell.tsx`, `src/components/notifications/version-update-modal.tsx`, and `src/app/notifications/page.tsx`):
 
 ```typescript
+// src/lib/version/releases.ts
 export type PointAllocation = 1 | 2 | 3 | 4 | 5;
 export type ReleaseVersion = `V${number}.${number}.${number}`;
 
+export interface MinorChangeItem {
+  description: string;
+  points: PointAllocation; // 1 to 5 points
+  type: 'fix' | 'feature' | 'perf' | 'security';
+}
+
+export interface ContributorItem {
+  name: string; // First name or display name
+  githubUsername: string; // GitHub username without @
+  role?: string;
+}
+
 export interface VersionRelease {
-  version: ReleaseVersion; // e.g. "V1.0.0"
-  releaseDate: string; // ISO 8601 Date or "October 19, 2026"
+  version: ReleaseVersion; // e.g. "V1.0.33"
+  releaseDate: string; // e.g. "October 20, 2026"
   title: string; // Release headline
   isLatest: boolean;
-  majorHighlights: string[]; // Prominently displayed major updates
-  minorChanges: {
-    description: string;
-    points: PointAllocation; // 1 to 5 points
-    type: 'fix' | 'feature' | 'perf' | 'security';
-  }[];
-  contributors: {
-    name: string; // First name or display name
-    githubUsername: string; // GitHub handle without @
-    role?: string;
-  }[];
+  majorHighlights: string[];
+  minorChanges: MinorChangeItem[];
+  contributors: ContributorItem[];
 }
 ```
+
+### Mandatory Release Update Checklist
+1. Prepend the new `VersionRelease` entry to `SYSTEM_RELEASES` in `src/lib/version/releases.ts` with `isLatest: true`, and flip previous entries to `isLatest: false`.
+2. Synchronize `"version"` in `package.json` without the `V` prefix (for example, `"version": "1.0.33"` in `package.json` matches `"V1.0.33"` in `SYSTEM_RELEASES`).
+3. Verify release history rendering in `src/components/notifications/notification-bell.tsx`, `src/components/notifications/version-update-modal.tsx`, and `src/app/notifications/page.tsx`.

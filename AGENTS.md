@@ -41,8 +41,8 @@ Read the relevant runbook before its task. Rules define requirements; runbooks p
 - For interface styling, read [web-design](.agents/skills/web-design/SKILL.md).
 - For handheld layouts and scanner ergonomics, read [mobile-web-ui](.agents/skills/mobile-web-ui/SKILL.md).
 - For routes, components, actions, and handlers, read [nextjs-app-router](.agents/skills/nextjs-app-router/SKILL.md).
-- For qR signatures, redemption, and retries, read [qr-crypto-idempotency](.agents/skills/qr-crypto-idempotency/SKILL.md).
-- For appwrite Storage and Realtime, read [appwrite-cloud](.agents/skills/appwrite-cloud/SKILL.md).
+- For QR signatures, redemption, and retries, read [qr-crypto-idempotency](.agents/skills/qr-crypto-idempotency/SKILL.md).
+- For Appwrite Storage and Realtime, read [appwrite-cloud](.agents/skills/appwrite-cloud/SKILL.md).
 - For ticket PDF generation, read [streaming-pdf-ticket](.agents/skills/streaming-pdf-ticket/SKILL.md).
 - For release versioning and attribution, read [versioning](.agents/skills/versioning/SKILL.md).
 

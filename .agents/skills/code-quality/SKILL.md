@@ -25,61 +25,137 @@ This skill ensures that all code produced in the Itechtivity 2027 codebase is ap
 |**Functions / Actions**|`camelCase`|Start with an action verb|`registerBuyerTransaction`, `verifyStubPayload`|
 |**Variables / Properties**|`camelCase`|Full words, no cryptic abbreviations|`selectedAwardCategory`, `scannerTorchActive`|
 |**Types / Interfaces**|`PascalCase`|Descriptive noun phrase|`TicketRedemptionReceipt`, `BoothSummary`|
-|**Components**|`PascalCase`|Descriptive component name|`LiveTallyBoard`, `StubScannerModal`|
-|**Constants / Env**|`UPPER_SNAKE_CASE`|Strict uppercase with underscores|`MAX_AWARDS_PER_CARD`, `EVENT_HMAC_SECRET`|
+|**Components**|`PascalCase`|Descriptive component name|`LiveTallyBoard`, `QrScanner`|
+|**Constants / Env**|`UPPER_SNAKE_CASE`|Strict uppercase with underscores|`MAX_ALLOWED_AWARDS`, `EVENT_HMAC_SECRET`|
 
 ---
 
 ## 3. The Vertical Spacing & Formatting Mannerism
 
-Code must breathe. Always include intentional vertical whitespace to separate execution blocks:
+Code must breathe. Leave an intentional single empty line immediately after every function opening brace `{`, and separate logical phases with single blank lines. The example below mirrors the active cashier POS card-binding model in `src/app/api/registration/bind/route.ts` (batch activation was permanently deprecated in `V1.0.19`):
 
 ```typescript
-export async function activatePurchasedCards(
-  buyerTransactionId: string,
-  masterQrSerials: string[],
-  staffUserId: string
-): Promise<ActivationResult> {
+import { BuyerType, CardStatus, StubStatus } from '@prisma/client';
+import prisma from '@/lib/db/prisma';
 
-  // Phase 1: Validate payload inputs and permissions
-  if (masterQrSerials.length === 0) {
+interface BindCardsInput {
+  buyerType: BuyerType;
+  buyerName: string;
+  cardSerials: string[];
+  staffUserId: string;
+  clientIp: string;
+}
+
+interface BindCardsResult {
+  success: boolean;
+  transactionId?: string;
+  cardsActivatedCount?: number;
+  stubsActivatedCount?: number;
+  error?: string;
+}
+
+export async function bindPurchasedCards(
+  input: BindCardsInput
+): Promise<BindCardsResult> {
+
+  // Phase 1: Normalize and validate input card serials
+  const normalizedSerials = Array.from(
+    new Set(
+      input.cardSerials.map((serial) =>
+        serial
+          .trim()
+          .toUpperCase()
+          .replace(/^(#|MASTER:|M-)/i, '')
+          .trim()
+      )
+    )
+  );
+  if (normalizedSerials.length === 0) {
     return { success: false, error: 'NO_CARDS_PROVIDED' };
   }
 
-  // Phase 2: Atomic database transaction
-  const activationSummary = await prisma.$transaction(async (transactionClient) => {
+  // Phase 2: Execute atomic registration gate check, card/stub activation, and audit trail
+  try {
+    const activationOutcome = await prisma.$transaction(async (tx) => {
 
-    const updatedCards = await transactionClient.bingoCard.updateMany({
-      where: {
-        masterQrHash: { in: masterQrSerials },
-        status: 'GENERATED',
-      },
-      data: {
-        status: 'ACTIVATED',
-        transactionId: buyerTransactionId,
-        activatedAt: new Date(),
-      },
+      const configs = await tx.$queryRaw<Array<{ isRegistrationOpen: boolean }>>`
+        SELECT "isRegistrationOpen" FROM "EventConfig" LIMIT 1 FOR SHARE
+      `;
+      if (!configs[0]?.isRegistrationOpen) {
+        return { success: false, error: 'REGISTRATION_CLOSED' };
+      }
+
+      const existingCards = await tx.bingoCard.findMany({
+        where: { cardSerial: { in: normalizedSerials } },
+        include: { stubs: true },
+      });
+      if (existingCards.length !== normalizedSerials.length) {
+        return { success: false, error: 'MISSING_CARDS' };
+      }
+
+      const alreadyActive = existingCards.filter((card) => card.status !== CardStatus.GENERATED);
+      if (alreadyActive.length > 0) {
+        return { success: false, error: 'ALREADY_ACTIVE' };
+      }
+
+      const transaction = await tx.registrationTransaction.create({
+        data: {
+          processedByUserId: input.staffUserId,
+          buyerType: input.buyerType,
+          buyerName: input.buyerName,
+          quantityBought: normalizedSerials.length,
+        },
+      });
+
+      const cardIds = existingCards.map((card) => card.id);
+      const updatedCards = await tx.bingoCard.updateMany({
+        where: { id: { in: cardIds }, status: CardStatus.GENERATED },
+        data: {
+          status: CardStatus.ACTIVATED,
+          transactionId: transaction.id,
+          activatedAt: new Date(),
+        },
+      });
+      if (updatedCards.count !== cardIds.length) {
+        throw new Error('CONCURRENCY_CONFLICT');
+      }
+
+      // Cascade activation to all INACTIVE stubs on the purchased cards
+      const expectedStubsCount = existingCards.reduce((sum, card) => sum + card.stubs.length, 0);
+      const updatedStubs = await tx.ticketStub.updateMany({
+        where: { bingoCardId: { in: cardIds }, status: StubStatus.INACTIVE },
+        data: { status: StubStatus.ACTIVATED },
+      });
+      if (updatedStubs.count !== expectedStubsCount) {
+        throw new Error('CONCURRENCY_CONFLICT');
+      }
+
+      await tx.auditLog.create({
+        data: {
+          userId: input.staffUserId,
+          action: 'REGISTRATION_BIND',
+          resource: 'REGISTRATION',
+          ipAddress: input.clientIp,
+        },
+      });
+
+      return {
+        success: true,
+        transactionId: transaction.id,
+        cardsActivatedCount: updatedCards.count,
+        stubsActivatedCount: updatedStubs.count,
+      };
     });
 
-    // Cascade state transition to all associated stubs
-    await transactionClient.ticketStub.updateMany({
-      where: {
-        bingoCard: { masterQrHash: { in: masterQrSerials } },
-        status: 'INACTIVE',
-      },
-      data: {
-        status: 'ACTIVATED',
-      },
-    });
-
-    return updatedCards;
-  });
-
-  // Phase 3: Return structured response
-  return {
-    success: true,
-    activatedCount: activationSummary.count,
-  };
+    // Phase 3: Return structured response
+    return activationOutcome;
+  } catch (error) {
+    if (error instanceof Error && error.message === 'CONCURRENCY_CONFLICT') {
+      return { success: false, error: 'CONCURRENCY_CONFLICT' };
+    }
+    console.error('Card binding failed:', error);
+    return { success: false, error: 'REGISTRATION_BIND_FAILED' };
+  }
 }
 ```
 
@@ -104,7 +180,7 @@ export async function activatePurchasedCards(
 
 - [ ] Does every function start with a clear, active verb?
 - [ ] Are variable names self-explanatory without ambiguous single-letter shortcuts?
-- [ ] Is there proper vertical spacing separating input validation, core logic, and response return?
+- [ ] Is there an intentional empty line after every function opening brace `{` and vertical spacing between phases?
 - [ ] Are comments concise, purposeful, and explaining the "why"?
-- [ ] Is security strictly preserved (e.g. atomic row locks, HMAC verification, input validation)?
+- [ ] Is security strictly preserved (e.g. atomic row locks, HMAC verification, input validation, audit logging)?
 - [ ] Are zero emojis present in code, comments, or UI templates?

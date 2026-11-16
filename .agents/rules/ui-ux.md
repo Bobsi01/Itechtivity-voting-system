@@ -8,13 +8,14 @@
 * **Alternative:** Use clean, professional monochrome vector icons from `lucide-react` (e.g., `<Check />`, `<AlertCircle />`, `<Camera />`, `<Lock />`) or concise, high-contrast typography.
 
 ### Rule 2: NEVER Use Background Colors on Text or Icons
-* **Strict Prohibition:** Never wrap text or icons in background colored fills, highlights, badge bubbles, or pill backgrounds unless explicitly instructed by the user.
+* **Strict Prohibition:** Never wrap text, badges, status pills, or icons in chromatic background color fills, highlights, badge bubbles, or pill backgrounds unless explicitly instructed by the user (chromatic fills such as `bg-blue-100` or `bg-emerald-100` are rejected by `src/lib/test/standards-checker.ts`).
 * **Forbidden Examples:**
   - `bg-blue-100 text-blue-700` pill badges behind text.
   - `bg-primary/10 p-2 rounded-full` colored circle containers behind icons.
   - `bg-yellow-50 text-yellow-800` warning highlight bars behind text.
 * **Permitted Standards:**
-  - Render text directly on the page/card background using clear typography, font weights, and border outlines (`border border-neutral-300`).
+  - Render text directly on neutral page/card surfaces (`bg-white`, `bg-neutral-50`) using clear typography, font weights, and border outlines (`border border-neutral-300`).
+  - High-contrast monochrome primary action buttons (`bg-neutral-900 text-white` or `hover:bg-neutral-900 hover:text-white` with `border border-neutral-900`) are permitted.
   - Render icons as clean SVG glyphs using pure stroke colors (`text-neutral-900`, `text-neutral-500`, `stroke-current`) without colored background patches.
 
 ### Rule 3: Avoid Gradients Unless Semantically Meaningful
@@ -61,10 +62,10 @@ All user interfaces must be conceptualized, styled, and coded as **Mobile-First 
 * Layouts must integrate hardware notch and home indicator safe areas:
   * Headers: `pt-[env(safe-area-inset-top)]`
   * Sticky footers & bottom bars: `pb-[max(0.75rem,env(safe-area-inset-bottom))]` (ensures a baseline padding buffer on devices where the inset evaluates to 0px).
-  * Next.js 15 viewport export must include `viewportFit: 'cover'`.
+  * Next.js viewport export in `src/app/layout.tsx` must include `viewportFit: 'cover'`.
 
 ### Rule 12: iOS Auto-Zoom Prevention
-* All `<input>` and `<textarea>` fields must enforce a minimum font size of $16\text{px}$ (`text-base` or `text-[16px]`). This prevents iOS Safari from triggering an automatic viewport zoom upon focus.
+* All `<input>`, `<select>`, and `<textarea>` fields must enforce a minimum font size of $16\text{px}$ (`text-base` or `text-[16px]`). This prevents iOS Safari from triggering an automatic viewport zoom upon focus.
 
 ### Rule 13: Touch Ergonomics & Thumb Zone
 * Apply `touch-manipulation` to interactive elements to eliminate the 300ms tap delay.

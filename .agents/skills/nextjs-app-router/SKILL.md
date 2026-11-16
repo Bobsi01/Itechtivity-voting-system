@@ -1,13 +1,13 @@
 ---
 name: nextjs-app-router
 description: >-
-  Provides best practices, patterns, and boundaries for Next.js 15 App Router.
-  Use when creating or modifying routes, Server Actions, Server Components, Client Components,
-  route handlers, or data mutations in the Next.js App Router. Do not use for visual styling,
+  Provides best practices, patterns, and boundaries for Next.js 16 App Router.
+  Use when creating or modifying routes, Edge Middleware, Server Components, Client Components,
+  or API Route Handlers in the Next.js App Router. Do not use for visual styling,
   cryptographic token hashing, or PDF rendering layout.
 ---
 
-# Next.js 15 App Router Engineering Skill
+# Next.js 16 App Router Engineering Skill
 
 > **Author:** Daniel Bobis (GitHub: @ItsMeYourNightmare)  
 > **Assisted by:** OpenAI Codex and Google Gemini
@@ -15,77 +15,159 @@ description: >-
 ---
 
 ## 1. Component Boundary Hierarchy
-1. **Server Components by Default:** Fetch data directly on the server without `useEffect` or client fetchers.
-2. **Push `'use client'` to the Leaves:** Only mark leaf components as Client Components (e.g., interactive camera viewfinders, audio players, interactive form inputs).
-3. **Never Pass Server-Only Objects Across Boundaries:** Do not pass Prisma models containing password hashes or secret tokens to Client Components. Use explicit DTOs.
+1. **Server Components by Default:** Fetch initial data or verify user sessions directly on the server (`src/app/exhibitor/page.tsx`, `src/app/admin/page.tsx`, `src/app/production/page.tsx`, `src/app/registration/page.tsx`).
+2. **Push `'use client'` to Leaf/Workspace Components:** Only mark components requiring browser state or hardware APIs as `'use client'` (`src/components/exhibitor/mobile-scanner.tsx`, `src/components/ui/qr-scanner.tsx`, `src/components/notifications/version-update-modal.tsx`).
+3. **Never Pass Server-Only Secrets Across Boundaries:** Never serialize Prisma `User.passwordHash`, `TicketStub.signatureHash`, or environment secrets to Client Components. Return explicit DTOs.
 
-## 2. Next.js 15 Specifics
-* **Async Request APIs:**
-  ```typescript
-  // Next.js 15: params & searchParams are promises
-  interface PageProps {
-    params: Promise<{ boothId: string }>;
-    searchParams: Promise<{ [key: string]: string | undefined }>;
-  }
+## 2. Async Request APIs (`params` & `searchParams`)
 
-  export default async function BoothPage({ params }: PageProps) {
-    const { boothId } = await params;
-    ...
-  }
-  ```
+In Next.js 16 (`next@^16.4.1` in `package.json`), both page `searchParams`/`params` and dynamic route `context.params` are Promises and must be awaited:
 
-## 3. Server Actions for Data Mutations
-* Always validate inputs using **Zod** at the very start of the Server Action.
-* Verify user session and role authorization before executing any mutation.
-* Return a standardized `ActionResponse<T>`:
-  ```typescript
-  type ActionResponse<T> =
-    | { success: true; data: T }
-    | { success: false; error: string; code?: string };
-  ```
+```tsx
+// src/app/exhibitor/page.tsx
+interface ExhibitorPageProps {
+  searchParams?: Promise<{ tab?: string }>;
+}
 
-## 4. Route Organization Standard
-```text
-src/app/
-├── (auth)/
-│   └── login/
-├── (dashboard)/
-│   ├── admin/
-│   ├── registration/
-│   └── exhibitor/
-└── api/
-    ├── vote/
-    │   └── route.ts
-    └── webhooks/
+export default async function ExhibitorPage({ searchParams }: ExhibitorPageProps) {
+
+  const resolvedParams = searchParams ? await searchParams : undefined;
+  const currentTab = resolvedParams?.tab === 'config' ? 'config' : 'scanner';
+
+  return <main data-active-tab={currentTab} />;
+}
 ```
 
-## 5. Next.js 15 Route Handler with Header Inspection (`/api/vote/route.ts`)
 ```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { ScanPayloadSchema } from '@/lib/validation/scan-schema';
+// src/app/api/production/files/[filename]/route.ts
+import { NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest) {
-  // 1. Extract Idempotency Key from Request Headers
-  const idempotencyKey = req.headers.get('Idempotency-Key');
-  if (!idempotencyKey) {
-    return NextResponse.json(
-      { success: false, error: 'MISSING_IDEMPOTENCY_KEY' },
-      { status: 400 }
-    );
+interface RouteContext {
+  params: Promise<{ filename: string }>;
+}
+
+export async function GET(request: Request, context: RouteContext) {
+
+  const { filename } = await context.params;
+  const download = new URL(request.url).searchParams.get('download') === '1';
+
+  return NextResponse.json({ filename, download });
+}
+```
+
+## 3. Edge Middleware Perimeter & Dual-Stage Session Verification
+
+* **Edge Perimeter (`src/middleware.ts`):** Verifies the `itech2027_session` cookie HMAC-SHA256 signature via Web Crypto (`crypto.subtle`) and enforces coarse route-role boundaries across `/admin`, `/production`, `/registration`, `/exhibitor`, `/presentation`, and `/api/*`.
+* **Handler / Page Verification (`src/lib/auth/session.ts`):**
+  - `getVerifiedSessionClaims()`: Fast in-memory HMAC and expiration check on the session cookie before running pre-DB QR verification.
+  - `getCurrentUser()`: Re-validates `accountVersion`, `role`, and `boothId` against PostgreSQL (`prisma.user.findUnique`) so password resets or booth reassignments revoke stale sessions immediately.
+
+## 4. Route Organization (`src/app/`)
+
+Production uses flat role-based routes (no `(auth)` or `(dashboard)` route groups) and REST-style Route Handlers (mutations do not use `'use server'` Server Actions):
+
+```text
+src/app/
+├── admin/
+├── exhibitor/
+├── login/
+├── notifications/
+├── presentation/
+├── production/
+├── projects/
+├── registration/
+├── validate/
+└── api/
+    ├── admin/
+    ├── auth/
+    ├── booths/
+    ├── cards/
+    ├── exhibitor/
+    ├── history/
+    ├── production/
+    ├── programs/
+    ├── registration/
+    └── vote/
+        └── route.ts
+```
+
+## 5. Authenticated, Bounded Route Handler Pattern (`src/app/api/vote/route.ts`)
+
+Always use Web `Request`, enforce session/role claims, apply rate limits, validate headers (`Idempotency-Key`), parse bounded JSON with `readBoundedJson` (`@/lib/security/request-body`), return HTTP `400` on invalid request schemas, verify booth ownership, and verify HMAC signatures in memory before database writes:
+
+```typescript
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { readBoundedJson, RequestBodyError } from '@/lib/security/request-body';
+import { getCurrentUser, getVerifiedSessionClaims } from '@/lib/auth/session';
+import { verifyStubPayload, getVerifiedHmacSecret } from '@/lib/crypto/stub-tokens';
+import { rateLimiter, getClientIp } from '@/lib/security/rate-limiter';
+
+const VoteRequestSchema = z.object({
+  qrPayload: z.string().min(5).max(512),
+  boothId: z.string().uuid(),
+});
+
+const IdempotencyKeySchema = z
+  .string()
+  .trim()
+  .min(8)
+  .max(128)
+  .regex(/^[a-zA-Z0-9:._-]+$/);
+
+export async function POST(request: Request) {
+
+  // 1. Verify signed session claims and role boundary
+  const session = await getVerifiedSessionClaims();
+  if (!session) {
+    return NextResponse.json({ success: false, error: 'UNAUTHENTICATED' }, { status: 401 });
+  }
+  if (session.role !== 'EXHIBITOR' && session.role !== 'ADMIN') {
+    return NextResponse.json({ success: false, error: 'FORBIDDEN_ROLE' }, { status: 403 });
   }
 
-  // 2. Safely parse and validate request body
-  const body = await req.json();
-  const parseResult = ScanPayloadSchema.safeParse(body);
-  if (!parseResult.success) {
-    return NextResponse.json(
-      { success: false, error: 'INVALID_PAYLOAD', details: parseResult.error.flatten() },
-      { status: 422 }
-    );
+  // 2. Enforce rate limit and mandatory Idempotency-Key header
+  const rateCheck = rateLimiter.check(`vote-input:${session.userId}:${session.accountVersion}`, 90, 60 * 1000);
+  if (!rateCheck.allowed) {
+    return NextResponse.json({ success: false, error: 'RATE_LIMIT_EXCEEDED' }, { status: 429 });
   }
 
-  // 3. Delegate to business logic module
-  // ...
-  return NextResponse.json({ success: true, message: 'Vote recorded' });
+  const parsedKey = IdempotencyKeySchema.safeParse(request.headers.get('idempotency-key'));
+  if (!parsedKey.success) {
+    return NextResponse.json({ success: false, error: 'MISSING_IDEMPOTENCY_KEY' }, { status: 400 });
+  }
+
+  try {
+    // 3. Parse bounded JSON body and verify booth scope
+    const body = await readBoundedJson(request);
+    const parsed = VoteRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ success: false, error: 'INVALID_PAYLOAD_FORMAT' }, { status: 400 });
+    }
+
+    const { qrPayload, boothId } = parsed.data;
+    if (session.role === 'EXHIBITOR' && session.boothId !== boothId) {
+      return NextResponse.json({ success: false, error: 'FORBIDDEN_BOOTH_MISMATCH' }, { status: 403 });
+    }
+
+    // 4. Verify QR HMAC signature in memory before touching PostgreSQL
+    const cryptoCheck = verifyStubPayload(qrPayload.trim(), getVerifiedHmacSecret());
+    if (!cryptoCheck.isValid || !cryptoCheck.data) {
+      return NextResponse.json({ success: false, error: 'TAMPERED_OR_INVALID_QR_CODE' }, { status: 400 });
+    }
+
+    // 5. Revalidate live account status and execute atomic transaction
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json({ success: false, error: 'UNAUTHENTICATED' }, { status: 401 });
+    }
+
+    return NextResponse.json({ success: true, clientIp: getClientIp(request) });
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
+    return NextResponse.json({ success: false, error: 'VOTE_PROCESSING_ERROR' }, { status: 500 });
+  }
 }
 ```

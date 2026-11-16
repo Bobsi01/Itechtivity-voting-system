@@ -1,10 +1,10 @@
 ---
 name: web-design
 description: >-
-  Defines component standards, responsive layouts, and tactile UI patterns in Next.js
-  with Tailwind CSS and shadcn/ui. Use when building UI layouts, styling components,
-  designing mobile viewports, or formatting typography. Do not use for server actions,
-  route handlers, database mutations, or cryptographic operations.
+  Defines component standards, high-contrast monochrome styling, responsive layouts, and tactile UI
+  patterns in Next.js with Tailwind CSS and custom UI primitives. Use when building UI layouts,
+  styling components, designing mobile-to-desktop viewports, or formatting typography. Do not use
+  for server actions, route handlers, database mutations, or cryptographic operations.
 ---
 
 # Web Design & Interface Craftsmanship Skill
@@ -14,10 +14,10 @@ description: >-
 
 ---
 
-## 1. Absolute Design Constraints
+## 1. Absolute Design Constraints (Aligned with `.agents/rules/ui-ux.md`)
 
-### Constraint 1: Zero Emojis
-* **Rule:** Never use emojis anywhere in the interface (no buttons, toasts, dialogs, headers, or cards).
+### Constraint 1: Zero Emojis (Rule 1)
+* **Rule:** Never use emojis anywhere in the interface (buttons, toasts, dialogs, headers, badges, or cards).
 * **Implementation:** Always use clean, scalable vector icons from `lucide-react` with explicit sizing and stroke widths:
   ```tsx
   // BAD: Embedding literal emojis in UI
@@ -38,9 +38,9 @@ description: >-
   </p>
   ```
 
-### Constraint 2: Zero Background Colors on Text and Icons (Unless Explicitly Instructed)
-* **Rule:** Do not place background color fills behind text (e.g. colored badge pills, text highlights) or behind icons (e.g. colored circle containers).
-* **Implementation:** Use borders, font weight, and clean typography to structure information:
+### Constraint 2: Zero Chromatic Background Colors on Text and Icons (Rule 2)
+* **Rule:** Do not place chromatic background color fills behind text (e.g. colored badge pills, text highlights) or behind icons (e.g. colored circle containers). `src/lib/test/standards-checker.ts` rejects chromatic `bg-*` classes (`bg-blue-*`, `bg-emerald-*`, etc.).
+* **Permitted Surfaces:** Neutral container surfaces (`bg-white`, `bg-neutral-50`), monochrome borders (`border border-neutral-300`), and high-contrast monochrome primary buttons (`bg-neutral-900 text-white` or `hover:bg-neutral-900 hover:text-white`):
   ```tsx
   // BAD: Bloated colored backgrounds
   <span className="bg-emerald-100 text-emerald-800 rounded-full px-2 py-1">Active</span>
@@ -57,21 +57,26 @@ description: >-
   </div>
   ```
 
+### Constraint 3: Visual Restraint (Rules 3-5)
+* **No Decorative Gradients:** Avoid decorative background, card, text, or border gradients unless carrying semantic meaning.
+* **No Redundant Eyebrow Labels:** Omit stacked uppercase context labels above primary headings when context is already clear.
+* **No UI Redundancy:** Avoid repeating titles, status badges, or explanatory subtitles that duplicate surrounding headings.
+
 ---
 
-## 2. Layout & Typography Architecture
+## 2. Layout, Contrast & Typography Architecture
 
-### 2.1 Mobile-First Viewports
-* Optimize primarily for mobile phone screens ($360\text{px} - 430\text{px}$ width) used by booth exhibitors and registration staff.
-* Keep viewport layout compact: ensure the camera viewfinder and manual entry controls fit in a single screen without vertical scrollbars during live scanning.
+### 2.1 Mobile-First Viewports & Progressive Grids (Rules 9-11)
+* Write unprefixed Tailwind classes for compact handheld viewports (`360px - 430px`) used by booth exhibitors and registration clerks, using `sm:`, `md:`, and `lg:` solely as progressive desktop enhancements (e.g. `grid-cols-1 lg:grid-cols-2`).
+* Use `min-h-dvh` or `h-dvh` instead of `h-screen` / `100vh`, and ensure zero horizontal overflow (`auditHorizontalOverflow`).
+* Reuse existing shared UI primitives in `src/components/ui/` (`SimpleSelect`, `SearchableProgramPicker`, `QrScanner`) rather than inventing duplicate dropdown or scanner controls.
 
-### 2.2 Typography Scale
-* Use system-ui or Inter font stack.
-* Headings: Crisp, high-contrast (`text-neutral-900 font-bold tracking-tight`).
-* Subheadings & Meta: Neutral gray (`text-neutral-600 font-normal`).
-* Minimum Body Font: $14\text{px}$ (`text-sm`) for readability; never smaller than $12\text{px}$ (`text-xs`) for secondary metadata.
+### 2.2 High-Contrast Typography & Input Zoom Safety (Rules 7 & 12)
+* **Exhibition Contrast (> 7:1):** Keep critical statuses, headings, and scan alerts high-contrast (`text-neutral-900`, `text-neutral-800`, `text-neutral-700`, `text-neutral-600`). Never use faint gray-on-gray copy or `text-neutral-400` on white (use `placeholder:text-neutral-500` on inputs).
+* **Body & Metadata Scale:** Minimum `14px` (`text-sm`) for body copy and `12px` (`text-xs`) for secondary metadata.
+* **Mandatory 16px Inputs:** All `<input>`, `<select>`, and `<textarea>` fields must render at least `16px` (`text-base` or `text-base sm:text-sm`) on mobile to prevent iOS Safari focus auto-zoom (`auditInputFontSize` in `src/lib/test/standards-checker.ts`).
 
-### 2.3 Tactile Touch Ergonomics
-* Minimum tap target size: $44 \times 44\text{px}$ (`min-h-[44px] min-w-[44px]`).
-* Generous button padding: `px-4 py-3`.
-* Prominent active and pressed states: `active:scale-[0.98] transition-transform`.
+### 2.3 Tactile Touch Ergonomics (Rules 6 & 13)
+* Minimum tap target size: `44x44px` (`min-h-11 min-w-11` / `min-h-[44px] min-w-[44px]`).
+* Generous interactive padding (`px-4 py-3`), `touch-manipulation`, and `select-none` on rapid-tap controls.
+* Prominent active states (`active:scale-[0.98] transition-transform` or `active:bg-neutral-800`).
