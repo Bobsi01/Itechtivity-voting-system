@@ -11,8 +11,8 @@ const CreateCoExhibitorSchema = z.object({
   email: z
     .string()
     .trim()
-    .email('A valid email address is required.')
-    .toLowerCase(),
+    .toLowerCase()
+    .pipe(z.email('A valid email address is required.')),
   fullName: z
     .string()
     .trim()
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
       {
         success: false,
         error: 'VALIDATION_ERROR',
-        details: parseResult.error.flatten(),
+        details: z.flattenError(parseResult.error),
       },
       { status: 400 }
     );

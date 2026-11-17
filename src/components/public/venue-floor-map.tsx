@@ -198,7 +198,7 @@ export function VenueFloorMap({
       {/* Horizontally Scrollable Floor Canvas */}
       <div className="relative border border-neutral-300 rounded-lg overflow-hidden">
         {/* Horizontal Scroll Wrapper */}
-        <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin">
+        <div className="overflow-x-auto p-4 sm:p-6">
           <div className="min-w-[720px] max-w-[960px] mx-auto space-y-4">
             {/* Top Anchor: Stage / Presentation Screen */}
             <div className="border border-neutral-900 rounded p-2.5 text-center">
@@ -297,7 +297,7 @@ export function VenueFloorMap({
               <button
                 type="button"
                 onClick={() => setInspectedBooth(null)}
-                className="p-2 border border-neutral-300 hover:border-neutral-900 rounded text-neutral-700 hover:text-neutral-900 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation flex-shrink-0"
+                className="p-2 border border-neutral-300 hover:border-neutral-900 rounded text-neutral-700 hover:text-neutral-900 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation shrink-0"
                 aria-label="Close project inspection dialog"
               >
                 <X className="w-4 h-4" />
@@ -347,7 +347,7 @@ export function VenueFloorMap({
                     Team Members
                   </span>
                   <div className="flex items-center gap-1.5 text-neutral-800 font-mono">
-                    <Users className="w-3.5 h-3.5 text-neutral-500 flex-shrink-0" />
+                    <Users className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
                     <span>{inspectedBooth.teamMembers}</span>
                   </div>
                 </div>

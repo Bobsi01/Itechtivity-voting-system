@@ -95,7 +95,7 @@ export function AdminWorkspace() {
          ======================================================== */}
       <aside
         aria-label="Desktop Navigation Sidebar"
-        className={`hidden md:flex flex-col flex-shrink-0 fixed inset-y-0 left-0 h-dvh border-r border-neutral-300 bg-white transition-[width] duration-200 ease-in-out z-30 ${
+        className={`hidden md:flex flex-col shrink-0 fixed inset-y-0 left-0 h-dvh border-r border-neutral-300 bg-white transition-[width] duration-200 ease-in-out z-30 ${
           isDesktopCollapsed ? 'w-16' : 'w-60 lg:w-64'
         }`}
       >
@@ -151,7 +151,7 @@ export function AdminWorkspace() {
                   : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/80 font-medium'
               }`}
             >
-              <Icon className="w-4 h-4 flex-shrink-0" />
+              <Icon className="w-4 h-4 shrink-0" />
               <span className={isDesktopCollapsed ? 'sr-only' : 'truncate'}>{label}</span>
             </button>
           ))}
@@ -187,7 +187,7 @@ export function AdminWorkspace() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <NotificationBell />
             <form action="/api/auth/logout" method="POST">
               <button
@@ -217,7 +217,7 @@ export function AdminWorkspace() {
                     : 'text-neutral-700 hover:bg-neutral-100'
                 }`}
               >
-                <Icon className="w-4 h-4 flex-shrink-0" />
+                <Icon className="w-4 h-4 shrink-0" />
                 <span>{label}</span>
               </button>
             ))}
@@ -296,10 +296,10 @@ export function AdminWorkspace() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    <Icon className="w-5 h-5 shrink-0" />
                     <span>{label}</span>
                   </div>
-                  {section === label && <Check className="w-4 h-4 text-white flex-shrink-0" />}
+                  {section === label && <Check className="w-4 h-4 text-white shrink-0" />}
                 </button>
               ))}
             </nav>

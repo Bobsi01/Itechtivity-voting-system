@@ -10,13 +10,11 @@ const compose = readFileSync('docker-compose.yml', 'utf8');
 const password = /POSTGRES_PASSWORD:\s*(\S+)/.exec(compose)?.[1];
 assert(password);
 const database = 'itech_audit_20261024_f7ac5223';
-process.env.DATABASE_URL = `postgresql://itech_admin:${encodeURIComponent(password)}@127.0.0.1:5433/${database}`;
-process.env.DIRECT_URL = process.env.DATABASE_URL;
-assert(new URL(process.env.DATABASE_URL).hostname === '127.0.0.1');
-assert(new URL(process.env.DATABASE_URL).pathname === `/${database}`);
-const db = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
-});
+const databaseUrl = `postgresql://itech_admin:${encodeURIComponent(password)}@127.0.0.1:5433/${database}`;
+process.env.DATABASE_URL = databaseUrl;
+process.env.DIRECT_URL = databaseUrl;
+assert(new URL(databaseUrl).hostname === '127.0.0.1');
+assert(new URL(databaseUrl).pathname === `/${database}`);
 const base = 'http://127.0.0.1:3310';
 const secret = 'audit-hmac-539bfe825ee34e0dae4b1400a6f48ec0';
 const suffix = crypto.randomBytes(4).toString('hex');
@@ -32,6 +30,12 @@ async function request(path: string, cookie = '', body?: object | string, key?: 
   return { status: response.status, data, cookie: response.headers.get('set-cookie')?.split(';')[0] || '' };
 }
 async function main() {
+
+  const { createDatabasePoolConfig } = await import('../db/prisma');
+  const db = new PrismaClient({
+    adapter: new PrismaPg(createDatabasePoolConfig(databaseUrl)),
+  });
+  try {
   const booth = await db.booth.create({ data: { code: `QA${suffix}`, projectTitle: 'Isolated QA', capstoneCategory: 'BSCS' } });
   const booth2 = await db.booth.create({ data: { code: `QB${suffix}`, projectTitle: 'Isolated QA second', capstoneCategory: 'BSCS' } });
   const cookies = new Map<Role, string>();
@@ -182,5 +186,8 @@ async function main() {
   assert.equal((await request('/api/registration/bind', reg, bindBody(cards[6]), `stale-reg-${suffix}`)).status, 403);
   console.log('PASS booth reassignment and password change invalidate actual prior login cookies');
   console.log('Fixture prefix retained:', suffix);
+  } finally {
+    await db.$disconnect();
+  }
 }
-main().catch(error => { console.error(error instanceof Error ? error.message : 'QA failure'); process.exitCode = 1; }).finally(() => db.$disconnect());
+main().catch(error => { console.error(error instanceof Error ? error.message : 'QA failure'); process.exitCode = 1; });

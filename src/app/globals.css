@@ -56,10 +56,10 @@
 }
 
 @layer base {
-  button, a, input, select, textarea {
+  button, a, summary, input, select, textarea {
     touch-action: manipulation;
   }
-  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
     outline: 2px solid currentColor;
     outline-offset: 3px;
   }

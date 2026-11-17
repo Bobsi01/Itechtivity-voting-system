@@ -141,7 +141,7 @@ export function BatchActivationCard({
       <div className="flex items-center justify-between gap-2 border-b border-neutral-300 pb-3">
         <div>
           <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-neutral-900 flex-shrink-0" />
+            <Layers className="w-4 h-4 text-neutral-900 shrink-0" />
             <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-900">
               Print Batches
             </h2>
@@ -156,7 +156,7 @@ export function BatchActivationCard({
           onClick={fetchBatchDirectory}
           disabled={isLoading}
           aria-label="Refresh batches list"
-          className="flex items-center justify-center gap-1.5 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px] min-w-[44px] touch-manipulation select-none flex-shrink-0"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px] min-w-[44px] touch-manipulation select-none shrink-0"
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           <span>Refresh</span>
@@ -172,7 +172,7 @@ export function BatchActivationCard({
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search batch #, card serial, or owner..."
           aria-label="Filter batches or card serials"
-          className="w-full pl-9 pr-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 font-mono min-h-[44px]"
+          className="w-full pl-9 pr-3 py-2 text-base border border-neutral-300 rounded focus:outline-hidden focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 font-mono min-h-[44px]"
         />
       </div>
 
@@ -218,7 +218,7 @@ export function BatchActivationCard({
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-mono text-xs font-bold text-neutral-900 flex-shrink-0 whitespace-nowrap">
+                      <span className="font-mono text-xs font-bold text-neutral-900 shrink-0 whitespace-nowrap">
                         Batch #{batch.batchNumber}
                       </span>
                       {batch.firstSerial && batch.lastSerial && (
@@ -229,7 +229,7 @@ export function BatchActivationCard({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     <span className="font-mono text-[11px] font-semibold text-neutral-800 border border-neutral-300 px-2 py-0.5 rounded">
                       {batch.counts.activated}/{batch.totalCards} Active
                     </span>
@@ -260,7 +260,7 @@ export function BatchActivationCard({
                           }`}
                         >
                           <div className="min-w-0 flex items-center gap-2">
-                            <span className="font-mono text-xs font-bold flex-shrink-0">
+                            <span className="font-mono text-xs font-bold shrink-0">
                               {card.cardSerial}
                             </span>
                             {card.buyerName && (
@@ -274,7 +274,7 @@ export function BatchActivationCard({
                             )}
                           </div>
 
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <span
                               className={`font-mono text-[10px] uppercase px-1.5 py-0.5 rounded border ${
                                 isSelected

@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { createDatabasePoolConfig } from './database-config.js';
-import { Client, Databases, ID } from 'node-appwrite';
+import { Client, Databases } from 'node-appwrite';
 
 const { Pool } = pg;
 
@@ -64,9 +64,19 @@ export default async ({ res, log, error }) => {
 
     // SEC-07: Upsert single document ID 'latest-tally' to prevent unbounded document creation
     try {
-      await databases.updateDocument(databaseId, collectionId, documentId, docData);
+      await databases.updateDocument({
+        databaseId,
+        collectionId,
+        documentId,
+        data: docData,
+      });
     } catch (docErr) {
-      await databases.createDocument(databaseId, collectionId, documentId, docData);
+      await databases.createDocument({
+        databaseId,
+        collectionId,
+        documentId,
+        data: docData,
+      });
     }
 
     log(`Cached leaderboard snapshot with ${tallyResult.rows.length} booth-award entries.`);

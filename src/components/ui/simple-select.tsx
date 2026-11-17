@@ -82,7 +82,7 @@ export function SimpleSelect({
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-neutral-600 flex-shrink-0 transition-transform ${
+          className={`w-4 h-4 text-neutral-600 shrink-0 transition-transform ${
             isOpen ? "rotate-180 text-neutral-900" : ""
           }`}
         />
@@ -106,7 +106,7 @@ export function SimpleSelect({
                   {opt.label}
                 </span>
                 {isSelected && (
-                  <Check className="w-4 h-4 text-neutral-900 flex-shrink-0" strokeWidth={2.5} />
+                  <Check className="w-4 h-4 text-neutral-900 shrink-0" strokeWidth={2.5} />
                 )}
               </button>
             );

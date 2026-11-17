@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { Databases, Storage, Functions } from 'node-appwrite';
 import type { Models } from 'node-appwrite';
-import { Client } from 'appwrite';
-import type { RealtimeResponseEvent } from 'appwrite';
+import { Realtime } from 'appwrite';
+import type { RealtimeResponseEvent, RealtimeSubscription } from 'appwrite';
 
 import {
   VoteBroadcastSchema,
@@ -726,16 +726,21 @@ function testVector6ClientSubscriptionAdversarialIngestion(): void {
   process.env.NEXT_PUBLIC_APPWRITE_SYSTEM_EVENTS_COLLECTION_ID = 'test-system_events';
   process.env.NEXT_PUBLIC_APPWRITE_PDF_BATCHES_COLLECTION_ID = 'test-pdf_batches';
 
-  type SubscriptionCallback = (response: RealtimeResponseEvent<never>) => void;
+  type ServicesRealtimeEvent<T> = RealtimeResponseEvent<T> & { subscriptions: string[] };
+  type SubscriptionCallback = (response: ServicesRealtimeEvent<unknown>) => void;
+  type ChannelLike = string | { toString(): string };
   const channelSubscribers = new Map<string, Set<SubscriptionCallback>>();
 
-  const originalSubscribe = Client.prototype.subscribe;
-  Client.prototype.subscribe = function <T>(
-    channelOrChannels: string | string[],
-    callback: (payload: RealtimeResponseEvent<T>) => void
-  ): () => void {
-    const channels = Array.isArray(channelOrChannels) ? channelOrChannels : [channelOrChannels];
-    const callbackWrapper = callback as unknown as SubscriptionCallback;
+  const originalSubscribe = Realtime.prototype.subscribe;
+  const mockSubscribe: Realtime['subscribe'] = async function <T>(
+    channelOrChannels: ChannelLike | ChannelLike[],
+    callback: (payload: ServicesRealtimeEvent<T>) => void
+  ): Promise<RealtimeSubscription> {
+    const rawChannels = Array.isArray(channelOrChannels) ? channelOrChannels : [channelOrChannels];
+    const channels = rawChannels.map((ch) => (typeof ch === 'string' ? ch : String(ch)));
+    const callbackWrapper: SubscriptionCallback = (event) => {
+      callback(event as ServicesRealtimeEvent<T>);
+    };
 
     for (const channel of channels) {
       if (!channelSubscribers.has(channel)) {
@@ -744,12 +749,19 @@ function testVector6ClientSubscriptionAdversarialIngestion(): void {
       channelSubscribers.get(channel)!.add(callbackWrapper);
     }
 
-    return () => {
+    const detach = async (): Promise<void> => {
       for (const channel of channels) {
         channelSubscribers.get(channel)?.delete(callbackWrapper);
       }
     };
+
+    return {
+      unsubscribe: detach,
+      update: async (): Promise<void> => {},
+      close: detach,
+    };
   };
+  Realtime.prototype.subscribe = mockSubscribe;
 
   const originalWarn = console.warn;
   console.warn = () => {};
@@ -759,11 +771,12 @@ function testVector6ClientSubscriptionAdversarialIngestion(): void {
       const listeners = channelSubscribers.get(channel);
       if (!listeners) return;
 
-      const responseEvent: RealtimeResponseEvent<never> = {
+      const responseEvent: ServicesRealtimeEvent<unknown> = {
         events: [`databases.test-itech2027-db.collections.${channel.split('.').at(-2) || 'unknown'}.documents.${action}`],
         channels: [channel],
         timestamp: new Date().toISOString(),
-        payload: payload as never,
+        payload,
+        subscriptions: [],
       };
 
       for (const listener of Array.from(listeners)) {
@@ -905,7 +918,7 @@ function testVector6ClientSubscriptionAdversarialIngestion(): void {
 
   } finally {
     console.warn = originalWarn;
-    Client.prototype.subscribe = originalSubscribe;
+    Realtime.prototype.subscribe = originalSubscribe;
   }
 }
 

@@ -126,7 +126,7 @@ export function BatchGeneratorCard({ onBatchGenerated }: BatchGeneratorCardProps
               step={4}
               value={cardCount}
               onChange={(e) => setCardCount(e.target.value)}
-              className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+              className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
             />
           </div>
 

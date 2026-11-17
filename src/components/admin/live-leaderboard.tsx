@@ -515,7 +515,7 @@ export function LiveLeaderboard() {
                   <span className="text-xs font-mono uppercase text-neutral-600 block">
                     Slot {award.slotNumber}
                   </span>
-                  <span className="font-mono text-xs font-bold text-neutral-900 border border-neutral-300 px-2 py-0.5 rounded flex-shrink-0 select-text">
+                  <span className="font-mono text-xs font-bold text-neutral-900 border border-neutral-300 px-2 py-0.5 rounded shrink-0 select-text">
                     {award.voteCount} {award.voteCount === 1 ? "vote" : "votes"}
                   </span>
                 </div>
@@ -531,7 +531,7 @@ export function LiveLeaderboard() {
                       }))
                     }
                     aria-label={`Slot ${award.slotNumber} Award Title`}
-                    className="w-full px-3 py-2 text-base font-medium border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 min-h-[44px]"
+                    className="w-full px-3 py-2 text-base font-medium border border-neutral-300 rounded focus:outline-hidden focus:border-neutral-900 text-neutral-900 min-h-[44px]"
                   />
                 ) : (
                   <p className="text-xs font-bold text-neutral-900 truncate select-text">
@@ -557,7 +557,7 @@ export function LiveLeaderboard() {
                 type="button"
                 onClick={handleSaveAwardTitles}
                 disabled={isUpdatingConfig}
-                className="flex items-center gap-1.5 px-4 py-2  text-neutral-900  rounded text-xs font-semibold transition-colors min-h-[44px]"
+                className="flex items-center gap-1.5 px-4 py-2 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none disabled:opacity-50"
               >
                 <Check className="w-4 h-4" />
                 <span>Save Slot Titles</span>
@@ -625,7 +625,7 @@ export function LiveLeaderboard() {
                   </p>
                 </div>
 
-                <div className="text-right flex-shrink-0">
+                <div className="text-right shrink-0">
                   <span className="font-mono font-bold text-neutral-900 text-xs border border-neutral-300 px-2 py-1 rounded select-text">
                     {log.quantityBought} card{log.quantityBought > 1 ? "s" : ""}
                   </span>
@@ -660,10 +660,10 @@ export function LiveLeaderboard() {
               value={boothSearch}
               onChange={(event) => { setBoothSearch(event.target.value); setStandingsPage(0); }}
               placeholder="Search booth code or project..."
-              className="min-h-11 w-full border border-neutral-300 rounded pl-9 pr-3 text-base font-mono"
+              className="min-h-11 w-full border border-neutral-300 rounded pl-9 pr-3 text-base font-mono focus:border-neutral-900 focus:outline-hidden"
             />
           </div>
-          <div className="flex items-center justify-between gap-2 text-sm font-mono text-xs">
+          <div className="flex items-center justify-between gap-2 font-mono text-xs">
             <button
               type="button"
               aria-label="Previous standings page"
@@ -695,7 +695,7 @@ export function LiveLeaderboard() {
               className="p-3 sm:p-4 flex items-center justify-between gap-3 transition-colors"
             >
               <div className="flex items-start gap-3 min-w-0 flex-1">
-                <span className="font-mono text-sm font-bold text-neutral-700 w-6 text-center select-text flex-shrink-0 pt-0.5">
+                <span className="font-mono text-sm font-bold text-neutral-700 w-6 text-center select-text shrink-0 pt-0.5">
                   #{stats.leaderboard.findIndex((entry) => entry.boothId === booth.boothId) + 1}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -717,7 +717,7 @@ export function LiveLeaderboard() {
                 </div>
               </div>
 
-              <div className="flex items-center flex-shrink-0 pl-2">
+              <div className="flex items-center shrink-0 pl-2">
                 <span className="font-mono text-base font-bold text-neutral-900 border border-neutral-900 px-3 py-1 rounded select-text">
                   {booth.totalVotes}
                 </span>

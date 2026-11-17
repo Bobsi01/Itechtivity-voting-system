@@ -7,10 +7,10 @@ import { rateLimiter, getClientIp } from '@/lib/security/rate-limiter';
 import { recordAuditLog, createHumanReadableSummary } from '@/lib/audit/log';
 import { readBoundedJson, RequestBodyError } from '@/lib/security/request-body';
 
-const LoginSchema = z.object({
-  email: z.string().email().max(254),
+const LoginSchema = z.strictObject({
+  email: z.email().max(254),
   password: z.string().min(1).max(100),
-}).strict();
+});
 
 // Precomputed bcrypt hash used to normalize execution time against user enumeration (SEC-09)
 const DUMMY_BCRYPT_HASH = '$2a$10$w095F9wY41R5cR42B8s1..4bEslN2D82W9.K8hR8v1bE5kQz2oG7W';

@@ -1,5 +1,5 @@
-import { Client } from 'appwrite';
-import type { RealtimeResponseEvent } from 'appwrite';
+import { Client, Realtime } from 'appwrite';
+import type { RealtimeResponseEvent, RealtimeSubscription } from 'appwrite';
 import {
   VoteBroadcastSchema,
   BatchBroadcastSchema,
@@ -25,6 +25,7 @@ export type {
 };
 
 let clientInstance: Client | null = null;
+let realtimeInstance: Realtime | null = null;
 
 export function getAppwriteBrowserClient(): Client {
 
@@ -35,6 +36,15 @@ export function getAppwriteBrowserClient(): Client {
   }
 
   return clientInstance;
+}
+
+export function getAppwriteRealtimeClient(): Realtime {
+
+  if (!realtimeInstance) {
+    realtimeInstance = new Realtime(getAppwriteBrowserClient());
+  }
+
+  return realtimeInstance;
 }
 
 function canUseAppwriteRealtime(): boolean {
@@ -54,6 +64,68 @@ function canUseAppwriteRealtime(): boolean {
   return true;
 }
 
+function subscribeToRealtimeChannel(
+  channel: string,
+  label: string,
+  onEvent: (response: RealtimeResponseEvent<unknown>) => void
+): () => void {
+
+  try {
+    if (!canUseAppwriteRealtime()) {
+      return () => {};
+    }
+
+    const realtime = getAppwriteRealtimeClient();
+    let isDisposed = false;
+    let activeSubscription: RealtimeSubscription | null = null;
+
+    const subscriptionPromise = realtime.subscribe<unknown>(
+      channel,
+      (response: RealtimeResponseEvent<unknown>) => {
+        if (isDisposed) {
+          return;
+        }
+
+        if (
+          response.events.some(
+            (event) => event.includes('.create') || event.includes('.update')
+          )
+        ) {
+          onEvent(response);
+        }
+      }
+    );
+
+    // Guard against React Strict Mode / fast unmounts settling before the socket handshake finishes
+    subscriptionPromise
+      .then((subscription) => {
+        if (isDisposed) {
+          return subscription.unsubscribe();
+        }
+        activeSubscription = subscription;
+        return undefined;
+      })
+      .catch((error: unknown) => {
+        if (!isDisposed) {
+          console.warn(`Realtime ${label} subscription fallback active:`, error);
+        }
+      });
+
+    return () => {
+      isDisposed = true;
+      if (activeSubscription) {
+        void activeSubscription.unsubscribe().catch((error: unknown) => {
+          console.warn(`Realtime ${label} unsubscribe warning:`, error);
+        });
+        activeSubscription = null;
+      }
+    };
+  } catch (error) {
+    console.warn(`Realtime ${label} subscription fallback active:`, error);
+    return () => {};
+  }
+}
+
 /**
  * Subscribes to real-time vote updates via Appwrite Realtime WebSocket.
  * Channel: databases.[id].collections.votes.documents
@@ -62,40 +134,18 @@ export function subscribeToVoteEvents(
   onVoteUpdate: (data: VoteBroadcastPayload) => void
 ): () => void {
 
-  try {
-    if (!canUseAppwriteRealtime()) {
-      return () => {};
+  const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'itech2027-db';
+  const collectionId = process.env.NEXT_PUBLIC_APPWRITE_VOTES_COLLECTION_ID || 'votes';
+  const channel = `databases.${databaseId}.collections.${collectionId}.documents`;
+
+  return subscribeToRealtimeChannel(channel, 'vote', (response) => {
+    const parsed = VoteBroadcastSchema.safeParse(response.payload);
+    if (parsed.success) {
+      onVoteUpdate(parsed.data);
+    } else {
+      console.warn('Realtime vote payload schema mismatch:', parsed.error);
     }
-
-    const client = getAppwriteBrowserClient();
-    const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'itech2027-db';
-    const collectionId = process.env.NEXT_PUBLIC_APPWRITE_VOTES_COLLECTION_ID || 'votes';
-
-    const channel = `databases.${databaseId}.collections.${collectionId}.documents`;
-
-    const unsubscribe = client.subscribe(
-      channel,
-      (response: RealtimeResponseEvent<unknown>) => {
-        if (
-          response.events.some(
-            (event) => event.includes('.create') || event.includes('.update')
-          )
-        ) {
-          const parsed = VoteBroadcastSchema.safeParse(response.payload);
-          if (parsed.success) {
-            onVoteUpdate(parsed.data);
-          } else {
-            console.warn('Realtime vote payload schema mismatch:', parsed.error);
-          }
-        }
-      }
-    );
-
-    return unsubscribe;
-  } catch (error) {
-    console.warn('Realtime vote subscription fallback active:', error);
-    return () => {};
-  }
+  });
 }
 
 /**
@@ -106,40 +156,18 @@ export function subscribeToBatchEvents(
   onBatchUpdate: (data: BatchBroadcastPayload) => void
 ): () => void {
 
-  try {
-    if (!canUseAppwriteRealtime()) {
-      return () => {};
+  const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'itech2027-db';
+  const collectionId = process.env.NEXT_PUBLIC_APPWRITE_PDF_BATCHES_COLLECTION_ID || 'pdf_batches';
+  const channel = `databases.${databaseId}.collections.${collectionId}.documents`;
+
+  return subscribeToRealtimeChannel(channel, 'batch', (response) => {
+    const parsed = BatchBroadcastSchema.safeParse(response.payload);
+    if (parsed.success) {
+      onBatchUpdate(parsed.data);
+    } else {
+      console.warn('Realtime batch payload schema mismatch:', parsed.error);
     }
-
-    const client = getAppwriteBrowserClient();
-    const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'itech2027-db';
-    const collectionId = process.env.NEXT_PUBLIC_APPWRITE_PDF_BATCHES_COLLECTION_ID || 'pdf_batches';
-
-    const channel = `databases.${databaseId}.collections.${collectionId}.documents`;
-
-    const unsubscribe = client.subscribe(
-      channel,
-      (response: RealtimeResponseEvent<unknown>) => {
-        if (
-          response.events.some(
-            (event) => event.includes('.create') || event.includes('.update')
-          )
-        ) {
-          const parsed = BatchBroadcastSchema.safeParse(response.payload);
-          if (parsed.success) {
-            onBatchUpdate(parsed.data);
-          } else {
-            console.warn('Realtime batch payload schema mismatch:', parsed.error);
-          }
-        }
-      }
-    );
-
-    return unsubscribe;
-  } catch (error) {
-    console.warn('Realtime batch subscription fallback active:', error);
-    return () => {};
-  }
+  });
 }
 
 /**
@@ -151,45 +179,23 @@ function subscribeToSystemEvents<T>(
   onUpdate: (data: T) => void
 ): () => void {
 
-  try {
-    if (!canUseAppwriteRealtime()) {
-      return () => {};
-    }
+  const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'itech2027-db';
+  const collectionId = process.env.NEXT_PUBLIC_APPWRITE_SYSTEM_EVENTS_COLLECTION_ID || 'system_events';
+  const channel = `databases.${databaseId}.collections.${collectionId}.documents`;
 
-    const client = getAppwriteBrowserClient();
-    const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'itech2027-db';
-    const collectionId = process.env.NEXT_PUBLIC_APPWRITE_SYSTEM_EVENTS_COLLECTION_ID || 'system_events';
+  return subscribeToRealtimeChannel(channel, expectedEventType, (response) => {
+    const payload = response.payload as Record<string, unknown> | null;
+    const isTargetOrMalformed = !payload || !payload.eventType || payload.eventType === expectedEventType;
 
-    const channel = `databases.${databaseId}.collections.${collectionId}.documents`;
-
-    const unsubscribe = client.subscribe(
-      channel,
-      (response: RealtimeResponseEvent<unknown>) => {
-        if (
-          response.events.some(
-            (event) => event.includes('.create') || event.includes('.update')
-          )
-        ) {
-          const payload = response.payload as Record<string, unknown> | null;
-          const isTargetOrMalformed = !payload || !payload.eventType || payload.eventType === expectedEventType;
-
-          if (isTargetOrMalformed) {
-            const parsed = parsePayload(response.payload);
-            if (parsed.success) {
-              onUpdate(parsed.data);
-            } else {
-              console.warn(`Realtime ${expectedEventType} payload schema mismatch:`, parsed.error);
-            }
-          }
-        }
+    if (isTargetOrMalformed) {
+      const parsed = parsePayload(response.payload);
+      if (parsed.success) {
+        onUpdate(parsed.data);
+      } else {
+        console.warn(`Realtime ${expectedEventType} payload schema mismatch:`, parsed.error);
       }
-    );
-
-    return unsubscribe;
-  } catch (error) {
-    console.warn(`Realtime ${expectedEventType} subscription fallback active:`, error);
-    return () => {};
-  }
+    }
+  });
 }
 
 /**

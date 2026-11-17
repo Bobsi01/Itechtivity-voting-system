@@ -355,7 +355,11 @@ export default async ({ req, res, log, error }) => {
       const databases = new Databases(client);
 
       const inputFile = InputFile.fromBuffer(pdfBuffer, fileName);
-      const uploaded = await storage.createFile(bucketId, uploadedFileId, inputFile);
+      const uploaded = await storage.createFile({
+        bucketId,
+        fileId: uploadedFileId,
+        file: inputFile,
+      });
       uploadedFileId = uploaded.$id;
       log(`Uploaded PDF to Appwrite Storage bucket ${bucketId}: ${uploadedFileId} (${pdfBuffer.length} bytes)`);
 
@@ -381,16 +385,21 @@ export default async ({ req, res, log, error }) => {
       }
 
       // Broadcast batch completion event over Appwrite Realtime WebSockets
-      await databases.createDocument(databaseId, batchesCollectionId, ID.unique(), {
-        batchId: batchId || uploadedFileId,
-        batchNumber,
-        status: 'COMPLETED',
-        fileId: uploadedFileId,
-        fileName,
-        totalCards,
-        totalSheets,
-        fileSize: pdfBuffer.length,
-        updatedAt: new Date().toISOString(),
+      await databases.createDocument({
+        databaseId,
+        collectionId: batchesCollectionId,
+        documentId: ID.unique(),
+        data: {
+          batchId: batchId || uploadedFileId,
+          batchNumber,
+          status: 'COMPLETED',
+          fileId: uploadedFileId,
+          fileName,
+          totalCards,
+          totalSheets,
+          fileSize: pdfBuffer.length,
+          updatedAt: new Date().toISOString(),
+        },
       });
     }
 

@@ -84,7 +84,7 @@ export function VersionUpdateModal({ release, isOpen, onClose }: VersionUpdateMo
                   key={idx}
                   className="flex items-start gap-2.5 p-3 border border-neutral-300 rounded text-neutral-900 text-xs sm:text-sm font-medium"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-neutral-900 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-neutral-900 shrink-0 mt-0.5" />
                   <span className="leading-snug">{highlight}</span>
                 </li>
               ))}
@@ -103,7 +103,7 @@ export function VersionUpdateModal({ release, isOpen, onClose }: VersionUpdateMo
                   className="flex items-start justify-between gap-3 py-1.5 border-b border-neutral-100 last:border-b-0 text-xs text-neutral-700"
                 >
                   <span className="leading-relaxed flex-1">{change.description}</span>
-                  <span className="font-mono font-semibold text-[11px] px-1.5 py-0.5 border border-neutral-300 rounded text-neutral-800 flex-shrink-0">
+                  <span className="font-mono font-semibold text-[11px] px-1.5 py-0.5 border border-neutral-300 rounded text-neutral-800 shrink-0">
                     +{change.points} pt{change.points > 1 ? "s" : ""}
                   </span>
                 </li>
@@ -147,7 +147,7 @@ export function VersionUpdateModal({ release, isOpen, onClose }: VersionUpdateMo
                       />
                     </svg>
                     <span>{contrib.githubUsername.replace(/^@/, '')}</span>
-                    <ExternalLink className="w-3 h-3 text-neutral-400" />
+                    <ExternalLink className="w-3 h-3 text-neutral-600" />
                   </a>
                 </div>
               ))}

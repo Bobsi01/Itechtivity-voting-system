@@ -69,7 +69,7 @@ export async function POST(request: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'VALIDATION_FAILED', details: parsed.error.format() },
+        { success: false, error: 'VALIDATION_FAILED', details: z.formatError(parsed.error) },
         { status: 400 }
       );
     }

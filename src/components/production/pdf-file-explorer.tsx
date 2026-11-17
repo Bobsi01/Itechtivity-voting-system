@@ -83,7 +83,7 @@ export function PdfFileExplorer({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search batches by number, filename, or serial range..."
-            className="w-full pl-9 pr-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+            className="w-full pl-9 pr-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
           />
         </div>
         <div className="flex items-center justify-between mt-2 text-[11px] font-mono text-neutral-600">
@@ -128,14 +128,14 @@ export function PdfFileExplorer({
               className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-neutral-50/50 transition-colors"
             >
               <div className="flex items-start gap-3 min-w-0">
-                <FileText className="w-5 h-5 text-neutral-700 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
+                <FileText className="w-5 h-5 text-neutral-700 shrink-0 mt-0.5" strokeWidth={1.75} />
                 <div className="min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-xs font-bold text-neutral-900 truncate select-text">
                       Batch #{file.batchNumber}
                     </span>
 
-                    <span className="text-[10px] font-mono border border-neutral-900 px-1.5 py-0.5 rounded text-neutral-900 flex-shrink-0 select-text uppercase">
+                    <span className="text-[10px] font-mono border border-neutral-900 px-1.5 py-0.5 rounded text-neutral-900 shrink-0 select-text uppercase">
                       {file.status || "COMPLETED"}
                     </span>
                   </div>
@@ -162,7 +162,7 @@ export function PdfFileExplorer({
               </div>
 
               {/* Action Buttons */}
-              {file.status === "COMPLETED" ? <div className="flex items-center gap-2 flex-shrink-0 pt-2 sm:pt-0">
+              {file.status === "COMPLETED" ? <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0">
                 <button
                   type="button"
                   onClick={() => onPreview(file)}

@@ -95,7 +95,7 @@ export function SavedPdfPage({ url, pageNumber }: SavedPdfPageProps) {
     <div ref={containerRef} className="w-full space-y-3" aria-busy={rendering && !error}>
       {error && (
         <div role="alert" className="p-4 text-sm flex items-center gap-2 border border-neutral-300 rounded text-neutral-900 bg-white">
-          <AlertCircle className="w-4 h-4 text-neutral-900 flex-shrink-0" />
+          <AlertCircle className="w-4 h-4 text-neutral-900 shrink-0" />
           <span>{error}</span>
         </div>
       )}

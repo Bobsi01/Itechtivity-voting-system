@@ -104,7 +104,7 @@ export function SearchableProgramPicker({
           {isLoading ? "Loading programs..." : displayLabel}
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-neutral-600 flex-shrink-0 transition-transform ${
+          className={`w-4 h-4 text-neutral-600 shrink-0 transition-transform ${
             isOpen ? "rotate-180 text-neutral-900" : ""
           }`}
         />
@@ -114,8 +114,8 @@ export function SearchableProgramPicker({
       {isOpen && (
         <div className="absolute z-50 left-0 right-0 mt-1.5 border border-neutral-900 rounded-lg shadow-xl bg-white overflow-hidden flex flex-col">
           {/* Search Bar Inside Dropdown */}
-          <div className="px-2 py-1 border-b border-neutral-200 flex items-center gap-2 bg-white">
-            <Search className="w-4 h-4 text-neutral-600 flex-shrink-0" />
+          <div className="px-2 py-1 border-b border-neutral-200 focus-within:border-neutral-900 flex items-center gap-2 bg-white">
+            <Search className="w-4 h-4 text-neutral-600 shrink-0" />
             <input
               ref={searchInputRef}
               type="text"
@@ -133,7 +133,7 @@ export function SearchableProgramPicker({
               }}
               aria-label="Search academic programs"
               placeholder="Search program or code..."
-              className="w-full text-base py-1.5 text-neutral-900 placeholder:text-neutral-500 focus:outline-none min-h-[44px]"
+              className="w-full text-base py-1.5 text-neutral-900 placeholder:text-neutral-500 focus:outline-hidden min-h-[44px]"
             />
             {searchQuery && (
               <button
@@ -167,7 +167,7 @@ export function SearchableProgramPicker({
                       <span className="text-neutral-800">{opt.name}</span>
                     </span>
                     {isSelected && (
-                      <Check className="w-4 h-4 text-neutral-900 flex-shrink-0" strokeWidth={2.5} />
+                      <Check className="w-4 h-4 text-neutral-900 shrink-0" strokeWidth={2.5} />
                     )}
                   </button>
                 );

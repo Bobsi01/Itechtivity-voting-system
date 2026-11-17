@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'INVALID_CARD_COUNT', details: parsed.error.format() },
+        { success: false, error: 'INVALID_CARD_COUNT', details: z.formatError(parsed.error) },
         { status: 400 }
       );
     }

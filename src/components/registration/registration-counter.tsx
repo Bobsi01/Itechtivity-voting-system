@@ -447,7 +447,7 @@ export function RegistrationCounter() {
           className="border-2 border-neutral-900 bg-white p-4 mb-4 text-center rounded-lg space-y-1"
         >
           <div className="flex items-center justify-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-neutral-900 flex-shrink-0" />
+            <AlertTriangle className="w-5 h-5 text-neutral-900 shrink-0" />
             <h2 className="font-bold text-sm uppercase tracking-wider text-neutral-900">
               Registration Paused
             </h2>
@@ -542,7 +542,7 @@ export function RegistrationCounter() {
               onChange={(e) => setBuyerName(e.target.value)}
               placeholder="e.g. Juan Dela Cruz"
               required
-              className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
+              className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px] disabled:opacity-50"
             />
           </div>
 
@@ -607,7 +607,7 @@ export function RegistrationCounter() {
               value={contactInfo}
               onChange={(e) => setContactInfo(e.target.value)}
               placeholder="e.g. 0917-000-0000 or email"
-              className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
+              className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px] disabled:opacity-50"
             />
           </div>
 
@@ -622,7 +622,7 @@ export function RegistrationCounter() {
                   value={studentNumber}
                   onChange={(e) => setStudentNumber(e.target.value)}
                   placeholder="e.g. 2023-12345"
-                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
+                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px] disabled:opacity-50"
                 />
               </div>
 
@@ -641,7 +641,7 @@ export function RegistrationCounter() {
                 value={affiliation}
                 onChange={(e) => setAffiliation(e.target.value)}
                 placeholder="e.g. Industry Partner / High School Guest / Family"
-                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
+                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px] disabled:opacity-50"
               />
             </div>
           )}
@@ -733,7 +733,7 @@ export function RegistrationCounter() {
               }
             }}
             placeholder="e.g. B27-B01-0001"
-            className="min-w-0 basis-full sm:basis-auto flex-1 px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
+            className="min-w-0 basis-full sm:basis-auto flex-1 px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px] disabled:opacity-50"
           />
           <button
             type="button"
@@ -768,7 +768,7 @@ export function RegistrationCounter() {
                   value={rangeStart}
                   onChange={(e) => setRangeStart(e.target.value)}
                   placeholder="e.g. B27-B01-0001"
-                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded min-h-[44px] disabled:opacity-50"
+                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px] disabled:opacity-50"
                 />
               </div>
               <div>
@@ -779,7 +779,7 @@ export function RegistrationCounter() {
                   value={rangeEnd}
                   onChange={(e) => setRangeEnd(e.target.value)}
                   placeholder="e.g. B27-B01-0020"
-                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded min-h-[44px] disabled:opacity-50"
+                  className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px] disabled:opacity-50"
                 />
               </div>
             </div>
@@ -807,7 +807,7 @@ export function RegistrationCounter() {
                   type="button"
                   disabled={!isRegistrationOpen || isSubmitting}
                   onClick={() => handleRemoveSerial(index)}
-                  className="min-h-[44px] min-w-[44px] p-2 flex items-center justify-center border border-transparent hover:border-neutral-300 hover:text-red-700 rounded transition-colors disabled:opacity-50"
+                  className="min-h-[44px] min-w-[44px] p-2 flex items-center justify-center border border-transparent hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 rounded transition-colors disabled:opacity-50"
                   aria-label={`Remove card ${serial}`}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -868,7 +868,7 @@ export function RegistrationCounter() {
                   value={cashTendered}
                   onChange={(e) => setCashTendered(e.target.value)}
                   placeholder="e.g. 500"
-                  className="w-full px-3 py-2 font-mono text-base border border-neutral-300 rounded min-h-[44px] focus:outline-none focus:border-neutral-900 disabled:opacity-50"
+                  className="w-full px-3 py-2 font-mono text-base border border-neutral-300 rounded min-h-[44px] focus:outline-hidden focus:border-neutral-900 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -960,7 +960,7 @@ export function RegistrationCounter() {
               }
             }}
             placeholder="Search by buyer name, student #, or card serial..."
-            className="min-w-0 flex-1 px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+            className="min-w-0 flex-1 px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
           />
           <button
             type="button"
@@ -1019,7 +1019,7 @@ export function RegistrationCounter() {
                   </p>
                 </div>
 
-                <div className="text-right flex-shrink-0 flex items-center gap-2">
+                <div className="text-right shrink-0 flex items-center gap-2">
                   <span className="font-mono font-bold text-neutral-900 text-xs border border-neutral-300 px-2 py-1 rounded select-text">
                     {tx.quantityBought} card{tx.quantityBought > 1 ? "s" : ""}
                   </span>

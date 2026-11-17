@@ -34,7 +34,7 @@ const UpsertBoothSchema = z.object({
     .nullable()
     .optional()
     .or(z.literal('')),
-  exhibitorEmail: z.string().trim().email().optional().or(z.literal('')),
+  exhibitorEmail: z.string().trim().pipe(z.email()).optional().or(z.literal('')),
   exhibitorName: z.string().trim().max(100).optional(),
   exhibitorPassword: z.string().min(6).max(100).optional().or(z.literal('')),
 });
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'VALIDATION_FAILED', details: parsed.error.format() },
+        { success: false, error: 'VALIDATION_FAILED', details: z.formatError(parsed.error) },
         { status: 400 }
       );
     }

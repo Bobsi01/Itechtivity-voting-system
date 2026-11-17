@@ -136,7 +136,7 @@ export function QrScanner({ onDecode, autoStart = false, imageInput = true }: Qr
       )}
       {error && (
         <div role="alert" className="text-sm text-neutral-900 break-words flex items-center gap-2 border border-neutral-300 p-2.5 rounded bg-white">
-          <AlertCircle className="w-4 h-4 text-neutral-900 flex-shrink-0" />
+          <AlertCircle className="w-4 h-4 text-neutral-900 shrink-0" />
           <span>{error}</span>
         </div>
       )}

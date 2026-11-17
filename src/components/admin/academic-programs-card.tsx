@@ -172,7 +172,7 @@ export function AcademicProgramsCard() {
                 onChange={(e) => setNewCode(e.target.value.toUpperCase())}
                 placeholder="e.g. BSCS"
                 required
-                className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+                className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
               />
             </div>
 
@@ -186,7 +186,7 @@ export function AcademicProgramsCard() {
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="e.g. BS in Computer Science"
                 required
-                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+                className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
               />
             </div>
           </div>
@@ -239,7 +239,7 @@ export function AcademicProgramsCard() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => handleToggleActive(prog.id, prog.isActive)}

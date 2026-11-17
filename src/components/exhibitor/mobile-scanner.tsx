@@ -246,7 +246,7 @@ export function MobileScanner() {
               className="border-2 border-neutral-900 rounded-lg p-4 bg-white text-neutral-900 space-y-1.5"
             >
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-neutral-900 flex-shrink-0" />
+                <AlertTriangle className="w-5 h-5 text-neutral-900 shrink-0" />
                 <span className="font-bold text-sm uppercase tracking-wider">
                   Emergency Voting Freeze Active
                 </span>
@@ -257,7 +257,7 @@ export function MobileScanner() {
             </div>
           )}
 
-          {/* Booth Header & Scoped Identity (Fixed layout with min-w-0 and flex-shrink-0 to prevent button overlap) */}
+          {/* Booth Header & Scoped Identity (Fixed layout with min-w-0 and shrink-0 to prevent button overlap) */}
           <div className="border border-neutral-300 p-4 rounded-lg space-y-3 bg-white">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -275,7 +275,7 @@ export function MobileScanner() {
           <button
             type="button"
             onClick={() => fetchBoothTally()}
-            className="flex-shrink-0 p-2.5 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors touch-manipulation select-none"
+            className="shrink-0 p-2.5 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors touch-manipulation select-none"
             aria-label="Refresh tally"
           >
             <RefreshCw className="w-4 h-4 text-neutral-800" />
@@ -347,7 +347,7 @@ export function MobileScanner() {
               onChange={(e) => setManualInputText(e.target.value)}
               disabled={!isVotingOpen}
               placeholder={isVotingOpen ? "e.g. B27-B01-0001-S1.9F4A2C8E or QR token" : "Voting is paused"}
-              className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] disabled:opacity-50"
+              className="w-full px-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px] disabled:opacity-50"
             />
           </div>
 
@@ -374,9 +374,9 @@ export function MobileScanner() {
         >
           <div className="flex items-start gap-3">
             {lastScanResult.success ? (
-              <CheckCircle2 className="w-5 h-5 text-neutral-900 flex-shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-5 h-5 text-neutral-900 shrink-0 mt-0.5" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-neutral-700 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-neutral-700 shrink-0 mt-0.5" />
             )}
             <div className="flex-1 min-w-0">
               <span className="text-xs font-mono uppercase tracking-wider text-neutral-600">
@@ -413,7 +413,7 @@ export function MobileScanner() {
                     : "border border-neutral-300 text-neutral-600 hover:border-neutral-700"
                 }`}
               >
-                <Award className="w-3.5 h-3.5 flex-shrink-0" />
+                <Award className="w-3.5 h-3.5 shrink-0" />
                 <span>Award Tallies</span>
               </button>
               <button
@@ -425,7 +425,7 @@ export function MobileScanner() {
                     : "border border-neutral-300 text-neutral-600 hover:border-neutral-700"
                 }`}
               >
-                <History className="w-3.5 h-3.5 flex-shrink-0" />
+                <History className="w-3.5 h-3.5 shrink-0" />
                 <span>Scan History</span>
                 <span className="font-mono text-[11px] border border-neutral-300 px-1 rounded">
                   {boothData?.recentScans.length ?? 0}
@@ -481,7 +481,7 @@ export function MobileScanner() {
                             <span className="font-mono text-[11px] text-neutral-500 select-text">#{scan.stubSerial}</span>
                           )}
                         </div>
-                        <span className="font-mono text-xs text-neutral-600 flex-shrink-0">
+                        <span className="font-mono text-xs text-neutral-600 shrink-0">
                           {new Date(scan.scannedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                         </span>
                       </div>
@@ -500,7 +500,7 @@ export function MobileScanner() {
                   value={scanSearchQuery}
                   onChange={(e) => setScanSearchQuery(e.target.value)}
                   placeholder="Search stub serial or award..."
-                  className="w-full pl-9 pr-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+                  className="w-full pl-9 pr-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
                 />
               </div>
 
@@ -534,7 +534,7 @@ export function MobileScanner() {
                             Stub: {scan.stubSerial || "Verified QR"}
                           </span>
                         </div>
-                        <div className="text-right flex-shrink-0 font-mono text-[11px] text-neutral-500">
+                        <div className="text-right shrink-0 font-mono text-[11px] text-neutral-500">
                           <div>{new Date(scan.scannedAt).toLocaleDateString([], { month: "short", day: "numeric" })}</div>
                           <div>{new Date(scan.scannedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</div>
                         </div>

@@ -25,7 +25,7 @@
 .projectGrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
 .projectCard { display: flex; flex-direction: column; min-width: 0; padding: 16px; border: 1px solid #d4d4d4; transition: border-color 150ms; }
 .projectCard:hover { border-color: #737373; }
-.coverBanner { position: relative; width: calc(100% + 44px); height: 140px; margin: -22px -22px 16px -22px; border-bottom: 1px solid #d4d4d4; overflow: hidden; }
+.coverBanner { position: relative; width: calc(100% + 32px); height: 140px; margin: -16px -16px 16px -16px; border-bottom: 1px solid #d4d4d4; overflow: hidden; }
 .cardTop { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 24px; }
 .boothCode { font-size: 14px; font-weight: 500; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; }
 .projectLogo { width: 40px; height: 40px; object-fit: contain; filter: grayscale(1); }

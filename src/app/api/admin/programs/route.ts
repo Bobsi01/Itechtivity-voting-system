@@ -13,7 +13,7 @@ const CreateProgramSchema = z.object({
 });
 
 const UpdateProgramSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   code: z.string().trim().min(2).max(15).transform((s) => s.toUpperCase()).optional(),
   name: z.string().trim().min(2).max(100).optional(),
   isActive: z.boolean().optional(),
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'VALIDATION_FAILED', details: parsed.error.format() },
+        { success: false, error: 'VALIDATION_FAILED', details: z.formatError(parsed.error) },
         { status: 400 }
       );
     }
@@ -123,7 +123,7 @@ export async function PATCH(request: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'VALIDATION_FAILED', details: parsed.error.format() },
+        { success: false, error: 'VALIDATION_FAILED', details: z.formatError(parsed.error) },
         { status: 400 }
       );
     }
@@ -174,7 +174,7 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const parsedId = z.string().uuid().safeParse(id);
+    const parsedId = z.uuid().safeParse(id);
 
     if (!parsedId.success) {
       return NextResponse.json({ success: false, error: 'INVALID_OR_MISSING_ID' }, { status: 400 });

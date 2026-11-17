@@ -325,7 +325,7 @@ export function AuditTrailCard() {
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-300 pb-4">
         <div className="flex items-center gap-3">
-          <FileText className="w-5 h-5 text-neutral-800 flex-shrink-0" strokeWidth={1.75} />
+          <FileText className="w-5 h-5 text-neutral-800 shrink-0" strokeWidth={1.75} />
           <div>
             <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-900">
               System-Wide Audit & Activity Log Trail
@@ -372,7 +372,7 @@ export function AuditTrailCard() {
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by attendee, serial, booth, actor, or keyword..."
-            className="w-full pl-9 pr-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+            className="w-full pl-9 pr-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
           />
         </div>
 
@@ -385,7 +385,7 @@ export function AuditTrailCard() {
             id="audit-resource-filter"
             value={resourceFilter}
             onChange={(e) => handleResourceFilterChange(e.target.value)}
-            className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] bg-white"
+            className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px] bg-white"
           >
             <option value="ALL">All Event Categories</option>
             <option value="AUTH">Authentication & Sessions</option>
@@ -409,7 +409,7 @@ export function AuditTrailCard() {
             id="audit-role-filter"
             value={roleFilter}
             onChange={(e) => handleRoleFilterChange(e.target.value)}
-            className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px] bg-white"
+            className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px] bg-white"
           >
             <option value="ALL">All Actor Roles</option>
             <option value="ADMIN">Admin Staff</option>
@@ -463,11 +463,11 @@ export function AuditTrailCard() {
                           <span className="font-mono text-xs font-bold text-neutral-900 truncate">
                             {log.action}
                           </span>
-                          <span className="font-mono text-[10px] border border-neutral-300 px-1 py-0.5 rounded text-neutral-600 flex-shrink-0">
+                          <span className="font-mono text-[10px] border border-neutral-300 px-1 py-0.5 rounded text-neutral-600 shrink-0">
                             {getResourceLabel(log.resource)}
                           </span>
                         </div>
-                        <span className="font-mono text-[11px] text-neutral-500 whitespace-nowrap flex-shrink-0">
+                        <span className="font-mono text-[11px] text-neutral-500 whitespace-nowrap shrink-0">
                           {formatTimestampCompact(log.createdAt)}
                         </span>
                       </div>
@@ -479,7 +479,7 @@ export function AuditTrailCard() {
 
                       {/* Row 3: Actor Name + Role */}
                       <div className="flex items-center gap-1.5 text-[11px] font-mono text-neutral-500 truncate">
-                        <User className="w-3 h-3 text-neutral-500 flex-shrink-0" />
+                        <User className="w-3 h-3 text-neutral-500 shrink-0" />
                         <span className="text-neutral-700 font-medium truncate">{log.actorName}</span>
                         <span>•</span>
                         <span className="truncate">{log.actorRole}</span>
@@ -491,7 +491,7 @@ export function AuditTrailCard() {
             )}
 
             {/* Pagination Controls */}
-            <div className="border-t border-neutral-200 px-3 py-2 flex items-center justify-between bg-white text-xs flex-shrink-0">
+            <div className="border-t border-neutral-200 px-3 py-2 flex items-center justify-between bg-white text-xs shrink-0">
               <button
                 type="button"
                 onClick={() => handlePageChange(Math.max(1, page - 1))}
@@ -528,7 +528,7 @@ export function AuditTrailCard() {
           {selectedLog ? (
             <div className="border border-neutral-300 rounded-lg p-4 sm:p-5 bg-white flex flex-col justify-between h-[560px] overflow-hidden">
               {/* Header */}
-              <div className="flex items-start justify-between gap-3 border-b border-neutral-200 pb-3 flex-shrink-0">
+              <div className="flex items-start justify-between gap-3 border-b border-neutral-200 pb-3 shrink-0">
                 <div className="min-w-0 space-y-1">
                   {/* Mobile Back Button */}
                   <button
@@ -553,7 +553,7 @@ export function AuditTrailCard() {
                   </h3>
                 </div>
 
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
                     onClick={handleCopyJson}
@@ -646,7 +646,7 @@ export function AuditTrailCard() {
             </div>
           ) : (
             <div className="border border-neutral-300 border-dashed rounded-lg p-6 bg-white flex flex-col items-center justify-center text-center h-[560px] space-y-3">
-              <FileText className="w-10 h-10 text-neutral-400 stroke-1" />
+              <FileText className="w-10 h-10 text-neutral-600 stroke-1" />
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-neutral-800">
                   No Audit Event Selected

@@ -738,7 +738,7 @@ export function CardInspectorCard({
         <button
           type="button"
           onClick={() => setIsPreviewExpandedModalOpen(true)}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none flex-shrink-0"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none shrink-0"
         >
           <Maximize2 className="w-4 h-4" />
           <span>Expand Card Preview</span>
@@ -754,7 +754,7 @@ export function CardInspectorCard({
           autoCapitalize="characters"
           placeholder="Enter Card Serial (e.g. B27-B01-0001)"
           aria-label="Inspect Card Serial"
-          className="flex-1 px-3 py-2 text-base font-mono uppercase border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
+          className="flex-1 px-3 py-2 text-base font-mono uppercase border border-neutral-300 rounded focus:outline-hidden focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
         />
         <button
           type="submit"
@@ -771,7 +771,7 @@ export function CardInspectorCard({
           role="alert"
           className="flex items-center gap-2 text-sm font-medium text-neutral-900 border border-neutral-300 p-3 rounded bg-white"
         >
-          <AlertCircle className="w-4 h-4 text-neutral-900 flex-shrink-0" />
+          <AlertCircle className="w-4 h-4 text-neutral-900 shrink-0" />
           <span>{lookupError}</span>
         </div>
       )}
@@ -801,7 +801,7 @@ export function CardInspectorCard({
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {inspectedCard.status !== "VOID" ? (
               <button
                 type="button"
@@ -1008,7 +1008,7 @@ export function CardInspectorCard({
                         {isRedeemed ? (
                           <CheckCircle2 className="w-4 h-4 text-neutral-900" />
                         ) : (
-                          <CircleDashed className="w-4 h-4 text-neutral-400" />
+                          <CircleDashed className="w-4 h-4 text-neutral-600" />
                         )}
                         <span className="font-mono text-xs font-bold text-neutral-900 select-text">
                           Slot {stub.slotNumber}
@@ -1052,7 +1052,7 @@ export function CardInspectorCard({
                         Ready to vote (Attendee has not cast this vote stub yet)
                       </p>
                     ) : (
-                      <p className="text-xs font-mono text-neutral-400 border-t border-neutral-100 pt-1.5">
+                      <p className="text-xs font-mono text-neutral-600 border-t border-neutral-100 pt-1.5">
                         Inactive (Card unactivated or marked void)
                       </p>
                     )}

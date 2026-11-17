@@ -11,7 +11,7 @@ import { createHumanReadableSummary } from '@/lib/audit/log';
 
 const VoteRequestSchema = z.object({
   qrPayload: z.string().min(5).max(512),
-  boothId: z.string().uuid(),
+  boothId: z.uuid(),
 });
 
 const IdempotencyKeySchema = z

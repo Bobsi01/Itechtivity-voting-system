@@ -7,7 +7,7 @@ import { recordAuditLog, createHumanReadableSummary } from '@/lib/audit/log';
 import { getClientIp } from '@/lib/security/rate-limiter';
 
 const UpdateCardStatusSchema = z.object({
-  cardId: z.string().uuid(),
+  cardId: z.uuid(),
   action: z.enum(['VOID', 'RESTORE']),
 });
 
@@ -143,7 +143,7 @@ export async function PATCH(request: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'VALIDATION_FAILED', details: parsed.error.format() },
+        { success: false, error: 'VALIDATION_FAILED', details: z.formatError(parsed.error) },
         { status: 400 }
       );
     }

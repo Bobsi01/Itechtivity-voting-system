@@ -303,7 +303,7 @@ export function BoothManagementCard() {
             placeholder="Search booth code, project title, or category..."
             value={search}
             onChange={(event) => { setSearch(event.target.value); setPageIndex(0); }}
-            className="w-full min-h-11 border border-neutral-300 rounded pl-9 pr-3 text-base font-mono placeholder:text-neutral-500 focus:outline-none focus:border-neutral-900 text-neutral-900"
+            className="w-full min-h-11 border border-neutral-300 rounded pl-9 pr-3 text-base font-mono placeholder:text-neutral-500 focus:outline-hidden focus:border-neutral-900 text-neutral-900"
           />
         </div>
 
@@ -351,7 +351,7 @@ export function BoothManagementCard() {
                 <div className="flex items-start justify-between gap-2.5">
                   <div className="flex items-center gap-2.5 min-w-0">
                     {booth.logoUrl ? (
-                      <div className="w-11 h-11 rounded border border-neutral-300 flex-shrink-0 flex items-center justify-center p-1 bg-white overflow-hidden">
+                      <div className="w-11 h-11 rounded border border-neutral-300 shrink-0 flex items-center justify-center p-1 bg-white overflow-hidden">
                         <Image
                           src={booth.logoUrl}
                           alt={`${booth.code} logo`}
@@ -384,7 +384,7 @@ export function BoothManagementCard() {
                     </div>
                   </div>
 
-                  <span className="font-mono font-bold text-xs text-neutral-900 border border-neutral-300 px-2 py-1 rounded flex-shrink-0 select-text">
+                  <span className="font-mono font-bold text-xs text-neutral-900 border border-neutral-300 px-2 py-1 rounded shrink-0 select-text">
                     {booth.voteCount} votes
                   </span>
                 </div>
@@ -479,7 +479,7 @@ export function BoothManagementCard() {
 
                 {logoUrl ? (
                   <div className="flex items-center gap-3.5">
-                    <div className="w-16 h-16 rounded border border-neutral-300 p-1 flex items-center justify-center bg-white flex-shrink-0">
+                    <div className="w-16 h-16 rounded border border-neutral-300 p-1 flex items-center justify-center bg-white shrink-0">
                       <Image
                         src={logoUrl}
                         alt="Booth logo preview"
@@ -561,7 +561,7 @@ export function BoothManagementCard() {
                     onChange={(e) => setCode(e.target.value.toUpperCase())}
                     autoCapitalize="characters"
                     disabled={Boolean(editingBooth)}
-                    className="w-full px-3 py-2 text-base font-mono uppercase border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px] disabled:opacity-60"
+                    className="w-full px-3 py-2 text-base font-mono uppercase border border-neutral-300 rounded focus:outline-hidden focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px] disabled:opacity-60"
                   />
                 </div>
 
@@ -575,7 +575,7 @@ export function BoothManagementCard() {
                     placeholder="e.g. SecureMesh Distributed Edge Firewall"
                     value={projectTitle}
                     onChange={(e) => setProjectTitle(e.target.value)}
-                    className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
+                    className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-hidden focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
                   />
                 </div>
               </div>
@@ -591,13 +591,13 @@ export function BoothManagementCard() {
                     placeholder="e.g. Cybersecurity & AI"
                     value={capstoneCategory}
                     onChange={(e) => setCapstoneCategory(e.target.value)}
-                    className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
+                    className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-hidden focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
                   />
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-xs font-mono uppercase text-neutral-700" htmlFor="booth-program-input">Academic Program</label>
-                  <select id="booth-program-input" value={programCode} onChange={(event) => setProgramCode(event.target.value)} className="w-full min-h-11 rounded border border-neutral-300 px-3 py-2 text-base text-neutral-900">
+                  <select id="booth-program-input" value={programCode} onChange={(event) => setProgramCode(event.target.value)} className="w-full min-h-11 rounded border border-neutral-300 px-3 py-2 text-base text-neutral-900 focus:border-neutral-900 focus:outline-hidden">
                     <option value="">Not assigned</option>
                     {Array.from(new Set([...programOptions, ...(programCode ? [programCode] : [])])).map((program) => (
                       <option key={program} value={program}>{program}</option>
@@ -615,7 +615,7 @@ export function BoothManagementCard() {
                     placeholder="e.g. Booth-9"
                     value={tableNumber}
                     onChange={(e) => setTableNumber(e.target.value)}
-                    className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
+                    className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-hidden focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
                   />
                 </div>
 
@@ -627,7 +627,7 @@ export function BoothManagementCard() {
                     id="booth-mapslot-input"
                     value={mapSlot}
                     onChange={(e) => setMapSlot(e.target.value)}
-                    className="w-full min-h-11 rounded border border-neutral-300 px-3 py-2 text-base text-neutral-900"
+                    className="w-full min-h-11 rounded border border-neutral-300 px-3 py-2 text-base text-neutral-900 focus:border-neutral-900 focus:outline-hidden"
                   >
                     <option value="">Unassigned</option>
                     {FLOOR_MAP_SLOTS.map((slot) => {
@@ -658,7 +658,7 @@ export function BoothManagementCard() {
                   placeholder="e.g. Santos, Reyes, Cruz"
                   value={teamMembers}
                   onChange={(e) => setTeamMembers(e.target.value)}
-                  className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
+                  className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-hidden focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
                 />
               </div>
 
@@ -681,7 +681,7 @@ export function BoothManagementCard() {
                       placeholder="e.g. booth9@ucc-csd.edu.ph"
                       value={exhibitorEmail}
                       onChange={(e) => setExhibitorEmail(e.target.value)}
-                      className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
+                      className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-hidden focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
                     />
                   </div>
 
@@ -695,7 +695,7 @@ export function BoothManagementCard() {
                       placeholder="e.g. CS-09 Booth Lead"
                       value={exhibitorName}
                       onChange={(e) => setExhibitorName(e.target.value)}
-                      className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
+                      className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-hidden focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
                     />
                   </div>
 
@@ -709,7 +709,7 @@ export function BoothManagementCard() {
                       placeholder="Default: itech2027"
                       value={exhibitorPassword}
                       onChange={(e) => setExhibitorPassword(e.target.value)}
-                      className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
+                      className="w-full px-3 py-2 text-base border border-neutral-300 rounded focus:outline-hidden focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500 min-h-[44px]"
                     />
                   </div>
                 </div>

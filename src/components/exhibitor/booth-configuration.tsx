@@ -224,7 +224,7 @@ export function BoothConfiguration() {
       >
         <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
           <div className="flex items-center gap-2">
-            <Lock className="w-4 h-4 text-neutral-700 flex-shrink-0" />
+            <Lock className="w-4 h-4 text-neutral-700 shrink-0" />
             <h2 id="readonly-params-heading" className="text-xs font-bold uppercase tracking-wider text-neutral-900">
               Assigned Parameters (Admin-Governed)
             </h2>
@@ -251,7 +251,7 @@ export function BoothConfiguration() {
               Floor Map Slot
             </span>
             <div className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-neutral-700 flex-shrink-0" />
+              <MapPin className="w-3.5 h-3.5 text-neutral-700 shrink-0" />
               <span className="font-mono text-xs font-bold border border-neutral-900 px-1.5 py-0.5 rounded text-neutral-900">
                 {booth.mapSlot || "Unassigned"}
               </span>
@@ -301,7 +301,7 @@ export function BoothConfiguration() {
       >
         <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
           <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-neutral-700 flex-shrink-0" />
+            <MapPin className="w-4 h-4 text-neutral-700 shrink-0" />
             <h2 id="floormap-preview-heading" className="text-xs font-bold uppercase tracking-wider text-neutral-900">
               Assigned Venue Floor Location
             </h2>
@@ -346,7 +346,7 @@ export function BoothConfiguration() {
       >
         <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
           <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-neutral-700 flex-shrink-0" />
+            <Building2 className="w-4 h-4 text-neutral-700 shrink-0" />
             <h2 id="booth-metadata-heading" className="text-xs font-bold uppercase tracking-wider text-neutral-900">
               Capstone Showcase Profile
             </h2>
@@ -371,7 +371,7 @@ export function BoothConfiguration() {
               value={projectTitle}
               onChange={(e) => setProjectTitle(e.target.value)}
               placeholder="e.g. AgriSense: Autonomous Crop Analytics"
-              className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+              className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
             />
             <p className="text-[11px] font-mono text-neutral-500">
               Official title displayed on public showcase listings and voting certificates.
@@ -395,7 +395,7 @@ export function BoothConfiguration() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Provide a concise summary of the project problem, methodology, and key features..."
-              className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[100px]"
+              className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[100px]"
             />
           </div>
 
@@ -412,7 +412,7 @@ export function BoothConfiguration() {
                 value={websiteUrl}
                 onChange={(e) => setWebsiteUrl(e.target.value)}
                 placeholder="https://example.com/project"
-                className="w-full pl-3 pr-10 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+                className="w-full pl-3 pr-10 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
               />
               {websiteUrl.trim() && (
                 <a
@@ -445,7 +445,7 @@ export function BoothConfiguration() {
               value={teamMembers}
               onChange={(e) => setTeamMembers(e.target.value)}
               placeholder="e.g. Juan Dela Cruz, Maria Santos, Pedro Penduko"
-              className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+              className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
             />
             <p className="text-[11px] font-mono text-neutral-500">
               Formatted author list shown to attendees. To grant teammates login access to scan, use the Co-Exhibitors section below.
@@ -465,7 +465,7 @@ export function BoothConfiguration() {
                 value={logoUrl}
                 onChange={(e) => setLogoUrl(e.target.value)}
                 placeholder="https://... or data:image/png;base64,..."
-                className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+                className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
               />
               {logoUrl.trim() && (
                 <div className="border border-neutral-200 rounded p-2 flex items-center gap-2">
@@ -494,11 +494,11 @@ export function BoothConfiguration() {
                 value={coverUrl}
                 onChange={(e) => setCoverUrl(e.target.value)}
                 placeholder="https://... or data:image/jpeg;base64,..."
-                className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+                className="w-full px-3 py-2.5 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
               />
               {coverUrl.trim() && (
                 <div className="border border-neutral-200 rounded p-2 flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-neutral-600 flex-shrink-0" />
+                  <ImageIcon className="w-4 h-4 text-neutral-600 shrink-0" />
                   <span className="font-mono text-[10px] text-neutral-600 truncate">Cover banner configured</span>
                 </div>
               )}
@@ -535,7 +535,7 @@ export function BoothConfiguration() {
       >
         <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-neutral-700 flex-shrink-0" />
+            <Users className="w-4 h-4 text-neutral-700 shrink-0" />
             <div>
               <h2 id="coexhibitor-heading" className="text-xs font-bold uppercase tracking-wider text-neutral-900">
                 Co-Exhibitor Scanner Accounts
@@ -568,7 +568,7 @@ export function BoothConfiguration() {
                       {member.email}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0 text-right">
+                  <div className="flex items-center gap-2 shrink-0 text-right">
                     <span className="font-mono text-[10px] border border-neutral-300 px-1.5 py-0.5 rounded text-neutral-600">
                       {member.role}
                     </span>
@@ -604,7 +604,7 @@ export function BoothConfiguration() {
                 value={newMemberName}
                 onChange={(e) => setNewMemberName(e.target.value)}
                 placeholder="Maria Santos"
-                className="w-full px-3 py-2 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+                className="w-full px-3 py-2 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
               />
             </div>
 
@@ -620,7 +620,7 @@ export function BoothConfiguration() {
                 value={newMemberEmail}
                 onChange={(e) => setNewMemberEmail(e.target.value)}
                 placeholder="santos.m@ucc.edu.ph"
-                className="w-full px-3 py-2 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+                className="w-full px-3 py-2 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
               />
             </div>
 
@@ -638,7 +638,7 @@ export function BoothConfiguration() {
                 value={newMemberPassword}
                 onChange={(e) => setNewMemberPassword(e.target.value)}
                 placeholder="Min 6 characters"
-                className="w-full px-3 py-2 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+                className="w-full px-3 py-2 font-mono text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
               />
             </div>
           </div>
@@ -650,7 +650,7 @@ export function BoothConfiguration() {
             <button
               type="submit"
               disabled={isCreatingMember}
-              className="min-h-[44px] px-5 py-2 border border-neutral-900 hover:border-neutral-700 text-xs font-bold uppercase tracking-wider rounded text-neutral-900 transition-colors inline-flex items-center gap-1.5 disabled:opacity-50 touch-manipulation select-none flex-shrink-0"
+              className="min-h-[44px] px-5 py-2 border border-neutral-900 hover:border-neutral-700 text-xs font-bold uppercase tracking-wider rounded text-neutral-900 transition-colors inline-flex items-center gap-1.5 disabled:opacity-50 touch-manipulation select-none shrink-0"
             >
               {isCreatingMember ? (
                 <>

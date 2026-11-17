@@ -55,7 +55,7 @@ export function DataExportCard() {
               className="border border-neutral-300 p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4"
             >
               <div className="flex items-start gap-3">
-                <Icon className="w-5 h-5 text-neutral-800 flex-shrink-0 mt-0.5" />
+                <Icon className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <h3 className="text-sm font-bold text-neutral-900">{item.title}</h3>
                   <p className="text-xs text-neutral-600 leading-relaxed font-mono">

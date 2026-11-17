@@ -4,13 +4,13 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
-const AuditQuerySchema = z.object({
+const AuditQuerySchema = z.strictObject({
   page: z.coerce.number().int().min(1).max(100000).default(1),
   limit: z.coerce.number().int().min(5).max(100).default(25),
   resource: z.string().max(64).default('ALL'),
   actorRole: z.enum(['ALL', 'ADMIN', 'PRODUCTION', 'REGISTRATION', 'EXHIBITOR', 'SYSTEM']).default('ALL'),
   search: z.string().trim().max(200).default(''),
-}).strict();
+});
 
 export async function GET(request: Request) {
 

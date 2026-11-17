@@ -164,7 +164,7 @@ function LoginForm() {
 
       {(error || accessError) && (
         <div role="alert" className="flex items-center gap-2 border border-neutral-300 p-3 rounded text-sm font-medium text-neutral-900 bg-white">
-          <AlertCircle className="w-4 h-4 text-neutral-900 flex-shrink-0" />
+          <AlertCircle className="w-4 h-4 text-neutral-900 shrink-0" />
           <span>{error || accessError}</span>
         </div>
       )}
@@ -200,7 +200,7 @@ function LoginForm() {
               value={email}
               onChange={(e) => handleEmailChange(e.target.value)}
               placeholder="user@itech2027.edu"
-              className="w-full px-3 py-2.5 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+              className="w-full px-3 py-2.5 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
               required
             />
           </div>
@@ -213,7 +213,7 @@ function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter password"
-              className="w-full px-3 py-2.5 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+              className="w-full px-3 py-2.5 text-base border border-neutral-300 rounded focus:border-neutral-900 focus:outline-hidden min-h-[44px]"
               required
             />
           </div>

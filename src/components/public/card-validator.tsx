@@ -229,7 +229,7 @@ export function CardValidator() {
               autoComplete="off"
               spellCheck="false"
               autoFocus
-              className="w-full min-h-11 px-3 py-2 text-base font-mono uppercase border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500"
+              className="w-full min-h-11 px-3 py-2 text-base font-mono uppercase border border-neutral-300 rounded focus:outline-hidden focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500"
             />
           </div>
 
@@ -271,7 +271,7 @@ export function CardValidator() {
           role="alert"
           className="border border-neutral-900 rounded p-3 flex items-start gap-2.5 text-xs text-neutral-900"
         >
-          <AlertCircle className="w-4 h-4 text-neutral-900 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="w-4 h-4 text-neutral-900 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <p className="font-bold uppercase tracking-wide">Validation Notice</p>
             <p className="text-neutral-700">{errorMessage}</p>
@@ -462,7 +462,7 @@ export function CardValidator() {
 
                       {stub.status === "REDEEMED" && stub.votedBooth && (
                         <div className="flex items-center gap-1.5 text-neutral-900 font-medium">
-                          <Vote className="w-3.5 h-3.5 flex-shrink-0" />
+                          <Vote className="w-3.5 h-3.5 shrink-0" />
                           <span>
                             Voted: {stub.votedBooth.code} ({stub.votedBooth.projectTitle})
                           </span>

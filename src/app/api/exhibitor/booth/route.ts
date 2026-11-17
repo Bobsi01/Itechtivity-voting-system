@@ -21,7 +21,7 @@ const ExhibitorBoothUpdateSchema = z.object({
     .optional(),
   websiteUrl: z
     .union([
-      z.string().trim().url('Website must be a valid URL starting with http:// or https://.').max(500),
+      z.string().trim().max(500).pipe(z.url('Website must be a valid URL starting with http:// or https://.')),
       z.literal(''),
     ])
     .nullable()
@@ -134,7 +134,7 @@ export async function PATCH(request: Request) {
       {
         success: false,
         error: 'VALIDATION_ERROR',
-        details: parseResult.error.flatten(),
+        details: z.flattenError(parseResult.error),
       },
       { status: 400 }
     );

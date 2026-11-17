@@ -129,7 +129,7 @@ export default function NotificationsPage() {
                       key={idx}
                       className="flex items-start gap-2.5 p-3 border border-neutral-300 rounded text-neutral-900 text-xs sm:text-sm font-medium"
                     >
-                      <CheckCircle2 className="w-4 h-4 text-neutral-900 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-4 h-4 text-neutral-900 shrink-0 mt-0.5" />
                       <span className="leading-snug">{highlight}</span>
                     </li>
                   ))}
@@ -151,14 +151,14 @@ export default function NotificationsPage() {
                     >
                       <div className="flex items-start gap-2.5 flex-1 min-w-0">
                         <span
-                          className="text-neutral-700 font-bold select-none text-sm leading-tight flex-shrink-0"
+                          className="text-neutral-700 font-bold select-none text-sm leading-tight shrink-0"
                           aria-hidden="true"
                         >
                           •
                         </span>
                         <span className="leading-relaxed">{change.description}</span>
                       </div>
-                      <span className="font-mono font-bold text-[11px] px-2 py-0.5 border border-neutral-400 rounded text-neutral-900 flex-shrink-0">
+                      <span className="font-mono font-bold text-[11px] px-2 py-0.5 border border-neutral-400 rounded text-neutral-900 shrink-0">
                         +{change.points} pt{change.points > 1 ? "s" : ""}
                       </span>
                     </div>
@@ -205,7 +205,7 @@ export default function NotificationsPage() {
                           />
                         </svg>
                         <span>{contrib.githubUsername.replace(/^@/, '')}</span>
-                        <ExternalLink className="w-3 h-3 text-neutral-400" />
+                        <ExternalLink className="w-3 h-3 text-neutral-600" />
                       </a>
                     </div>
                   ))}

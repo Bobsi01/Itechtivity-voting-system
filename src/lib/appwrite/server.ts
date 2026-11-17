@@ -80,6 +80,22 @@ function getServerClient(): {
   };
 }
 
+async function createAppwriteDocument(
+  collectionId: string,
+  data: Record<string, unknown>
+): Promise<void> {
+
+  const { databases } = getServerClient();
+  const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
+
+  await databases.createDocument({
+    databaseId,
+    collectionId,
+    documentId: ID.unique(),
+    data,
+  });
+}
+
 /**
  * Broadcasts a verified vote event via Appwrite Realtime WebSockets.
  * Offloads live WebSocket connections from the Next.js server to Appwrite Cloud.
@@ -92,16 +108,8 @@ export async function broadcastVoteEvent(payload: VoteBroadcastPayload): Promise
       return;
     }
 
-    const { databases } = getServerClient();
-    const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
     const collectionId = process.env.APPWRITE_VOTES_COLLECTION_ID || 'votes';
-
-    await databases.createDocument(
-      databaseId,
-      collectionId,
-      ID.unique(),
-      validated
-    );
+    await createAppwriteDocument(collectionId, validated);
   } catch (error) {
     console.warn('[Appwrite Realtime Broadcast Fallback]:', payload?.boothCode, payload?.awardTitle, error);
   }
@@ -119,16 +127,8 @@ export async function broadcastBatchEvent(payload: BatchBroadcastPayload): Promi
       return;
     }
 
-    const { databases } = getServerClient();
-    const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
     const collectionId = process.env.APPWRITE_PDF_BATCHES_COLLECTION_ID || 'pdf_batches';
-
-    await databases.createDocument(
-      databaseId,
-      collectionId,
-      ID.unique(),
-      validated
-    );
+    await createAppwriteDocument(collectionId, validated);
   } catch (error) {
     console.warn('[Appwrite Batch Broadcast Fallback]:', payload?.batchNumber, error);
   }
@@ -146,16 +146,8 @@ export async function broadcastRegistrationEvent(payload: RegistrationBroadcastP
       return;
     }
 
-    const { databases } = getServerClient();
-    const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
     const collectionId = process.env.APPWRITE_SYSTEM_EVENTS_COLLECTION_ID || 'system_events';
-
-    await databases.createDocument(
-      databaseId,
-      collectionId,
-      ID.unique(),
-      validated
-    );
+    await createAppwriteDocument(collectionId, validated);
   } catch (error) {
     console.warn('[Appwrite Registration Broadcast Fallback]:', error);
   }
@@ -173,16 +165,8 @@ export async function broadcastCardActivationEvent(payload: CardBatchActivatedBr
       return;
     }
 
-    const { databases } = getServerClient();
-    const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
     const collectionId = process.env.APPWRITE_SYSTEM_EVENTS_COLLECTION_ID || 'system_events';
-
-    await databases.createDocument(
-      databaseId,
-      collectionId,
-      ID.unique(),
-      validated
-    );
+    await createAppwriteDocument(collectionId, validated);
   } catch (error) {
     console.warn('[Appwrite Card Activation Broadcast Fallback]:', error);
   }
@@ -207,16 +191,8 @@ export async function broadcastSystemConfigEvent(
       return;
     }
 
-    const { databases } = getServerClient();
-    const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
     const collectionId = process.env.APPWRITE_SYSTEM_EVENTS_COLLECTION_ID || 'system_events';
-
-    await databases.createDocument(
-      databaseId,
-      collectionId,
-      ID.unique(),
-      validated
-    );
+    await createAppwriteDocument(collectionId, validated);
   } catch (error) {
     console.warn('[Appwrite System Config Broadcast Fallback]:', error);
   }
@@ -234,16 +210,8 @@ export async function broadcastAuditEvent(payload: AuditBroadcastPayload): Promi
       return;
     }
 
-    const { databases } = getServerClient();
-    const databaseId = process.env.APPWRITE_DATABASE_ID || 'itech2027-db';
     const collectionId = process.env.APPWRITE_SYSTEM_EVENTS_COLLECTION_ID || 'system_events';
-
-    await databases.createDocument(
-      databaseId,
-      collectionId,
-      ID.unique(),
-      validated
-    );
+    await createAppwriteDocument(collectionId, validated);
   } catch (error) {
     console.warn('[Appwrite Audit Broadcast Fallback]:', error);
   }
@@ -261,11 +229,11 @@ export async function triggerLeaderboardSnapshot(): Promise<void> {
     }
 
     const { functions } = getServerClient();
-    await functions.createExecution(
-      'compute-leaderboard-snapshot',
-      JSON.stringify({ triggeredAt: new Date().toISOString() }),
-      true
-    );
+    await functions.createExecution({
+      functionId: 'compute-leaderboard-snapshot',
+      body: JSON.stringify({ triggeredAt: new Date().toISOString() }),
+      async: true,
+    });
   } catch (error) {
     console.warn('[Appwrite Leaderboard Snapshot Trigger Fallback]:', error);
   }
@@ -289,7 +257,11 @@ export async function uploadBatchPdfToAppwrite(
     const bucketId = process.env.APPWRITE_STORAGE_BUCKET_ID || 'bingo-cards-pdf';
     const inputFile = InputFile.fromBuffer(fileBuffer, fileName);
 
-    const uploadedFile = await storage.createFile(bucketId, ID.unique(), inputFile);
+    const uploadedFile = await storage.createFile({
+      bucketId,
+      fileId: ID.unique(),
+      file: inputFile,
+    });
     return uploadedFile.$id;
   } catch (error) {
     console.warn('[Appwrite Storage Upload Fallback]:', error);
@@ -309,7 +281,10 @@ export async function downloadBatchPdfFromAppwrite(fileId: string): Promise<Buff
   try {
     const { storage } = getServerClient();
     const bucketId = process.env.APPWRITE_STORAGE_BUCKET_ID || 'bingo-cards-pdf';
-    const arrayBuffer = await storage.getFileView(bucketId, fileId);
+    const arrayBuffer = await storage.getFileView({
+      bucketId,
+      fileId,
+    });
     return Buffer.from(arrayBuffer);
   } catch (error) {
     console.warn('[Appwrite Storage Download Fallback]:', error);
@@ -318,7 +293,7 @@ export async function downloadBatchPdfFromAppwrite(fileId: string): Promise<Buff
 }
 
 /**
- * Triggers an asynchronous Appwrite Function execution (xasync: true) for batch PDF generation.
+ * Triggers an asynchronous Appwrite Function execution (async: true) for batch PDF generation.
  * The serverless function renders the A4 vector PDF, uploads to Appwrite Storage, updates Supabase,
  * and broadcasts a Realtime WebSocket notification on completion.
  */
@@ -338,11 +313,11 @@ export async function triggerAppwritePdfGeneration(batchPayload: {
     const { functions } = getServerClient();
     const functionId = process.env.APPWRITE_FUNCTION_ID || 'generate-bingo-pdf';
 
-    const execution = await functions.createExecution(
+    const execution = await functions.createExecution({
       functionId,
-      JSON.stringify(batchPayload),
-      true
-    );
+      body: JSON.stringify(batchPayload),
+      async: true,
+    });
 
     return {
       success: true,
@@ -373,7 +348,11 @@ export async function uploadBoothLogoToAppwrite(
     const bucketId = process.env.APPWRITE_BOOTH_LOGOS_BUCKET_ID || 'booth-logos';
     const inputFile = InputFile.fromBuffer(fileBuffer, fileName);
 
-    const uploadedFile = await storage.createFile(bucketId, ID.unique(), inputFile);
+    const uploadedFile = await storage.createFile({
+      bucketId,
+      fileId: ID.unique(),
+      file: inputFile,
+    });
     const endpoint = process.env.APPWRITE_ENDPOINT || 'https://sgp.cloud.appwrite.io/v1';
     const projectId = process.env.APPWRITE_PROJECT_ID || 'itechtivity-2027';
     const viewUrl = `${endpoint}/storage/buckets/${bucketId}/files/${uploadedFile.$id}/view?project=${projectId}`;
