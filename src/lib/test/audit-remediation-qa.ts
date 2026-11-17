@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 import bcrypt from 'bcryptjs';
 import { PrismaClient, Role } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { encodeStubPayload, generateStubSignature } from '../crypto/stub-tokens';
 
 const compose = readFileSync('docker-compose.yml', 'utf8');
@@ -13,7 +14,9 @@ process.env.DATABASE_URL = `postgresql://itech_admin:${encodeURIComponent(passwo
 process.env.DIRECT_URL = process.env.DATABASE_URL;
 assert(new URL(process.env.DATABASE_URL).hostname === '127.0.0.1');
 assert(new URL(process.env.DATABASE_URL).pathname === `/${database}`);
-const db = new PrismaClient();
+const db = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+});
 const base = 'http://127.0.0.1:3310';
 const secret = 'audit-hmac-539bfe825ee34e0dae4b1400a6f48ec0';
 const suffix = crypto.randomBytes(4).toString('hex');

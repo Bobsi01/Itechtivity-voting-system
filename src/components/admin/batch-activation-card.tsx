@@ -222,7 +222,7 @@ export function BatchActivationCard({
                         Batch #{batch.batchNumber}
                       </span>
                       {batch.firstSerial && batch.lastSerial && (
-                        <span className="font-mono text-[11px] text-neutral-600 truncate">
+                        <span className="font-mono text-[11px] text-neutral-600 truncate select-text">
                           {batch.firstSerial} – {batch.lastSerial}
                         </span>
                       )}

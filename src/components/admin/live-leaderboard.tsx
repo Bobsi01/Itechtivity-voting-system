@@ -421,7 +421,7 @@ export function LiveLeaderboard() {
             disabled={isUpdatingConfig}
             className={`flex items-center gap-1.5 px-3 py-2 rounded text-xs font-semibold transition-colors min-h-[44px] touch-manipulation select-none ${
               stats.config.isVotingOpen
-                ? "border border-amber-500 text-amber-600 bg-white hover:bg-amber-500 hover:text-neutral-950 active:bg-amber-600"
+                ? "border border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white active:bg-neutral-800"
                 : "border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900"
             }`}
           >
@@ -645,9 +645,9 @@ export function LiveLeaderboard() {
         <div className="p-4 border-b border-neutral-300 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Trophy className="w-4 h-4 text-neutral-900" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-900">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-900">
               Global Booth Live Standings
-            </h3>
+            </h2>
           </div>
           <span className="text-xs font-mono text-neutral-600">Updates every 5 seconds</span>
         </div>
@@ -759,7 +759,7 @@ export function LiveLeaderboard() {
                   executeToggleVoting();
                 }}
                 disabled={isUpdatingConfig}
-                className="px-4 py-2 border-2 border-amber-600 bg-amber-500 text-neutral-950 hover:bg-amber-600 active:bg-amber-700 rounded text-xs font-bold uppercase tracking-wider transition-colors min-h-[44px] touch-manipulation select-none disabled:opacity-50"
+                className="px-4 py-2 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 active:bg-black rounded text-xs font-bold uppercase tracking-wider transition-colors min-h-[44px] touch-manipulation select-none disabled:opacity-50"
               >
                 Confirm Emergency Freeze
               </button>

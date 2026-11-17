@@ -250,7 +250,7 @@ export function AuditTrailCard() {
 
   const handleExportAuditCsv = () => {
 
-    window.open("/api/admin/export?type=votes", "_blank");
+    window.open("/api/admin/export?type=audit", "_blank");
   };
 
   const handleCopyJson = async () => {

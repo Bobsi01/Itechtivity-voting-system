@@ -159,7 +159,7 @@ export function VenueFloorMap({
                     </span>
                   </div>
                 ) : (
-                  <span className="font-mono text-[10px] text-neutral-400 block mt-auto">
+                  <span className="font-mono text-[10px] text-neutral-600 block mt-auto">
                     Empty
                   </span>
                 )}

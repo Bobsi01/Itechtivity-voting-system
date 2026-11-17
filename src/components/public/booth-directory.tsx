@@ -32,6 +32,7 @@ export interface PublicAwardItem {
 interface BoothDirectoryProps {
   booths: PublicBoothItem[];
   awards: PublicAwardItem[];
+  programCodes?: string[];
   activeView: "directory" | "map" | "rules" | "awards";
 }
 
@@ -44,13 +45,20 @@ const VOTING_GUIDE = [
   { title: "Make each choice count", description: "Each activated stub can be redeemed once. You may support the same project in different award categories using the matching stubs." },
 ];
 
-export function BoothDirectory({ booths, awards, activeView }: BoothDirectoryProps) {
+export function BoothDirectory({ booths, awards, programCodes = [], activeView }: BoothDirectoryProps) {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedProgram, setSelectedProgram] = useState("");
   const [page, setPage] = useState(1);
   const categories = Array.from(new Set(booths.map((booth) => booth.capstoneCategory))).filter(Boolean).sort();
+  const availableProgramCodes = Array.from(
+    new Set([
+      ...BOOTH_PROGRAM_CODES,
+      ...programCodes,
+      ...booths.map((booth) => booth.programCode).filter((code): code is string => Boolean(code)),
+    ])
+  );
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
   const filteredBooths = booths.filter((booth) => {
@@ -141,7 +149,7 @@ export function BoothDirectory({ booths, awards, activeView }: BoothDirectoryPro
                   setPage(1);
                 }}>
                   <option value="">All programs</option>
-                  {BOOTH_PROGRAM_CODES.map((program) => <option key={program} value={program}>{program}</option>)}
+                  {availableProgramCodes.map((program) => <option key={program} value={program}>{program}</option>)}
                   <option value="unassigned">Not assigned</option>
                 </select>
               </div>

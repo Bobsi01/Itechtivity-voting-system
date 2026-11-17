@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 const ValidateCardSchema = z.object({
   code: z
-    .string({ required_error: 'Validation code is required' })
+    .string({ error: 'Validation code is required' })
     .trim()
     .min(1, 'Validation code or QR string is required')
     .max(500, 'Validation code exceeds maximum length'),
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
       {
         success: false,
         error: 'VALIDATION_ERROR',
-        message: parsed.error.errors[0]?.message || 'Invalid validation code.',
+        message: parsed.error.issues[0]?.message || 'Invalid validation code.',
       },
       { status: 400 }
     );
@@ -132,7 +132,15 @@ export async function POST(request: Request) {
 
   const resolved = resolveValidationQuery(parsed.data.code);
   if (!resolved) {
-    return NextResponse.json({ success: false, error: 'INVALID_VALIDATION_CODE' }, { status: 400 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'INVALID_VALIDATION_CODE',
+        message:
+          'Invalid serial format or QR code. Enter a card serial like B27-B01-0001 or scan a valid QR code.',
+      },
+      { status: 400 }
+    );
   }
   const { rawCode, cleanSerial, candidateCardSerial, resolvedStubSerial } = resolved;
 

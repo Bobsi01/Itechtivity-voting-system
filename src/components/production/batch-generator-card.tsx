@@ -38,7 +38,9 @@ export function BatchGeneratorCard({ onBatchGenerated }: BatchGeneratorCardProps
     }
 
     setIsGenerating(true);
-    const toastId = toast.loading(`Rendering ${cardCount} cards across ${calculatedSheets} A4 sheets...`);
+    const toastId = toast.loading(
+      `Rendering ${cardCount} cards across ${calculatedSheets} A4 ${calculatedSheets === 1 ? "sheet" : "sheets"}...`
+    );
 
     try {
       const res = await fetch("/api/production/generate", {
@@ -56,7 +58,7 @@ export function BatchGeneratorCard({ onBatchGenerated }: BatchGeneratorCardProps
       }
 
       toast.success(
-        `Batch #${data.batch.batchNumber} generated! (${data.batch.totalSheets} A4 sheets ready)`,
+        `Batch #${data.batch.batchNumber} generated! (${data.batch.totalSheets} A4 ${data.batch.totalSheets === 1 ? "sheet" : "sheets"} ready)`,
         { id: toastId }
       );
       onBatchGenerated();
@@ -128,7 +130,11 @@ export function BatchGeneratorCard({ onBatchGenerated }: BatchGeneratorCardProps
             />
           </div>
 
-          <p className="text-sm text-neutral-700">{Number(cardCount) >= 4 && Number(cardCount) <= 200 && Number(cardCount) % 4 === 0 ? `${calculatedSheets} A4 sheets · 4 cards per sheet` : "Choose a multiple of 4 between 4 and 200."}</p>
+          <p className="text-sm text-neutral-700">
+            {Number(cardCount) >= 4 && Number(cardCount) <= 200 && Number(cardCount) % 4 === 0
+              ? `${calculatedSheets} A4 ${calculatedSheets === 1 ? "sheet" : "sheets"} · 4 cards per sheet`
+              : "Choose a multiple of 4 between 4 and 200."}
+          </p>
           <div className="flex flex-col xl:flex-row items-stretch gap-2">
             <a
               href="/api/production/calibration"

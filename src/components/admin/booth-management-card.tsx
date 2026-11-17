@@ -36,6 +36,7 @@ export function BoothManagementCard() {
   const [search, setSearch] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const [booths, setBooths] = useState<BoothRecord[]>([]);
+  const [programOptions, setProgramOptions] = useState<string[]>([...BOOTH_PROGRAM_CODES]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState<boolean>(false);
@@ -74,10 +75,25 @@ export function BoothManagementCard() {
     }
   };
 
+  const fetchPrograms = useCallback(async () => {
+
+    try {
+      const res = await fetch("/api/programs");
+      const data: { success?: boolean; programs?: Array<{ code: string }> } = await res.json();
+      if (res.ok && data.success && Array.isArray(data.programs)) {
+        const activeCodes = data.programs.map((program) => program.code).filter(Boolean);
+        setProgramOptions(Array.from(new Set([...BOOTH_PROGRAM_CODES, ...activeCodes])));
+      }
+    } catch (err) {
+      console.warn("Failed to load academic programs for booth selector:", err);
+    }
+  }, []);
+
   useEffect(() => {
 
     fetchBooths();
-  }, []);
+    fetchPrograms();
+  }, [fetchPrograms]);
 
   const resetForm = useCallback(() => {
 
@@ -287,7 +303,7 @@ export function BoothManagementCard() {
             placeholder="Search booth code, project title, or category..."
             value={search}
             onChange={(event) => { setSearch(event.target.value); setPageIndex(0); }}
-            className="w-full min-h-11 border border-neutral-300 rounded pl-9 pr-3 text-base sm:text-sm font-mono placeholder:text-neutral-500 focus:outline-none focus:border-neutral-900 text-neutral-900"
+            className="w-full min-h-11 border border-neutral-300 rounded pl-9 pr-3 text-base font-mono placeholder:text-neutral-500 focus:outline-none focus:border-neutral-900 text-neutral-900"
           />
         </div>
 
@@ -360,7 +376,7 @@ export function BoothManagementCard() {
                             Slot: {booth.mapSlot}
                           </span>
                         ) : (
-                          <span className="text-[11px] font-mono text-neutral-400 border border-neutral-200 px-1.5 py-0.5 rounded truncate select-text">
+                          <span className="text-[11px] font-mono text-neutral-600 border border-neutral-200 px-1.5 py-0.5 rounded truncate select-text">
                             No Slot
                           </span>
                         )}
@@ -583,7 +599,9 @@ export function BoothManagementCard() {
                   <label className="text-xs font-mono uppercase text-neutral-700" htmlFor="booth-program-input">Academic Program</label>
                   <select id="booth-program-input" value={programCode} onChange={(event) => setProgramCode(event.target.value)} className="w-full min-h-11 rounded border border-neutral-300 px-3 py-2 text-base text-neutral-900">
                     <option value="">Not assigned</option>
-                    {BOOTH_PROGRAM_CODES.map((program) => <option key={program} value={program}>{program}</option>)}
+                    {Array.from(new Set([...programOptions, ...(programCode ? [programCode] : [])])).map((program) => (
+                      <option key={program} value={program}>{program}</option>
+                    ))}
                   </select>
                 </div>
 

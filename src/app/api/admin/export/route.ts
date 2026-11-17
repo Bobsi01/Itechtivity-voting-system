@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type') || 'standings';
-  if (!z.enum(['standings', 'votes', 'registrations']).safeParse(type).success) {
+  if (!z.enum(['standings', 'votes', 'registrations', 'audit']).safeParse(type).success) {
     return NextResponse.json({ success: false, error: 'INVALID_EXPORT_TYPE' }, { status: 400 });
   }
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -237,6 +237,48 @@ export async function GET(request: Request) {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': `attachment; filename="itechtivity-2027-registration-demographics-${timestamp}.csv"`,
+      },
+    });
+  }
+
+  if (type === 'audit') {
+    const logs = await prisma.auditLog.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const headerRow = [
+      'Timestamp',
+      'Action',
+      'Resource',
+      'Actor Name',
+      'Actor Email',
+      'Actor Role',
+      'IP Address',
+      'Summary',
+    ];
+
+    const rows = logs.map((log) =>
+      [
+        log.createdAt.toISOString(),
+        log.action,
+        log.resource,
+        log.actorName || 'System',
+        log.actorEmail || '',
+        log.actorRole || 'SYSTEM',
+        log.ipAddress || '',
+        log.summary || log.action,
+      ]
+        .map(escapeCsvField)
+        .join(',')
+    );
+
+    const csvContent = [headerRow.map(escapeCsvField).join(','), ...rows].join('\r\n');
+
+    return new Response(csvContent, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="itech2027-audit-logs-${timestamp}.csv"`,
       },
     });
   }

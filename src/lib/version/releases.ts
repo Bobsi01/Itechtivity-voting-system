@@ -25,10 +25,62 @@ export interface VersionRelease {
 
 export const SYSTEM_RELEASES: VersionRelease[] = [
   {
+    version: "V1.0.52",
+    releaseDate: "November 17, 2026",
+    title: "Full-Lifecycle QA Remediation, Dependency Security Hardening & Framework Upgrades",
+    isLatest: true,
+    majorHighlights: [
+      "Eliminated all npm audit security vulnerabilities via Zod v4 (4.6.7), Next.js 16.4.6, and ESLint/toolchain patches.",
+      "Upgraded core infrastructure to Prisma ORM 7.10.1 (PostgreSQL driver adapter), Appwrite SDKs v29/v31, Tailwind CSS 4.3.5, and TypeScript 6.0.3.",
+      "Resolved exhibitor duplicate-scan idempotency key caching so repeated scans immediately surface duplicate warnings.",
+      "Added dedicated Audit Log CSV export (type=audit) and dynamic academic program synchronization across Booth Management and /projects.",
+      "Enforced 44x44px touch targets, 16px+ input typography, monochrome styling, and high-contrast legibility across 1080p desktop and mobile viewports.",
+    ],
+    minorChanges: [
+      {
+        description: "Upgraded Zod to 4.6.7, Next.js to 16.4.6, Prisma to 7.10.1, Appwrite SDKs to v29/v31, Tailwind CSS to 4.3.5, and TypeScript to 6.0.3 with zero audit vulnerabilities",
+        points: 5,
+        type: "security",
+      },
+      {
+        description: "Cleared exhibitor pendingScanRef on scan success so consecutive duplicate stub scans return HTTP 409 TICKET_ALREADY_REDEEMED",
+        points: 4,
+        type: "fix",
+      },
+      {
+        description: "Added AuditLog CSV export endpoint (type=audit) and wired Admin Audit Trail and Data Exports actions",
+        points: 3,
+        type: "feature",
+      },
+      {
+        description: "Enforced 44x44px mobile touch targets, 16px+ input sizes across FHD portrait viewports, monochrome states, and accessible contrast",
+        points: 3,
+        type: "fix",
+      },
+      {
+        description: "Synchronized dynamically created academic programs across Admin Booth Management and the public /projects directory",
+        points: 2,
+        type: "fix",
+      },
+      {
+        description: "Modernized multi-agent Puppeteer browser QA suite (3-viewport matrix) and WebSocket integration mocks",
+        points: 2,
+        type: "fix",
+      },
+    ],
+    contributors: [
+      {
+        name: "Daniel",
+        githubUsername: "ItsMeYourNightmare",
+        role: "Repository Owner & Lead Systems Architect",
+      },
+    ],
+  },
+  {
     version: "V1.0.33",
     releaseDate: "October 20, 2026",
     title: "52-Booth Production Grid Architecture & Master QR Centering",
-    isLatest: true,
+    isLatest: false,
     majorHighlights: [
       "Production-wide expansion to 52 capstone booths (CS-01 to CS-52) across an 8x7 matrix without unused cells.",
       "Maximized 2x2 Master QR center block (44.5pt / 1.57cm) with bilateral alignment and enhanced camera acquisition.",

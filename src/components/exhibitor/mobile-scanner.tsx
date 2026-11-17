@@ -160,6 +160,8 @@ export function MobileScanner() {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        // Clear pending scan state so immediate same-stub re-scans use a fresh key and trigger duplicate detection
+        pendingScanRef.current = null;
         playAudioFeedback(true);
         triggerHaptic(true);
         setScanFlash("success");
@@ -498,7 +500,7 @@ export function MobileScanner() {
                   value={scanSearchQuery}
                   onChange={(e) => setScanSearchQuery(e.target.value)}
                   placeholder="Search stub serial or award..."
-                  className="w-full pl-9 pr-3 py-2 text-base sm:text-xs font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+                  className="w-full pl-9 pr-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
                 />
               </div>
 

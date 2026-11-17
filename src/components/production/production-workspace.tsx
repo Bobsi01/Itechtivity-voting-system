@@ -80,7 +80,7 @@ export function ProductionWorkspace() {
     <div className="space-y-6">
       <div role="status" className="text-sm text-neutral-700">
         {loadError && files.length === 0 ? "Print batch totals unavailable." : isLoading && files.length === 0 ? "Loading print batches..." : (
-          <p>{completedFiles.length} completed batches · {totalCardsGenerated} cards · {totalSheetsGenerated} A4 sheets
+          <p>{completedFiles.length} {completedFiles.length === 1 ? "completed batch" : "completed batches"} · {totalCardsGenerated} {totalCardsGenerated === 1 ? "card" : "cards"} · {totalSheetsGenerated} A4 {totalSheetsGenerated === 1 ? "sheet" : "sheets"}
             {files.some((file) => file.status !== "COMPLETED") && (
               <span> · {files.filter((file) => file.status === "FAILED").length} failed · {files.filter((file) => file.status !== "COMPLETED" && file.status !== "FAILED").length} in progress</span>
             )}
