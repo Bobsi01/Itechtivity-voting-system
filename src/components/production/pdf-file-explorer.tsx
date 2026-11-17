@@ -83,7 +83,7 @@ export function PdfFileExplorer({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search batches by number, filename, or serial range..."
-            className="w-full pl-9 pr-3 py-2 text-base sm:text-xs font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
+            className="w-full pl-9 pr-3 py-2 text-base font-mono border border-neutral-300 rounded focus:border-neutral-900 focus:outline-none min-h-[44px]"
           />
         </div>
         <div className="flex items-center justify-between mt-2 text-[11px] font-mono text-neutral-600">

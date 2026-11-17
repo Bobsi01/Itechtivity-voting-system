@@ -42,9 +42,19 @@ export function AwardsStage({ awards }: AwardsStageProps) {
   const [stageAwards, setStageAwards] = useState<StageAwardData[]>(awards);
   const [selectedSlot, setSelectedSlot] = useState<number>(awards[0]?.slotNumber ?? 1);
   const [revealedRanks, setRevealedRanks] = useState<Record<number, boolean>>({});
+  const [emptyRevealNotice, setEmptyRevealNotice] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   const currentAward = stageAwards.find((a) => a.slotNumber === selectedSlot) || stageAwards[0];
+  const availableRanks = currentAward
+    ? [1, 2, 3].filter((rank) => Boolean(currentAward.winners[rank - 1]))
+    : [];
+  const isAllRevealed = availableRanks.length > 0
+    ? availableRanks.every((rank) => Boolean(revealedRanks[rank]))
+    : Boolean(revealedRanks[1] && revealedRanks[2] && revealedRanks[3]);
+  const isAllHidden = availableRanks.length > 0
+    ? availableRanks.every((rank) => !revealedRanks[rank])
+    : !isAllRevealed && !emptyRevealNotice;
 
   useEffect(() => {
 
@@ -154,11 +164,13 @@ export function AwardsStage({ awards }: AwardsStageProps) {
   const handleRevealAll = () => {
 
     setRevealedRanks({ 1: true, 2: true, 3: true });
+    setEmptyRevealNotice(Boolean(currentAward && currentAward.winners.length === 0));
   };
 
   const handleResetReveals = () => {
 
     setRevealedRanks({});
+    setEmptyRevealNotice(false);
   };
 
   const toggleRank = (rank: number) => {
@@ -196,16 +208,26 @@ export function AwardsStage({ awards }: AwardsStageProps) {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            aria-pressed={isAllRevealed}
             onClick={handleRevealAll}
-            className="px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-bold min-h-[44px] flex items-center gap-1.5 transition-colors touch-manipulation select-none"
+            className={`px-3 py-2 rounded text-xs font-bold min-h-[44px] flex items-center gap-1.5 transition-colors touch-manipulation select-none ${
+              isAllRevealed
+                ? "border-2 border-neutral-900 bg-neutral-900 text-white"
+                : "border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900"
+            }`}
           >
             <Eye className="w-3.5 h-3.5" />
             <span>Reveal All</span>
           </button>
           <button
             type="button"
+            aria-pressed={isAllHidden}
             onClick={handleResetReveals}
-            className="px-3 py-2 border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 rounded text-xs font-semibold min-h-[44px] flex items-center gap-1.5 transition-colors touch-manipulation select-none"
+            className={`px-3 py-2 rounded text-xs font-semibold min-h-[44px] flex items-center gap-1.5 transition-colors touch-manipulation select-none ${
+              isAllHidden
+                ? "border-2 border-neutral-900 bg-white text-neutral-900 font-bold"
+                : "border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white hover:border-neutral-900"
+            }`}
           >
             <EyeOff className="w-3.5 h-3.5" />
             <span>Hide Standings</span>
@@ -230,6 +252,7 @@ export function AwardsStage({ awards }: AwardsStageProps) {
             onClick={() => {
               setSelectedSlot(award.slotNumber);
               setRevealedRanks({});
+              setEmptyRevealNotice(false);
             }}
             className={`px-4 py-2.5 rounded border text-xs font-bold whitespace-nowrap min-h-[44px] transition-colors ${
               selectedSlot === award.slotNumber
@@ -257,6 +280,14 @@ export function AwardsStage({ awards }: AwardsStageProps) {
           <p className="text-xs text-neutral-600 max-w-xl mx-auto font-mono">
             {currentAward.description || "Official Capstone Award presented by the University of Caloocan City."}
           </p>
+          {emptyRevealNotice && currentAward.winners.length === 0 && (
+            <p
+              role="status"
+              className="mt-3 inline-block border border-neutral-900 rounded px-3 py-1.5 text-xs font-mono font-semibold text-neutral-900"
+            >
+              No qualifying votes have been recorded for Slot #{currentAward.slotNumber} yet.
+            </p>
+          )}
         </div>
 
         {/* Podium Layout: 2nd Place (Left), 1st Place (Center), 3rd Place (Right) */}

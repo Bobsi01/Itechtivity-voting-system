@@ -572,7 +572,7 @@ export function BoothConfiguration() {
                     <span className="font-mono text-[10px] border border-neutral-300 px-1.5 py-0.5 rounded text-neutral-600">
                       {member.role}
                     </span>
-                    <span className="font-mono text-[10px] text-neutral-400 hidden sm:inline">
+                    <span className="font-mono text-[10px] text-neutral-600 hidden sm:inline">
                       {new Date(member.createdAt).toLocaleDateString([], { month: "short", day: "2-digit" })}
                     </span>
                   </div>

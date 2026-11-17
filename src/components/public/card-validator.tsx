@@ -115,7 +115,9 @@ export function CardValidator() {
             ? "Rate limit exceeded. Please wait a moment before trying again."
             : response.status === 404
               ? "No bingo card found matching the provided code."
-              : "Unable to validate card. Please try again.");
+              : response.status === 400
+                ? "Invalid serial format or QR code. Enter a card serial like B27-B01-0001 or scan a valid QR code."
+                : "Unable to validate card. Please try again.");
         setErrorMessage(errorText);
         setResult(null);
         playAudioFeedback(false);
@@ -227,7 +229,7 @@ export function CardValidator() {
               autoComplete="off"
               spellCheck="false"
               autoFocus
-              className="w-full min-h-11 px-3 py-2 text-base font-mono uppercase border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-400"
+              className="w-full min-h-11 px-3 py-2 text-base font-mono uppercase border border-neutral-300 rounded focus:outline-none focus:border-neutral-900 text-neutral-900 placeholder:text-neutral-500"
             />
           </div>
 

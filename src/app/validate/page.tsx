@@ -28,7 +28,7 @@ export default function ValidatePage() {
           <Link
             href="/"
             aria-label="Itechtivity 2027 Home"
-            className="text-xs font-black tracking-widest uppercase text-neutral-900 select-none"
+            className="min-h-11 min-w-11 inline-flex items-center px-2 text-xs font-black tracking-widest uppercase text-neutral-900 select-none"
           >
             ITECHTIVITY <span className="font-light text-neutral-500">2027</span>
           </Link>
@@ -53,9 +53,9 @@ export default function ValidatePage() {
         <CardValidator />
       </div>
 
-      <footer className="mt-8 pt-4 border-t border-neutral-200 text-center text-xs text-neutral-500 space-y-1">
+      <footer className="mt-8 pt-4 border-t border-neutral-200 text-center text-xs text-neutral-600 space-y-1">
         <p>University of Caloocan City — Computer Studies Department</p>
-        <p className="font-mono text-[11px] text-neutral-400">
+        <p className="font-mono text-[11px] text-neutral-600">
           Itechtivity 2027 Capstone Awards Voting System
         </p>
       </footer>

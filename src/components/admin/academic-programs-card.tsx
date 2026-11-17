@@ -256,7 +256,7 @@ export function AcademicProgramsCard() {
                   <button
                     type="button"
                     onClick={() => setProgramToDelete({ id: prog.id, code: prog.code })}
-                    className="p-2 border border-red-500 text-red-600 bg-white hover:bg-red-600 hover:text-white active:bg-red-700 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors touch-manipulation select-none"
+                    className="p-2 border border-neutral-300 bg-white text-neutral-900 hover:border-neutral-900 hover:bg-neutral-900 hover:text-white active:bg-neutral-800 rounded min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors touch-manipulation select-none"
                     aria-label={`Delete ${prog.code}`}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -299,7 +299,7 @@ export function AcademicProgramsCard() {
                 setProgramToDelete(null);
                 handleDeleteProgram(target.id, target.code);
               }}
-              className="px-4 py-2 border-2 border-red-600 bg-red-600 text-white hover:bg-red-700 active:bg-red-800 rounded text-xs font-bold uppercase tracking-wider transition-colors min-h-[44px] touch-manipulation select-none"
+              className="px-4 py-2 border-2 border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-800 active:bg-black rounded text-xs font-bold uppercase tracking-wider transition-colors min-h-[44px] touch-manipulation select-none"
             >
               Confirm Delete
             </button>

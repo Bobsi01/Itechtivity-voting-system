@@ -102,7 +102,9 @@ export function AdminWorkspace() {
         {/* Sidebar Header: Brand & Minimize/Maximize Toggle
             Height locked to exactly h-16 (64px) with border-b border-neutral-300
             so it lines up perfectly with the main top header line! */}
-        <div className="h-16 flex items-center justify-between px-3 border-b border-neutral-300 box-border">
+        <div className={`h-16 flex items-center border-b border-neutral-300 box-border ${
+          isDesktopCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+        }`}>
           {!isDesktopCollapsed && (
             <div className="flex flex-col min-w-0 pr-2">
               <span className="text-xs font-bold uppercase tracking-wider text-neutral-900 truncate">
@@ -118,8 +120,8 @@ export function AdminWorkspace() {
             onClick={toggleDesktopCollapse}
             aria-label={isDesktopCollapsed ? 'Maximize sidebar' : 'Minimize sidebar'}
             title={isDesktopCollapsed ? 'Maximize sidebar' : 'Minimize sidebar'}
-            className={`min-h-10 rounded-md flex items-center justify-center text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors touch-manipulation select-none active:scale-95 ${
-              isDesktopCollapsed ? 'w-full' : 'w-10'
+            className={`min-h-11 min-w-11 rounded-md flex items-center justify-center text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors touch-manipulation select-none active:scale-95 ${
+              isDesktopCollapsed ? 'w-full' : 'w-11'
             }`}
           >
             {isDesktopCollapsed ? (

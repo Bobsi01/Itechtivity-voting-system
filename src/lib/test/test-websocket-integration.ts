@@ -336,30 +336,44 @@ async function testVector4MockServerDispatch(): Promise<void> {
   const originalCreateDocument = Databases.prototype.createDocument;
 
   // Intercept Databases.prototype.createDocument with mock implementation
-  Databases.prototype.createDocument = async function <TDocument extends Models.Document>(
-    databaseId: string,
-    collectionId: string,
-    documentId: string,
-    data: Omit<TDocument, keyof Models.Document>,
-    permissions?: string[]
-  ): Promise<TDocument> {
+  const mockCreateDocument = async function (
+    databaseIdOrParams: string | {
+      databaseId: string;
+      collectionId: string;
+      documentId: string;
+      data: Record<string, unknown>;
+      permissions?: string[];
+    },
+    collectionIdArg?: string,
+    documentIdArg?: string,
+    dataArg?: Record<string, unknown>,
+    permissionsArg?: string[]
+  ) {
+    const isParamsObject = typeof databaseIdOrParams === 'object' && databaseIdOrParams !== null;
+    const databaseId = isParamsObject ? databaseIdOrParams.databaseId : databaseIdOrParams;
+    const collectionId = isParamsObject ? databaseIdOrParams.collectionId : (collectionIdArg ?? '');
+    const documentId = isParamsObject ? databaseIdOrParams.documentId : (documentIdArg ?? '');
+    const data = isParamsObject ? databaseIdOrParams.data : (dataArg ?? {});
+    const permissions = isParamsObject ? databaseIdOrParams.permissions : permissionsArg;
+
     recordedCalls.push({
       databaseId,
       collectionId,
       documentId,
-      data: data as Record<string, unknown>,
+      data,
     });
-    const mockDocument = {
+    return {
       $id: documentId,
+      $sequence: 0,
       $createdAt: new Date().toISOString(),
       $updatedAt: new Date().toISOString(),
       $permissions: permissions ?? [],
       $collectionId: collectionId,
       $databaseId: databaseId,
-      ...(data as Record<string, unknown>),
+      ...data,
     };
-    return mockDocument as TDocument;
   };
+  Databases.prototype.createDocument = mockCreateDocument as Databases['createDocument'];
 
   try {
     // 1. Test broadcastVoteEvent
@@ -574,7 +588,7 @@ function testVector5MockClientSubscriptionIngestion(): void {
       const responseEvent: RealtimeResponseEvent<never> = {
         events: [`databases.test-itech2027-db.collections.${channel.split('.').at(-2) || 'unknown'}.documents.${action}`],
         channels: [channel],
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         payload: payload as never,
       };
 
@@ -773,7 +787,7 @@ function testVector6MalformedPayloadProtection(): void {
       const responseEvent: RealtimeResponseEvent<never> = {
         events: [`databases.test-itech2027-db.collections.${channel.split('.').at(-2) || 'unknown'}.documents.${action}`],
         channels: [channel],
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         payload: payload as never,
       };
 

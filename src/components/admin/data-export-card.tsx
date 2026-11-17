@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileSpreadsheet, ShieldAlert, Users } from "lucide-react";
+import { Download, FileSpreadsheet, History, ShieldAlert, Users } from "lucide-react";
 
 export function DataExportCard() {
 
@@ -25,6 +25,13 @@ export function DataExportCard() {
       href: "/api/admin/export?type=registrations",
       filename: "itechtivity-2027-registration-demographics.csv",
       icon: Users,
+    },
+    {
+      title: "System Audit Trail CSV",
+      description: "Chronological security and operational audit log of administrative toggles, card binds, booth changes, and staff actions.",
+      href: "/api/admin/export?type=audit",
+      filename: "itechtivity-2027-audit-logs.csv",
+      icon: History,
     },
   ];
 

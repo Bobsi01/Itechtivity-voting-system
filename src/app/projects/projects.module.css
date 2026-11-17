@@ -45,8 +45,8 @@
   .footer { margin-top: 56px; }
 }
 
-.navigation { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 20px; margin-left: auto; }
-.navigation a { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; color: #525252; }
+.navigation { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 12px; margin-left: auto; }
+.navigation a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding-inline: 0.75rem; font-size: 13px; color: #525252; }
 .navigation a[aria-current="page"] { color: #171717; font-weight: 650; text-decoration: underline; text-underline-offset: 6px; }
 .navigation a:hover { color: #171717; }
 @media (max-width: 639px) {

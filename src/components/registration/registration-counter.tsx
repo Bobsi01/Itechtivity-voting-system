@@ -948,7 +948,9 @@ export function RegistrationCounter() {
         {/* Search Activity Logs */}
         <div className="flex gap-2">
           <input
+            id="registration-activity-search"
             type="text"
+            aria-label="Search registration transactions"
             value={historySearchQuery}
             onChange={(e) => setHistorySearchQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -975,7 +977,7 @@ export function RegistrationCounter() {
                 setHistorySearchQuery("");
                 fetchRecentHistory("");
               }}
-              className="px-3 py-2 border border-amber-500 text-amber-600 bg-white hover:bg-amber-500 hover:text-neutral-950 active:bg-amber-600 rounded text-xs min-h-[44px] flex items-center gap-1 touch-manipulation select-none transition-colors"
+              className="px-3 py-2 border border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white active:bg-neutral-800 rounded text-xs min-h-[44px] flex items-center gap-1 touch-manipulation select-none transition-colors"
             >
               <X className="w-3.5 h-3.5" />
               <span>Clear</span>
@@ -1050,7 +1052,7 @@ export function RegistrationCounter() {
         aria-labelledby="receipt-dialog-title"
         className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
       >
-        <div className="bg-white border border-neutral-300 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-xl">
+        <div className="bg-white border border-neutral-300 rounded-lg max-w-lg w-full max-h-[90dvh] overflow-y-auto p-6 space-y-4 shadow-xl">
           <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-neutral-800" />

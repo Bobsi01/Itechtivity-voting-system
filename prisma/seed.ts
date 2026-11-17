@@ -1,7 +1,16 @@
+import 'dotenv/config';
 import { PrismaClient, Role } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('CRITICAL: DATABASE_URL or DIRECT_URL must be configured for seeding.');
+}
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString }),
+});
 
 async function main() {
   console.log('Starting Itechtivity 2027 database seeding...');

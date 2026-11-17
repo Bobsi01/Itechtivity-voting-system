@@ -81,8 +81,8 @@
   .filters { grid-template-columns: minmax(0, 1fr) 300px 220px; gap: 16px; padding-top: 22px; }
   .filters > .searchField { grid-column: auto; }
   .categoryField label { display: block; }
-  .categoryField select { font-size: 14px; }
-  .searchField input { font-size: 15px; }
+  .categoryField select { font-size: 1rem; }
+  .searchField input { font-size: 1rem; }
   .projectGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
   .projectCard { min-height: 282px; padding: 26px; }
   .coverBanner { width: calc(100% + 52px); margin: -26px -26px 16px -26px; }

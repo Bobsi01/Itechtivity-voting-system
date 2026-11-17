@@ -762,7 +762,7 @@ function testVector6ClientSubscriptionAdversarialIngestion(): void {
       const responseEvent: RealtimeResponseEvent<never> = {
         events: [`databases.test-itech2027-db.collections.${channel.split('.').at(-2) || 'unknown'}.documents.${action}`],
         channels: [channel],
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         payload: payload as never,
       };
 

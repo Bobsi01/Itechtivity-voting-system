@@ -26,7 +26,7 @@ export default async function ProjectsPage({ searchParams }: {
   const { view } = await searchParams;
   const activeView = PROJECT_VIEWS.find((item) => item.id === view)?.id ?? "directory";
 
-  const [booths, awards] = await Promise.all([
+  const [booths, awards, activePrograms] = await Promise.all([
     prisma.booth.findMany({
       orderBy: { code: "asc" },
       select: {
@@ -54,6 +54,11 @@ export default async function ProjectsPage({ searchParams }: {
         description: true,
       },
     }),
+    prisma.academicProgram.findMany({
+      where: { isActive: true },
+      orderBy: [{ order: "asc" }, { code: "asc" }],
+      select: { code: true },
+    }),
   ]);
 
   const publicBooths: PublicBoothItem[] = booths.map((b) => ({
@@ -77,6 +82,8 @@ export default async function ProjectsPage({ searchParams }: {
     title: a.title,
     description: a.description,
   }));
+
+  const publicProgramCodes = activePrograms.map((program) => program.code);
 
   return (
     <main className={styles.page}>
@@ -106,7 +113,7 @@ export default async function ProjectsPage({ searchParams }: {
         </div>
       </section>
 
-      <BoothDirectory key={activeView} booths={publicBooths} awards={publicAwards} activeView={activeView} />
+      <BoothDirectory key={activeView} booths={publicBooths} awards={publicAwards} programCodes={publicProgramCodes} activeView={activeView} />
 
       <footer className={styles.footer}>
         <p>University of Caloocan City <span>Computer Studies Department</span></p>
