@@ -107,7 +107,8 @@ jobs:
       - run: npx prisma validate
 
       # No --accept-data-loss: destructive schema changes fail the pipeline instead of dropping data.
-      - run: npx prisma db push --skip-generate
+      # Prisma 7 removed --skip-generate because db push no longer triggers prisma generate automatically.
+      - run: npx prisma db push
 
   deploy-functions:
     name: Deploy Appwrite Functions
